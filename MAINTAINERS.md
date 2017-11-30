@@ -2,7 +2,7 @@
 
 | Name | GitHub | Gerrit | RocketChat | email |
 |---|---|---|---|---|
-| Srinivasan Muralidharan | muralisr | muralisrini | muralisr | srinivasan.muralidharan99@gmail.com |
+| Srinivasan Muralidharan | muralisrini | muralisr | muralisr | srinivasan.muralidharan99@gmail.com |
 | Christopher Ferris | christo4ferris | ChristopherFerris | cbf | chrisfer@us.ibm.com |
 | Gari Singh | mastersingh24 | mastersingh24 | garisingh | gari.r.singh@gmail.com |
 | Jay Guo | guoger | guoger | guoger | guojiannan@cn.ibm.com |
