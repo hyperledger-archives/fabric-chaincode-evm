@@ -76,6 +76,12 @@
   version = "v1.7.0"
 
 [[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -92,10 +98,20 @@
   name = "github.com/hyperledger/burrow"
   packages = [
     "account",
+    "account/state",
     "binary",
+    "event",
+    "execution/evm",
+    "execution/evm/abi",
     "execution/evm/asm",
     "execution/evm/asm/bc",
-    "permission/types"
+    "execution/evm/events",
+    "execution/evm/sha3",
+    "logging",
+    "logging/structure",
+    "permission",
+    "permission/types",
+    "process"
   ]
   revision = "a3f2b9251b2ce4f21b2993f1b6918c4ce7fe2d5d"
 
@@ -286,7 +302,9 @@
   name = "github.com/tendermint/tmlibs"
   packages = [
     "common",
-    "log"
+    "log",
+    "pubsub",
+    "pubsub/query"
   ]
   revision = "91b4b534ad78e442192c8175db92a06a51064064"
   version = "v0.6.0"
@@ -404,6 +422,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0eaf9f342095f540fdcc840ba15a5d5bdff5176386f04b5dacc309004dbc5375"
+  inputs-digest = "d958523f7a3a53b439df23b7a437e5c9accc357339d725509e92f2cc40bb2d0b"
   solver-name = "gps-cdcl"
   solver-version = 1
