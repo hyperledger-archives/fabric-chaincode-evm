@@ -7,11 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package main_test
 
 import (
-	"encoding/hex"
-	"strings"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/account"

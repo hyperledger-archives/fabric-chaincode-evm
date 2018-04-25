@@ -137,9 +137,6 @@ func (evmscc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 
 		return shim.Success(output)
 	}
-
-	logger.Fatalf("Not reacheable")
-	return shim.Error("internal server error")
 }
 
 func (evmscc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []byte) pb.Response {
