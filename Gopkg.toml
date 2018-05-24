@@ -1,3 +1,6 @@
+#Copyright IBM Corp. All Rights Reserved.
+#SPDX-License-Identifier: Apache-2.0
+
 # Gopkg.toml example
 #
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
@@ -26,7 +29,7 @@
 
 
 [[constraint]]
-  branch = "develop"
+  version = "0.18.0"
   name = "github.com/hyperledger/burrow"
 
 [[constraint]]

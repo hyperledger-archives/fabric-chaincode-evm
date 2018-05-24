@@ -94,7 +94,6 @@
   revision = "fec3b39b059c0f88fa6b20f5ed012b1aa203a8b4"
 
 [[projects]]
-  branch = "develop"
   name = "github.com/hyperledger/burrow"
   packages = [
     "account",
@@ -113,7 +112,8 @@
     "permission/types",
     "process"
   ]
-  revision = "a3f2b9251b2ce4f21b2993f1b6918c4ce7fe2d5d"
+  revision = "5a21578211cfefd1c636d01b72295c041b81389a"
+  version = "v0.18.0"
 
 [[projects]]
   branch = "master"
@@ -296,6 +296,7 @@
     "data"
   ]
   revision = "fa721242b042ecd4c6ed1a934ee740db4f74e45c"
+  source = "github.com/tendermint/go-amino"
   version = "v0.7.3"
 
 [[projects]]
@@ -422,6 +423,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d958523f7a3a53b439df23b7a437e5c9accc357339d725509e92f2cc40bb2d0b"
+  inputs-digest = "8a355d08f0087192cfc478786d857293e3556f8c050a8f2ef11563682f458111"
   solver-name = "gps-cdcl"
   solver-version = 1
