@@ -18,8 +18,8 @@
 #   - linter - runs all code checks
 #   - unit-test - runs the go-test based unit tests
 
-ARCH=$(shell uname -m)
-BASEIMAGE_RELEASE=0.4.7
+ARCH=$(shell go env GOARCH)
+BASEIMAGE_RELEASE=0.4.8
 
 BASE_DOCKER_NS ?= hyperledger
 BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
