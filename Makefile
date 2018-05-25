@@ -11,12 +11,15 @@
 #   - check-deps - check for vendored dependencies that are no longer used
 #   - checks - runs all non-integration tests/checks
 #   - clean - cleans the build area
+#   - docker - builds the hyperledger/fabric-peer-evm image
+#   - docker-base - builds the base peer image for the docker multi-stage build
 #   - evmscc - build evmscc shared library for native OS
-#   - evmscc-linux - build evmscc shared library for Linux, so it could be used in Docker
+#   - evmscc-linux build evmscc shared library for linux
 #   - gotools - installs go tools like golint
 #   - license - checks go source files for Apache license header
 #   - linter - runs all code checks
 #   - unit-test - runs the go-test based unit tests
+#   - integration-test - runs the e2e_cli based test
 
 ARCH=$(shell go env GOARCH)
 BASEIMAGE_RELEASE=0.4.8
@@ -26,10 +29,12 @@ BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
 EVMSCC=github.com/hyperledger/fabric-chaincode-evm
 FABRIC=github.com/hyperledger/fabric
 LIB_DIR=/opt/gopath/lib
-
+GO_TAGS=nopkcs11
 BUILD_DIR ?= .build
+GOOS ?= $(shell go env GOOS)
 
 PACKAGES = ./statemanager/... ./plugin/...
+SRCFILES = ./plugin/evmscc.go ./statemanager/statemanager.go
 
 # We need this flag due to https://github.com/golang/go/issues/23739
 CGO_LDFLAGS_ALLOW = CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool"
@@ -38,7 +43,7 @@ EXECUTABLES ?= go docker git curl
 K := $(foreach exec,$(EXECUTABLES),\
 	$(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH: Check dependencies")))
 
-all: checks evmscc-linux
+all: checks evmscc docker integration-test
 
 checks: basic-checks unit-test
 
@@ -58,41 +63,56 @@ include gotools.mk
 gotools: gotools-install
 
 unit-test: $(PROJECT_FILES)
-	echo "Running unit-tests"
-	go test -tags \"$(GO_TAGS)\" $(PACKAGES)
+	@echo "Running unit-tests"
+	@go test -tags "$(GO_TAGS)" $(PACKAGES)
 
 unit-tests: unit-test
 
 linter: check-deps
 	@echo "LINT: Running code checks.."
-	./scripts/golinter.sh
+	@scripts/golinter.sh
 
-check-deps: 
+check-deps:
 	@echo "DEP: Checking for dependency issues.."
-	./scripts/check_deps.sh
+	@scripts/check_deps.sh
 
 changelog:
-	./scripts/changelog.sh v$(PREV_VERSION) v$(BASE_VERSION)
+	@scripts/changelog.sh v$(PREV_VERSION) v$(BASE_VERSION)
 
-DRUN = docker run -i --rm $(DOCKER_RUN_FLAGS) -w /opt/gopath/src/$(EVMSCC)
+.PHONY: docker-base
+docker-base: dependencies $(BUILD_DIR)/base-image/$(DUMMY)
 
-evmscc-linux: $(BUILD_DIR)/linux/lib/evmscc.so
-$(BUILD_DIR)/linux/lib/evmscc.so:
+$(BUILD_DIR)/base-image/$(DUMMY): Gopkg.toml Gopkg.lock
 	@mkdir -p $(@D)
-	$(eval TMPDIR := $(shell mktemp -d /tmp/evmscc-build.XXXXX))
-	@echo $(TMPDIR)
-	@rsync -az --exclude=".*/" --exclude=".*" --exclude="build/" $(GOPATH)/src/$(FABRIC) $(TMPDIR)
-	@rsync -az --exclude=".*/" --exclude=".*" --exclude="build/" $(GOPATH)/src/$(EVMSCC) $(TMPDIR)
-	@echo "Building $@"
-	@$(DRUN) \
-		-v $(TMPDIR)/fabric-chaincode-evm:/opt/gopath/src/$(EVMSCC) \
-		-v $(TMPDIR)/fabric:/opt/gopath/src/$(FABRIC) \
-		-v $(abspath $(@D)):$(LIB_DIR) \
-		-v $(PWD)/scripts/build.sh:/opt/build.sh \
-		-e LIB_DIR=$(LIB_DIR) \
-		$(BASE_DOCKER_NS)/fabric-baseimage:$(BASE_DOCKER_TAG) \
-		bash -c '/opt/build.sh /opt/gopath/src/$(FABRIC) /opt/gopath/src/$(EVMSCC)'
-	@rm -rf $(TMPDIR)
+	@docker build --no-cache --build-arg GO_TAGS --build-arg CGO_LDFLAGS_ALLOW . -f Dockerfile.base -t fabric-peer-evm-base:latest
+	@touch $@
+
+docker: docker-base $(BUILD_DIR)/peer-image/$(DUMMY)
+
+$(BUILD_DIR)/peer-image/$(DUMMY): $(SRCFILES) ./config/core.yaml
+	@mkdir -p $(@D)
+	@docker build --no-cache --build-arg GO_TAGS --build-arg CGO_LDFLAGS_ALLOW . -t hyperledger/fabric-peer-evm:latest
+	@scripts/docker-cleanup.sh
+	@touch $@
+
+.PHONY: dependencies
+dependencies:
+	@scripts/check_docker_deps.sh
+
+.PHONY: integration-test
+integration-test: docker
+	@echo "Running integration-test"
+	@cd e2e_cli && ./network_setup.sh down && ./network_setup.sh up mychannel 1
+
+evmscc: $(BUILD_DIR)/$(GOOS)/lib/evmscc.so
+
+evmscc-linux:
+	@GOOS=linux make evmscc
+
+$(BUILD_DIR)/$(GOOS)/lib/evmscc.so: docker
+	@echo "Extracting $(GOOS) evmscc.so from image"
+	@mkdir -p $(@D)
+	@docker run --rm -v $(PWD)/$(@D):/tmp/build/ hyperledger/fabric-peer-evm:latest /bin/bash -c 'cp /opt/lib/evmscc.so /tmp/build/'
 
 .PHONY: clean
 clean:

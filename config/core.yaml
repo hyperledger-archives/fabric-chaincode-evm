@@ -168,6 +168,7 @@ peer:
         # Number of peers selected to push messages to
         propagatePeerNum: 3
         # Determines frequency of pull phases(unit: second)
+        # Must be greater than digestWaitTime + responseWaitTime
         pullInterval: 4s
         # Number of peers to pull from
         pullPeerNum: 3
@@ -190,9 +191,11 @@ peer:
         # Buffer size of sending messages
         sendBuffSize: 200
         # Time to wait before pull engine processes incoming digests (unit: second)
+        # Should be slightly smaller than requestWaitTime
         digestWaitTime: 1s
-        # Time to wait before pull engine removes incoming nonce (unit: second)
-        requestWaitTime: 1s
+        # Time to wait before pull engine removes incoming nonce (unit: milliseconds)
+        # Should be slightly bigger than digestWaitTime
+        requestWaitTime: 1500ms
         # Time to wait before pull engine ends pull (unit: second)
         responseWaitTime: 2s
         # Alive check interval(unit: second)
@@ -312,7 +315,6 @@ peer:
             # Location of Key Store
             FileKeyStore:
                 # If "", defaults to 'mspConfigPath'/keystore
-                # TODO: Ensure this is read with fabric/core/config.GetPath() once ready
                 KeyStore:
 
     # Path on the file system where peer will find MSP local configurations
@@ -325,13 +327,19 @@ peer:
     # to match the name of one of the MSPs in each of the channel
     # that this peer is a member of. Otherwise this peer's messages
     # will not be identified as valid by other nodes.
-    localMspId: DEFAULT
+    localMspId: SampleOrg
 
     # Delivery service related config
     deliveryclient:
         # It sets the total time the delivery service may spend in reconnection
         # attempts until its retry logic gives up and returns an error
         reconnectTotalTimeThreshold: 3600s
+
+        # It sets the delivery service <-> ordering service node connection timeout
+        connTimeout: 3s
+
+        # It sets the delivery service maximal delay between consecutive retries
+        reConnectBackoffThreshold: 3600s
 
     # Type for the local MSP - by default it's of type bccsp
     localMspType: bccsp
@@ -342,10 +350,21 @@ peer:
         enabled:     false
         listenAddress: 0.0.0.0:6060
 
+    # The admin service is used for administrative operations such as
+    # control over log module severity, etc.
+    # Only peer administrators can use the service.
+    adminService:
+        # The interface and port on which the admin server will listen on.
+        # If this is commented out, or the port number is equal to the port
+        # of the peer listen address - the admin service is attached to the
+        # peer's service (defaults to 7051).
+        #listenAddress: 0.0.0.0:7055
+
     # Handlers defines custom handlers that can filter and mutate
     # objects passing within the peer, such as:
     #   Auth filter - reject or forward proposals from clients
     #   Decorators  - append or mutate the chaincode input passed to the chaincode
+    #   Endorsers   - Custom signing over proposal response payload and its mutation
     # Valid handler definition contains:
     #   - A name which is a factory method name defined in
     #     core/handlers/library/library.go for statically compiled handlers
@@ -364,6 +383,15 @@ peer:
     #   -
     #     name: DecoratorTwo
     #     library: /opt/lib/decorator.so
+    # Endorsers are configured as a map that its keys are the endorsement system chaincodes that are being overridden.
+    # Below is an example that overrides the default ESCC and uses an endorsement plugin that has the same functionality
+    # as the default ESCC.
+    # If the 'library' property is missing, the name is used as the constructor method in the builtin library similar
+    # to auth filters and decorators.
+    # endorsers:
+    #   escc:
+    #     name: DefaultESCC
+    #     library: /etc/hyperledger/fabric/plugin/escc.so
     handlers:
         authFilters:
           -
@@ -382,7 +410,7 @@ peer:
             name: DefaultValidation
             library:
 
-
+    #    library: /etc/hyperledger/fabric/plugin/escc.so
     # Number of goroutines that will execute transaction validation in parallel.
     # By default, the peer chooses the number of CPUs on the machine. Set this
     # variable to override that choice.
@@ -390,6 +418,21 @@ peer:
     # the peer so please change this value only if you know what you're doing
     validatorPoolSize:
 
+    # The discovery service is used by clients to query information about peers,
+    # such as - which peers have joined a certain channel, what is the latest
+    # channel config, and most importantly - given a chaincode and a channel,
+    # what possible sets of peers satisfy the endorsement policy.
+    discovery:
+        enabled: true
+        # Whether the authentication cache is enabled or not.
+        authCacheEnabled: true
+        # The maximum size of the cache, after which a purge takes place
+        authCacheMaxSize: 1000
+        # The proportion (0 to 1) of entries that remain in the cache after the cache is purged due to overpopulation
+        authCachePurgeRetentionRatio: 0.75
+        # Whether to allow non-admins to perform non channel scoped queries.
+        # When this is false, it means that only peer admins can perform non channel scoped queries.
+        orgMembersAllowedAccess: false
 ###############################################################################
 #
 #    VM section
@@ -481,7 +524,7 @@ chaincode:
         # This image is packed with shim layer libraries that are necessary
         # for Java chaincode runtime.
         Dockerfile:  |
-            from $(DOCKER_NS)/fabric-javaenv:$(ARCH)-$(PROJECT_VERSION)
+            from $(DOCKER_NS)/fabric-javaenv:$(ARCH)-1.1.0
 
     node:
         # need node.js engine at runtime, currently available in baseimage

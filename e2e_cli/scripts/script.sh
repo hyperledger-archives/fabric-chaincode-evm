@@ -70,9 +70,9 @@ checkOSNAvailability() {
 		 sleep 3
 		 echo "Attempting to fetch system channel 'testchainid' ...$(($(date +%s)-starttime)) secs"
 		 if [ -z "$CORE_PEER_TLS_ENABLED" -o "$CORE_PEER_TLS_ENABLED" = "false" ]; then
-			 peer channel fetch 0 -o orderer.example.com:7050 -c "testchainid" >&log.txt
+			 CORE_LOGGING_LEVEL=DEBUG peer channel fetch 0 -o orderer.example.com:7050 -c "testchainid" >&log.txt
 		 else
-			 peer channel fetch 0 0_block.pb -o orderer.example.com:7050 -c "testchainid" --tls --cafile $ORDERER_CA >&log.txt
+			 CORE_LOGGING_LEVEL=DEBUG peer channel fetch 0 0_block.pb -o orderer.example.com:7050 -c "testchainid" --tls --cafile $ORDERER_CA >&log.txt
 		 fi
 		 test $? -eq 0 && VALUE=$(cat log.txt | awk '/Received block/ {print $NF}')
 		 test "$VALUE" = "0" && let rc=0
