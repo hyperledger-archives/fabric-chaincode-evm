@@ -16,11 +16,11 @@ ARG GO_TAGS
 ARG CGO_LDFLAGS_ALLOW
 
 FROM fabric-peer-evm-base:latest as evmscc-builder
-COPY ./plugin/evmscc.go ./plugin/evmscc.go
+COPY ./evmcc/evmcc.go ./evmcc/evmcc.go
 COPY ./statemanager/statemanager.go ./statemanager/statemanager.go
-RUN sed -i 's/fabric-chaincode-evm/fabric/g' ./plugin/evmscc.go
+RUN sed -i 's/fabric-chaincode-evm/fabric/g' ./evmcc/evmcc.go
 RUN dep ensure
-RUN ${CGO_LDFLAGS_ALLOW} go build -o /go/lib/evmscc.so -tags '${GO_TAGS}' -buildmode=plugin ./plugin
+RUN ${CGO_LDFLAGS_ALLOW} go build -o /go/lib/evmscc.so -tags '${GO_TAGS}' -buildmode=plugin ./evmcc
 
 FROM hyperledger/fabric-peer:latest
 COPY --from=evmscc-builder /opt/gopath/src/github.com/hyperledger/fabric/.build/bin/peer /usr/local/bin/peer

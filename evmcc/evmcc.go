@@ -25,27 +25,23 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-var logger = flogging.MustGetLogger("evmscc")
+var logger = flogging.MustGetLogger("evmcc")
 var evmLogger = logging.NewNoopLogger()
-
-func New() shim.Chaincode {
-	return &EvmChaincode{}
-}
 
 type EvmChaincode struct{}
 
-func (evmscc *EvmChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	logger.Debugf("Init evmscc, it's no-op")
+func (evmcc *EvmChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	logger.Debugf("Init evmcc, it's no-op")
 	return shim.Success(nil)
 }
 
-func (evmscc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	// We always expect 2 args: 'callee address, input data' or ' getCode ,  contract address'
 	args := stub.GetArgs()
 
 	if len(args) == 1 {
 		if string(args[0]) == "account" {
-			return evmscc.account(stub)
+			return evmcc.account(stub)
 		}
 	}
 
@@ -54,7 +50,7 @@ func (evmscc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 	}
 
 	if string(args[0]) == "getCode" {
-		return evmscc.getCode(stub, args[1])
+		return evmcc.getCode(stub, args[1])
 	}
 
 	c, err := hex.DecodeString(string(args[0]))
@@ -139,7 +135,7 @@ func (evmscc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 	}
 }
 
-func (evmscc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []byte) pb.Response {
+func (evmcc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []byte) pb.Response {
 	c, err := hex.DecodeString(string(address))
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(address), err.Error()))
@@ -158,7 +154,7 @@ func (evmscc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []
 	return shim.Success([]byte(hex.EncodeToString(code)))
 }
 
-func (evmscc *EvmChaincode) account(stub shim.ChaincodeStubInterface) pb.Response {
+func (evmcc *EvmChaincode) account(stub shim.ChaincodeStubInterface) pb.Response {
 	creatorBytes, err := stub.GetCreator()
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to get creator: %s", err.Error()))
@@ -224,4 +220,8 @@ func identityToAddr(id []byte) (account.Address, error) {
 	return account.AddressFromWord256(sha3.Sum256(pubkeyBytes)), nil
 }
 
-func main() {}
+func main() {
+	if err := shim.Start(new(EvmChaincode)); err != nil {
+		logger.Infof("Error starting EVM chaincode: %s", err.Error())
+	}
+}

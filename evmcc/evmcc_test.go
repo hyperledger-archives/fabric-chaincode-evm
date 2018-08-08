@@ -15,8 +15,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/account"
+	evm "github.com/hyperledger/fabric-chaincode-evm/evmcc"
 	"github.com/hyperledger/fabric-chaincode-evm/mocks"
-	plugin "github.com/hyperledger/fabric-chaincode-evm/plugin"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/msp"
 	"golang.org/x/crypto/sha3"
@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Evmscc", func() {
+var _ = Describe("evmcc", func() {
 	marshalCreator := func(mspId string, certByte []byte) []byte {
 		b, err := proto.Marshal(&msp.SerializedIdentity{Mspid: mspId, IdBytes: certByte})
 		if err != nil || b == nil {
@@ -35,13 +35,13 @@ var _ = Describe("Evmscc", func() {
 	}
 
 	var (
-		evmscc     shim.Chaincode
+		evmcc      shim.Chaincode
 		stub       *mocks.MockStub
 		fakeLedger map[string][]byte
 	)
 
 	BeforeEach(func() {
-		evmscc = plugin.New()
+		evmcc = &evm.EvmChaincode{}
 		stub = &mocks.MockStub{}
 		fakeLedger = make(map[string][]byte)
 
@@ -63,7 +63,7 @@ var _ = Describe("Evmscc", func() {
 
 	Describe("Init", func() {
 		It("returns an OK response", func() {
-			res := evmscc.Init(stub)
+			res := evmcc.Init(stub)
 			Expect(res.Status).To(Equal(int32(shim.OK)))
 			Expect(res.Payload).To(Equal([]byte(nil)))
 		})
@@ -112,7 +112,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 		It("will create and store the runtime bytecode from the deploy bytecode", func() {
 			// zero address, and deploy code is contract creation
 			stub.GetArgsReturns([][]byte{[]byte(account.ZeroAddress.String()), deployCode})
-			res := evmscc.Invoke(stub)
+			res := evmcc.Invoke(stub)
 			Expect(res.Status).To(Equal(int32(shim.OK)))
 
 			// First PutState Call is to store the current sequence number
@@ -133,7 +133,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 			BeforeEach(func() {
 				// zero address, and deploy code is contract creation
 				stub.GetArgsReturns([][]byte{[]byte(account.ZeroAddress.String()), deployCode})
-				res := evmscc.Invoke(stub)
+				res := evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
 				Expect(stub.PutStateCallCount()).To(Equal(2))
 
@@ -144,16 +144,16 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 
 			It("can run the methods of the contract", func() {
 				stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(GET)})
-				res := evmscc.Invoke(stub)
+				res := evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
 				Expect(hex.EncodeToString(res.Payload)).To(Equal("0000000000000000000000000000000000000000000000000000000000000000"))
 
 				stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(SET + "000000000000000000000000000000000000000000000000000000000000002a")})
-				res = evmscc.Invoke(stub)
+				res = evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
 
 				stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(GET)})
-				res = evmscc.Invoke(stub)
+				res = evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
 				Expect(hex.EncodeToString(res.Payload)).To(Equal("000000000000000000000000000000000000000000000000000000000000002a"))
 			})
@@ -163,7 +163,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 					stub.GetArgsReturns([][]byte{[]byte("getCode"), []byte(contractAddress.String())})
 				})
 				It("will return the runtime bytecode of the contract", func() {
-					res := evmscc.Invoke(stub)
+					res := evmcc.Invoke(stub)
 					Expect(res.Status).To(Equal(int32(shim.OK)))
 					Expect(string(res.Payload)).To(Equal(runtimeCode))
 				})
@@ -174,7 +174,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 					stub.GetArgsReturns([][]byte{[]byte(account.ZeroAddress.String()), deployCode})
 				})
 				It("creates a new contract and returns another contract address", func() {
-					res := evmscc.Invoke(stub)
+					res := evmcc.Invoke(stub)
 					Expect(res.Status).To(Equal(int32(shim.OK)))
 					Expect(string(res.Payload)).ToNot(Equal(string(contractAddress.Bytes())))
 				})
@@ -188,7 +188,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 			})
 
 			It("returns an error", func() {
-				res := evmscc.Invoke(stub)
+				res := evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.ERROR)))
 				Expect(res.Message).To(ContainSubstring("expects 2 args"))
 			})
@@ -209,7 +209,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 					})
 
 					It("will return the caller address of the contract", func() {
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(string(res.Payload)).To(Equal(callerAddress.String()))
 					})
@@ -221,7 +221,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 					})
 
 					It("returns an error", func() {
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						Expect(res.Status).To(Equal(int32(shim.ERROR)))
 						Expect(res.Message).To(ContainSubstring("expects 2 args"))
 					})
@@ -234,7 +234,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 				})
 
 				It("returns an error", func() {
-					res := evmscc.Invoke(stub)
+					res := evmcc.Invoke(stub)
 					Expect(res.Status).To(Equal(int32(shim.ERROR)))
 					Expect(res.Message).To(ContainSubstring("expects 2 args"))
 				})
@@ -426,7 +426,7 @@ H8GZeN2ifTyJzzGo
 
 				// zero address, and deploy code is contract creation
 				stub.GetArgsReturns([][]byte{[]byte(account.ZeroAddress.String()), deployCode})
-				res := evmscc.Invoke(stub)
+				res := evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
 
 				// Last PutState Call is to store contract runtime bytecode
@@ -442,12 +442,12 @@ H8GZeN2ifTyJzzGo
 			It("is able to properly initialize proposals through constructor", func() {
 				//invoke proposals(x) to see if constructor args are properly stored
 				stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(proposals + "0000000000000000000000000000000000000000000000000000000000000000")})
-				res := evmscc.Invoke(stub)
+				res := evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
 				Expect(hex.EncodeToString(res.Payload)).To(Equal("61000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
 
 				stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(proposals + "0000000000000000000000000000000000000000000000000000000000000001")})
-				res = evmscc.Invoke(stub)
+				res = evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
 				Expect(hex.EncodeToString(res.Payload)).To(Equal("62000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
 			})
@@ -459,7 +459,7 @@ H8GZeN2ifTyJzzGo
 					user1Addr, err := identityToAddr([]byte(user1Cert))
 					Expect(err).ToNot(HaveOccurred())
 					stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(giveRightToVote + hex.EncodeToString(user1Addr.Word256().Bytes()))})
-					res := evmscc.Invoke(stub)
+					res := evmcc.Invoke(stub)
 					Expect(res.Status).To(Equal(int32(shim.OK)))
 
 					baseCallCount = stub.PutStateCallCount()
@@ -469,7 +469,7 @@ H8GZeN2ifTyJzzGo
 					BeforeEach(func() {
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(vote + "0000000000000000000000000000000000000000000000000000000000000000")})
 						stub.GetCreatorReturns(user1, nil)
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(stub.PutStateCallCount()).To(Equal(baseCallCount+3), "`vote` should perform 3 writes: sender.voted, sender.vote, voteCount")
 					})
@@ -478,21 +478,21 @@ H8GZeN2ifTyJzzGo
 						user1addr, err := identityToAddr([]byte(user1Cert))
 						Expect(err).ToNot(HaveOccurred())
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(voters + hex.EncodeToString(user1addr.Word256().Bytes()))})
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(hex.EncodeToString(res.Payload)).To(Equal("0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
 					})
 
 					It("increments vote count of proposal 'a'", func() {
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(proposals + "0000000000000000000000000000000000000000000000000000000000000000")})
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(hex.EncodeToString(res.Payload)).To(Equal("61000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"))
 					})
 
 					It("should make proposal 'a' winner", func() {
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(winnerName)})
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(hex.EncodeToString(res.Payload)).To(Equal("6100000000000000000000000000000000000000000000000000000000000000"))
 					})
@@ -502,7 +502,7 @@ H8GZeN2ifTyJzzGo
 					BeforeEach(func() {
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(vote + "0000000000000000000000000000000000000000000000000000000000000000")})
 						stub.GetCreatorReturns(user2, nil)
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						baseCallCount = stub.PutStateCallCount()
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(stub.PutStateCallCount()).To(Equal(baseCallCount), "require(!sender.voted) should fail, therefore NO write should be performed")
@@ -510,7 +510,7 @@ H8GZeN2ifTyJzzGo
 
 					It("does not increment vote count of proposal 'a'", func() {
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(proposals + "0000000000000000000000000000000000000000000000000000000000000000")})
-						res := evmscc.Invoke(stub)
+						res := evmcc.Invoke(stub)
 						Expect(stub.PutStateCallCount()).To(Equal(baseCallCount), "query should not write to ledger")
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(hex.EncodeToString(res.Payload)).To(Equal("61000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
@@ -521,7 +521,7 @@ H8GZeN2ifTyJzzGo
 	})
 })
 
-// TODO: This is copied from evmscc. Consider moving this to an util pkg
+// TODO: This is copied from evmcc. Consider moving this to an util pkg
 func identityToAddr(id []byte) (account.Address, error) {
 	bl, _ := pem.Decode(id)
 	if bl == nil {

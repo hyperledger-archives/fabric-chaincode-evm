@@ -33,8 +33,8 @@ GO_TAGS=nopkcs11
 BUILD_DIR ?= .build
 GOOS ?= $(shell go env GOOS)
 
-PACKAGES = ./statemanager/... ./plugin/...
-SRCFILES = ./plugin/evmscc.go ./statemanager/statemanager.go
+PACKAGES = ./statemanager/... ./evmcc/...
+SRCFILES = ./evmcc/evmcc.go ./statemanager/statemanager.go
 
 # We need this flag due to https://github.com/golang/go/issues/23739
 CGO_LDFLAGS_ALLOW = CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool"
@@ -100,7 +100,7 @@ dependencies:
 	@scripts/check_docker_deps.sh
 
 .PHONY: integration-test
-integration-test: docker
+integration-test:
 	@echo "Running integration-test"
 	@cd e2e_cli && ./network_setup.sh down && ./network_setup.sh up mychannel 1
 

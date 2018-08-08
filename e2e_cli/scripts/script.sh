@@ -140,17 +140,39 @@ joinChannel () {
 	done
 }
 
+installEVM () {
+	for ch in 0 1 2 3; do
+    PEER=$ch
+		setGlobals $PEER
+    set -x
+    peer chaincode install -n evmcc -v 0 -p github.com/hyperledger/fabric-chaincode-evm/evmcc -l golang
+    set +x
+		echo "===================== Installed EVM on PEER$ch ===================== "
+		sleep 2
+		echo
+	done
+}
+
+instantiateEVM () {
+  set -x
+  peer chaincode instantiate -n evmcc -o orderer.example.com:7050 -C $CHANNEL_NAME -v 0 -c '{"Args":[]}'
+  set +x
+  echo "===================== Instantiated EVM on the channel \"$CHANNEL_NAME\" ===================== "
+  sleep 2
+  echo
+}
+
 installChaincode () {
 	PEER=$1
 	setGlobals $PEER
-	peer chaincode invoke -o orderer.example.com:7050 -C $CHANNEL_NAME -n evmscc -c '{"Args":["0000000000000000000000000000000000000000", "6060604052341561000f57600080fd5b60d38061001d6000396000f3006060604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c14606e575b600080fd5b3415605857600080fd5b606c60048080359060200190919050506094565b005b3415607857600080fd5b607e609e565b6040518082815260200191505060405180910390f35b8060008190555050565b600080549050905600a165627a7a72305820122f55f799d70b5f6dbfd4312efb65cdbfaacddedf7c36249b8b1e915a8dd85b0029"]}'
+	peer chaincode invoke -o orderer.example.com:7050 -C $CHANNEL_NAME -n evmcc -c '{"Args":["0000000000000000000000000000000000000000", "6060604052341561000f57600080fd5b60d38061001d6000396000f3006060604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c14606e575b600080fd5b3415605857600080fd5b606c60048080359060200190919050506094565b005b3415607857600080fd5b607e609e565b6040518082815260200191505060405180910390f35b8060008190555050565b600080549050905600a165627a7a72305820122f55f799d70b5f6dbfd4312efb65cdbfaacddedf7c36249b8b1e915a8dd85b0029"]}'
     sleep 3
 }
 
 chaincodeQuery () {
     PEER=$1
     setGlobals $PEER
-    peer chaincode query --hex -C $CHANNEL_NAME -n evmscc -c '{"Args":["2927d70bc386dd8cc5a08fcd718f03e1da2a2c4b", "6d4ce63c"]}'
+    peer chaincode query --hex -C $CHANNEL_NAME -n evmcc -c '{"Args":["2927d70bc386dd8cc5a08fcd718f03e1da2a2c4b", "6d4ce63c"]}'
     sleep 3
 }
 
@@ -158,7 +180,7 @@ chaincodeInvoke () {
 	PEER=$1
 	setGlobals $PEER
 	VAL=$2
-    peer chaincode invoke -o orderer.example.com:7050 -C $CHANNEL_NAME -n evmscc -c '{"Args":["2927d70bc386dd8cc5a08fcd718f03e1da2a2c4b", "60fe47b1000000000000000000000000000000000000000000000000000000000000000'${VAL}'"]}'
+    peer chaincode invoke -o orderer.example.com:7050 -C $CHANNEL_NAME -n evmcc -c '{"Args":["2927d70bc386dd8cc5a08fcd718f03e1da2a2c4b", "60fe47b1000000000000000000000000000000000000000000000000000000000000000'${VAL}'"]}'
     sleep 3
 }
 
@@ -174,16 +196,25 @@ createChannel
 echo "Having all peers join the channel..."
 joinChannel
 
-## Install chaincode on Peer0/Org1 and Peer2/Org2
-echo "Install chaincode on org2/peer0..."
+echo "Install EVM on all peers"
+installEVM
+
+echo "Instantiate EVM on all peers"
+instantiateEVM
+
+echo "Deploying Simple Storage EVM Smart Contract"
 installChaincode 2
 
+echo "Invoking SimpleStorage"
 chaincodeInvoke 0 3
 
+echo "Querying SimpleStorage"
 chaincodeQuery 1
 
+echo "Invoking SimpleStorage"
 chaincodeInvoke 2 5
 
+echo "Querying SimpleStorage"
 chaincodeQuery 3
 
 echo
