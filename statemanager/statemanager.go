@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package statemanager
 
 import (
+	"encoding/hex"
+
 	"github.com/hyperledger/burrow/account"
 	"github.com/hyperledger/burrow/binary"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -51,7 +53,7 @@ func (s *stateManager) GetAccount(address account.Address) (account.Account, err
 }
 
 func (s *stateManager) GetStorage(address account.Address, key binary.Word256) (binary.Word256, error) {
-	compKey := address.String() + key.String()
+	compKey := address.String() + hex.EncodeToString(key.Bytes())
 
 	if val, ok := s.cache[compKey]; ok {
 		return val, nil
@@ -75,8 +77,9 @@ func (s *stateManager) RemoveAccount(address account.Address) error {
 
 func (s *stateManager) SetStorage(address account.Address, key, value binary.Word256) error {
 	var err error
-	if err = s.stub.PutState(address.String()+key.String(), value.Bytes()); err == nil {
-		s.cache[address.String()+key.String()] = value
+
+	if err = s.stub.PutState(address.String()+hex.EncodeToString(key.Bytes()), value.Bytes()); err == nil {
+		s.cache[address.String()+hex.EncodeToString(key.Bytes())] = value
 	}
 
 	return err

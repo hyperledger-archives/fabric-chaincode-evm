@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package statemanager_test
 
 import (
+	"encoding/hex"
 	"errors"
 
 	"github.com/hyperledger/burrow/account"
@@ -101,7 +102,7 @@ var _ = Describe("Statemanager", func() {
 		})
 
 		It("returns the value associated with the key", func() {
-			fakeGetLedger[addr.String()+key.String()] = expectedVal.Bytes()
+			fakeGetLedger[addr.String()+hex.EncodeToString(key.Bytes())] = expectedVal.Bytes()
 
 			val, err := sm.GetStorage(addr, key)
 			Expect(err).ToNot(HaveOccurred())
@@ -128,7 +129,7 @@ var _ = Describe("Statemanager", func() {
 				initialVal = binary.LeftPadWord256([]byte("storage-value"))
 				updatedVal = binary.LeftPadWord256([]byte("updated-storage-value"))
 
-				fakeGetLedger[addr.String()+key.String()] = initialVal.Bytes()
+				fakeGetLedger[addr.String()+hex.EncodeToString(key.Bytes())] = initialVal.Bytes()
 
 				val, err := sm.GetStorage(addr, key)
 				Expect(err).ToNot(HaveOccurred())
@@ -257,7 +258,7 @@ var _ = Describe("Statemanager", func() {
 
 			initialVal = binary.LeftPadWord256([]byte("storage-value"))
 			key = binary.LeftPadWord256([]byte("key"))
-			compKey = addr.String() + key.String()
+			compKey = addr.String() + hex.EncodeToString(key.Bytes())
 		})
 
 		Context("when key already exists", func() {
