@@ -148,7 +148,7 @@ func GetProposalResponse(prBytes []byte) (*peer.ProposalResponse, error) {
 }
 
 // GetChaincodeDeploymentSpec returns a ChaincodeDeploymentSpec given args
-func GetChaincodeDeploymentSpec(code []byte) (*peer.ChaincodeDeploymentSpec, error) {
+func GetChaincodeDeploymentSpec(code []byte, pr *platforms.Registry) (*peer.ChaincodeDeploymentSpec, error) {
 	cds := &peer.ChaincodeDeploymentSpec{}
 	err := proto.Unmarshal(code, cds)
 	if err != nil {
@@ -156,13 +156,7 @@ func GetChaincodeDeploymentSpec(code []byte) (*peer.ChaincodeDeploymentSpec, err
 	}
 
 	// FAB-2122: Validate the CDS according to platform specific requirements
-	platform, err := platforms.Find(cds.ChaincodeSpec.Type)
-	if err != nil {
-		return nil, err
-	}
-
-	err = platform.ValidateDeploymentSpec(cds)
-	return cds, err
+	return cds, pr.ValidateDeploymentSpec(cds)
 }
 
 // GetChaincodeAction gets the ChaincodeAction given chaicnode action bytes
@@ -254,6 +248,26 @@ func CreateChaincodeProposalWithTransient(typ common.HeaderType, chainID string,
 	txid, err := ComputeProposalTxID(nonce, creator)
 	if err != nil {
 		return nil, "", err
+	}
+
+	return CreateChaincodeProposalWithTxIDNonceAndTransient(txid, typ, chainID, cis, nonce, creator, transientMap)
+}
+
+// CreateChaincodeProposalWithTxIDAndTransient creates a proposal from given input
+// It returns the proposal and the transaction id associated to the proposal
+func CreateChaincodeProposalWithTxIDAndTransient(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte, txid string, transientMap map[string][]byte) (*peer.Proposal, string, error) {
+	// generate a random nonce
+	nonce, err := crypto.GetRandomNonce()
+	if err != nil {
+		return nil, "", err
+	}
+
+	// compute txid unless provided by tests
+	if txid == "" {
+		txid, err = ComputeProposalTxID(nonce, creator)
+		if err != nil {
+			return nil, "", err
+		}
 	}
 
 	return CreateChaincodeProposalWithTxIDNonceAndTransient(txid, typ, chainID, cis, nonce, creator, transientMap)
@@ -465,8 +479,19 @@ func CreateDeployProposalFromCDS(
 }
 
 // CreateUpgradeProposalFromCDS returns a upgrade proposal given a serialized identity and a ChaincodeDeploymentSpec
-func CreateUpgradeProposalFromCDS(chainID string, cds *peer.ChaincodeDeploymentSpec, creator []byte, policy []byte, escc []byte, vscc []byte) (*peer.Proposal, string, error) {
-	return createProposalFromCDS(chainID, cds, creator, "upgrade", policy, escc, vscc)
+func CreateUpgradeProposalFromCDS(
+	chainID string,
+	cds *peer.ChaincodeDeploymentSpec,
+	creator []byte,
+	policy []byte,
+	escc []byte,
+	vscc []byte,
+	collectionConfig []byte) (*peer.Proposal, string, error) {
+	if collectionConfig == nil {
+		return createProposalFromCDS(chainID, cds, creator, "upgrade", policy, escc, vscc)
+	} else {
+		return createProposalFromCDS(chainID, cds, creator, "upgrade", policy, escc, vscc, collectionConfig)
+	}
 }
 
 // createProposalFromCDS returns a deploy or upgrade proposal given a serialized identity and a ChaincodeDeploymentSpec

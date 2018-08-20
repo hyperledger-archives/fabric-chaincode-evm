@@ -151,7 +151,7 @@ type Attribute struct {
 }
 
 // NewAttribute allocates a Attribute and returns a pointer to it.
-// Note that this is merely a convience function, as values returned
+// Note that this is merely a convenience function, as values returned
 // from the HSM are not converted back to Go values, those are just raw
 // byte slices.
 func NewAttribute(typ uint, x interface{}) *Attribute {
@@ -231,8 +231,12 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 		return m
 	}
 
-	// Add any parameters passed (For now presume always bytes were passed in, is there another case?)
-	m.Parameter = x.([]byte)
+	switch x.(type) {
+	case *GCMParams:
+		m.Parameter = cGCMParams(x.(*GCMParams))
+	default:
+		m.Parameter = x.([]byte)
+	}
 
 	return m
 }

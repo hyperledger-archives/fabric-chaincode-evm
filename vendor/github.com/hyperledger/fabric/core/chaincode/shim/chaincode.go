@@ -80,7 +80,7 @@ var streamGetter peerStreamGetter
 //the non-mock user CC stream establishment func
 func userChaincodeStreamGetter(name string) (PeerChaincodeStream, error) {
 	flag.StringVar(&peerAddress, "peer.address", "", "peer address")
-	if comm.TLSEnabled() {
+	if viper.GetBool("peer.tls.enabled") {
 		keyPath := viper.GetString("tls.client.key.path")
 		certPath := viper.GetString("tls.client.cert.path")
 
@@ -165,8 +165,8 @@ func IsEnabledForLogLevel(logLevel string) bool {
 }
 
 // SetupChaincodeLogging sets the chaincode logging format and the level
-// to the values of CORE_CHAINCODE_LOGFORMAT and CORE_CHAINCODE_LOGLEVEL set
-// from core.yaml by chaincode_support.go
+// to the values of CORE_CHAINCODE_LOGGING_FORMAT, CORE_CHAINCODE_LOGGING_LEVEL
+// and CORE_CHAINCODE_LOGGING_SHIM set from core.yaml by chaincode_support.go
 func SetupChaincodeLogging() {
 	viper.SetEnvPrefix("CORE")
 	viper.AutomaticEnv()
@@ -254,7 +254,7 @@ func newPeerClientConnection() (*grpc.ClientConn, error) {
 		ClientInterval: time.Duration(1) * time.Minute,
 		ClientTimeout:  time.Duration(20) * time.Second,
 	}
-	if comm.TLSEnabled() {
+	if viper.GetBool("peer.tls.enabled") {
 		return comm.NewClientConnectionWithAddress(peerAddress, true, true,
 			comm.InitTLSForShim(key, cert), kaOpts)
 	}
@@ -262,82 +262,71 @@ func newPeerClientConnection() (*grpc.ClientConn, error) {
 }
 
 func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode) error {
-
 	// Create the shim handler responsible for all control logic
 	handler := newChaincodeHandler(stream, cc)
-
 	defer stream.CloseSend()
+
 	// Send the ChaincodeID during register.
 	chaincodeID := &pb.ChaincodeID{Name: chaincodename}
 	payload, err := proto.Marshal(chaincodeID)
 	if err != nil {
 		return errors.Wrap(err, "error marshalling chaincodeID during chaincode registration")
 	}
+
 	// Register on the stream
 	chaincodeLogger.Debugf("Registering.. sending %s", pb.ChaincodeMessage_REGISTER)
 	if err = handler.serialSend(&pb.ChaincodeMessage{Type: pb.ChaincodeMessage_REGISTER, Payload: payload}); err != nil {
 		return errors.WithMessage(err, "error sending chaincode REGISTER")
 	}
-	waitc := make(chan struct{})
+
+	// holds return values from gRPC Recv below
+	type recvMsg struct {
+		msg *pb.ChaincodeMessage
+		err error
+	}
+	msgAvail := make(chan *recvMsg, 1)
 	errc := make(chan error)
-	go func() {
-		defer close(waitc)
-		msgAvail := make(chan *pb.ChaincodeMessage)
-		var in *pb.ChaincodeMessage
-		recv := true
-		for {
-			in = nil
-			err = nil
-			if recv {
-				recv = false
-				go func() {
-					var in2 *pb.ChaincodeMessage
-					in2, err = stream.Recv()
-					msgAvail <- in2
-				}()
-			}
-			select {
-			case sendErr := <-errc:
-				//serialSendAsync successful?
-				if sendErr == nil {
-					continue
+
+	receiveMessage := func() {
+		in, err := stream.Recv()
+		msgAvail <- &recvMsg{in, err}
+	}
+
+	go receiveMessage()
+	for {
+		select {
+		case rmsg := <-msgAvail:
+			switch {
+			case rmsg.err == io.EOF:
+				err = errors.Wrapf(rmsg.err, "received EOF, ending chaincode stream")
+				chaincodeLogger.Debugf("%+v", err)
+				return err
+			case rmsg.err != nil:
+				err := errors.Wrap(rmsg.err, "receive failed")
+				chaincodeLogger.Errorf("Received error from server, ending chaincode stream: %+v", err)
+				return err
+			case rmsg.msg == nil:
+				err := errors.New("received nil message, ending chaincode stream")
+				chaincodeLogger.Debugf("%+v", err)
+				return err
+			default:
+				chaincodeLogger.Debugf("[%s]Received message %s from peer", shorttxid(rmsg.msg.Txid), rmsg.msg.Type)
+				err := handler.handleMessage(rmsg.msg, errc)
+				if err != nil {
+					err = errors.WithMessage(err, "error handling message")
+					return err
 				}
-				//no, bail
-				err = errors.Wrap(sendErr, fmt.Sprintf("error sending %s", in.Type.String()))
-				return
-			case in = <-msgAvail:
-				if err == io.EOF {
-					err = errors.Wrapf(err, "received EOF, ending chaincode stream")
-					chaincodeLogger.Debugf("%+v", err)
-					return
-				} else if err != nil {
-					chaincodeLogger.Errorf("Received error from server, ending chaincode stream: %+v", err)
-					return
-				} else if in == nil {
-					err = errors.New("received nil message, ending chaincode stream")
-					chaincodeLogger.Debugf("%+v", err)
-					return
-				}
-				chaincodeLogger.Debugf("[%s]Received message %s from peer", shorttxid(in.Txid), in.Type)
-				recv = true
+
+				go receiveMessage()
 			}
 
-			err = handler.handleMessage(in, errc)
-			if err != nil {
-				err = errors.WithMessage(err, "error handling message")
-				return
-			}
-
-			//keepalive messages are PONGs to the fabric's PINGs
-			if in.Type == pb.ChaincodeMessage_KEEPALIVE {
-				chaincodeLogger.Debug("Sending KEEPALIVE response")
-				//ignore any errors, maybe next KEEPALIVE will work
-				handler.serialSendAsync(in, nil)
+		case sendErr := <-errc:
+			if sendErr != nil {
+				err := errors.Wrap(sendErr, "error sending")
+				return err
 			}
 		}
-	}()
-	<-waitc
-	return err
+	}
 }
 
 // -- init stub ---
@@ -437,6 +426,77 @@ func (stub *ChaincodeStub) DelState(key string) error {
 	// Access public data by setting the collection to empty string
 	collection := ""
 	return stub.handler.handleDelState(collection, key, stub.ChannelId, stub.TxID)
+}
+
+//  ---------  private state functions  ---------
+
+// GetPrivateData documentation can be found in interfaces.go
+func (stub *ChaincodeStub) GetPrivateData(collection string, key string) ([]byte, error) {
+	if collection == "" {
+		return nil, fmt.Errorf("collection must not be an empty string")
+	}
+	return stub.handler.handleGetState(collection, key, stub.ChannelId, stub.TxID)
+}
+
+// PutPrivateData documentation can be found in interfaces.go
+func (stub *ChaincodeStub) PutPrivateData(collection string, key string, value []byte) error {
+	if collection == "" {
+		return fmt.Errorf("collection must not be an empty string")
+	}
+	if key == "" {
+		return fmt.Errorf("key must not be an empty string")
+	}
+	return stub.handler.handlePutState(collection, key, value, stub.ChannelId, stub.TxID)
+}
+
+// DelPrivateData documentation can be found in interfaces.go
+func (stub *ChaincodeStub) DelPrivateData(collection string, key string) error {
+	if collection == "" {
+		return fmt.Errorf("collection must not be an empty string")
+	}
+	return stub.handler.handleDelState(collection, key, stub.ChannelId, stub.TxID)
+}
+
+// GetPrivateDataByRange documentation can be found in interfaces.go
+func (stub *ChaincodeStub) GetPrivateDataByRange(collection, startKey, endKey string) (StateQueryIteratorInterface, error) {
+	if collection == "" {
+		return nil, fmt.Errorf("collection must not be an empty string")
+	}
+	if startKey == "" {
+		startKey = emptyKeySubstitute
+	}
+	if err := validateSimpleKeys(startKey, endKey); err != nil {
+		return nil, err
+	}
+	return stub.handleGetStateByRange(collection, startKey, endKey)
+}
+
+// GetPrivateDataByPartialCompositeKey documentation can be found in interfaces.go
+func (stub *ChaincodeStub) GetPrivateDataByPartialCompositeKey(collection, objectType string, attributes []string) (StateQueryIteratorInterface, error) {
+	if collection == "" {
+		return nil, fmt.Errorf("collection must not be an empty string")
+	}
+	if partialCompositeKey, err := stub.CreateCompositeKey(objectType, attributes); err == nil {
+		return stub.handleGetStateByRange(collection, partialCompositeKey, partialCompositeKey+string(maxUnicodeRuneValue))
+	} else {
+		return nil, err
+	}
+}
+
+// GetPrivateDataQueryResult documentation can be found in interfaces.go
+func (stub *ChaincodeStub) GetPrivateDataQueryResult(collection, query string) (StateQueryIteratorInterface, error) {
+	if collection == "" {
+		return nil, fmt.Errorf("collection must not be an empty string")
+	}
+	response, err := stub.handler.handleGetQueryResult(collection, query, stub.ChannelId, stub.TxID)
+	if err != nil {
+		return nil, err
+	}
+	return &StateQueryIterator{CommonIterator: &CommonIterator{
+		handler:   stub.handler,
+		channelId: stub.ChannelId,
+		txid:      stub.TxID,
+		response:  response}}, nil
 }
 
 // CommonIterator documentation can be found in interfaces.go

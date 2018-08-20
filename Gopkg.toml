@@ -17,9 +17,48 @@
   branch = "master"
   name = "github.com/onsi/gomega"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/hyperledger/fabric-sdk-go"
+
+#Constraints from Burrow
 [[override]]
-  version = "~0.6.0"
+  version = "=0.8.1"
   name = "github.com/tendermint/tmlibs"
+
+[[override]]
+  version = "0.5.0"
+  name = "github.com/tendermint/go-crypto"
+
+#Constraints from Fabric
+[[override]]
+  revision = "57142e89befe90977da6dce7762f9fcc70f28da1"
+  name = "github.com/docker/docker"
+
+[[override]]
+  version = "0.8.0"
+  name = "github.com/pkg/errors"
+
+[[override]]
+  revision = "df60624c1e9b9d2973e889c7a1cff73155da81c4"
+  name = "google.golang.org/genproto"
+
+[[override]]
+  version = "1.1.0"
+  name = "github.com/golang/protobuf"
+
+#Constraints from fabric-sdk-go
+[[override]]
+  revision = "aafc9e6bc7b7bb53ddaa75a5ef49a17d6e654be5"
+  name = "github.com/spf13/viper"
+
+[[override]]
+  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
+  name = "github.com/prometheus/common"
+
+[[override]]
+  revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
+  name = "github.com/prometheus/procfs"
 
 [prune]
   go-tests = true

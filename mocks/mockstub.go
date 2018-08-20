@@ -200,6 +200,89 @@ type MockStub struct {
 		result1 shim.HistoryQueryIteratorInterface
 		result2 error
 	}
+	GetPrivateDataStub        func(collection, key string) ([]byte, error)
+	getPrivateDataMutex       sync.RWMutex
+	getPrivateDataArgsForCall []struct {
+		collection string
+		key        string
+	}
+	getPrivateDataReturns struct {
+		result1 []byte
+		result2 error
+	}
+	getPrivateDataReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
+	PutPrivateDataStub        func(collection string, key string, value []byte) error
+	putPrivateDataMutex       sync.RWMutex
+	putPrivateDataArgsForCall []struct {
+		collection string
+		key        string
+		value      []byte
+	}
+	putPrivateDataReturns struct {
+		result1 error
+	}
+	putPrivateDataReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DelPrivateDataStub        func(collection, key string) error
+	delPrivateDataMutex       sync.RWMutex
+	delPrivateDataArgsForCall []struct {
+		collection string
+		key        string
+	}
+	delPrivateDataReturns struct {
+		result1 error
+	}
+	delPrivateDataReturnsOnCall map[int]struct {
+		result1 error
+	}
+	GetPrivateDataByRangeStub        func(collection, startKey, endKey string) (shim.StateQueryIteratorInterface, error)
+	getPrivateDataByRangeMutex       sync.RWMutex
+	getPrivateDataByRangeArgsForCall []struct {
+		collection string
+		startKey   string
+		endKey     string
+	}
+	getPrivateDataByRangeReturns struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}
+	getPrivateDataByRangeReturnsOnCall map[int]struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}
+	GetPrivateDataByPartialCompositeKeyStub        func(collection, objectType string, keys []string) (shim.StateQueryIteratorInterface, error)
+	getPrivateDataByPartialCompositeKeyMutex       sync.RWMutex
+	getPrivateDataByPartialCompositeKeyArgsForCall []struct {
+		collection string
+		objectType string
+		keys       []string
+	}
+	getPrivateDataByPartialCompositeKeyReturns struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}
+	getPrivateDataByPartialCompositeKeyReturnsOnCall map[int]struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}
+	GetPrivateDataQueryResultStub        func(collection, query string) (shim.StateQueryIteratorInterface, error)
+	getPrivateDataQueryResultMutex       sync.RWMutex
+	getPrivateDataQueryResultArgsForCall []struct {
+		collection string
+		query      string
+	}
+	getPrivateDataQueryResultReturns struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}
+	getPrivateDataQueryResultReturnsOnCall map[int]struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}
 	GetCreatorStub        func() ([]byte, error)
 	getCreatorMutex       sync.RWMutex
 	getCreatorArgsForCall []struct{}
@@ -1056,6 +1139,325 @@ func (fake *MockStub) GetHistoryForKeyReturnsOnCall(i int, result1 shim.HistoryQ
 	}{result1, result2}
 }
 
+func (fake *MockStub) GetPrivateData(collection string, key string) ([]byte, error) {
+	fake.getPrivateDataMutex.Lock()
+	ret, specificReturn := fake.getPrivateDataReturnsOnCall[len(fake.getPrivateDataArgsForCall)]
+	fake.getPrivateDataArgsForCall = append(fake.getPrivateDataArgsForCall, struct {
+		collection string
+		key        string
+	}{collection, key})
+	fake.recordInvocation("GetPrivateData", []interface{}{collection, key})
+	fake.getPrivateDataMutex.Unlock()
+	if fake.GetPrivateDataStub != nil {
+		return fake.GetPrivateDataStub(collection, key)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getPrivateDataReturns.result1, fake.getPrivateDataReturns.result2
+}
+
+func (fake *MockStub) GetPrivateDataCallCount() int {
+	fake.getPrivateDataMutex.RLock()
+	defer fake.getPrivateDataMutex.RUnlock()
+	return len(fake.getPrivateDataArgsForCall)
+}
+
+func (fake *MockStub) GetPrivateDataArgsForCall(i int) (string, string) {
+	fake.getPrivateDataMutex.RLock()
+	defer fake.getPrivateDataMutex.RUnlock()
+	return fake.getPrivateDataArgsForCall[i].collection, fake.getPrivateDataArgsForCall[i].key
+}
+
+func (fake *MockStub) GetPrivateDataReturns(result1 []byte, result2 error) {
+	fake.GetPrivateDataStub = nil
+	fake.getPrivateDataReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockStub) GetPrivateDataReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.GetPrivateDataStub = nil
+	if fake.getPrivateDataReturnsOnCall == nil {
+		fake.getPrivateDataReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.getPrivateDataReturnsOnCall[i] = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockStub) PutPrivateData(collection string, key string, value []byte) error {
+	var valueCopy []byte
+	if value != nil {
+		valueCopy = make([]byte, len(value))
+		copy(valueCopy, value)
+	}
+	fake.putPrivateDataMutex.Lock()
+	ret, specificReturn := fake.putPrivateDataReturnsOnCall[len(fake.putPrivateDataArgsForCall)]
+	fake.putPrivateDataArgsForCall = append(fake.putPrivateDataArgsForCall, struct {
+		collection string
+		key        string
+		value      []byte
+	}{collection, key, valueCopy})
+	fake.recordInvocation("PutPrivateData", []interface{}{collection, key, valueCopy})
+	fake.putPrivateDataMutex.Unlock()
+	if fake.PutPrivateDataStub != nil {
+		return fake.PutPrivateDataStub(collection, key, value)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.putPrivateDataReturns.result1
+}
+
+func (fake *MockStub) PutPrivateDataCallCount() int {
+	fake.putPrivateDataMutex.RLock()
+	defer fake.putPrivateDataMutex.RUnlock()
+	return len(fake.putPrivateDataArgsForCall)
+}
+
+func (fake *MockStub) PutPrivateDataArgsForCall(i int) (string, string, []byte) {
+	fake.putPrivateDataMutex.RLock()
+	defer fake.putPrivateDataMutex.RUnlock()
+	return fake.putPrivateDataArgsForCall[i].collection, fake.putPrivateDataArgsForCall[i].key, fake.putPrivateDataArgsForCall[i].value
+}
+
+func (fake *MockStub) PutPrivateDataReturns(result1 error) {
+	fake.PutPrivateDataStub = nil
+	fake.putPrivateDataReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockStub) PutPrivateDataReturnsOnCall(i int, result1 error) {
+	fake.PutPrivateDataStub = nil
+	if fake.putPrivateDataReturnsOnCall == nil {
+		fake.putPrivateDataReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.putPrivateDataReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockStub) DelPrivateData(collection string, key string) error {
+	fake.delPrivateDataMutex.Lock()
+	ret, specificReturn := fake.delPrivateDataReturnsOnCall[len(fake.delPrivateDataArgsForCall)]
+	fake.delPrivateDataArgsForCall = append(fake.delPrivateDataArgsForCall, struct {
+		collection string
+		key        string
+	}{collection, key})
+	fake.recordInvocation("DelPrivateData", []interface{}{collection, key})
+	fake.delPrivateDataMutex.Unlock()
+	if fake.DelPrivateDataStub != nil {
+		return fake.DelPrivateDataStub(collection, key)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.delPrivateDataReturns.result1
+}
+
+func (fake *MockStub) DelPrivateDataCallCount() int {
+	fake.delPrivateDataMutex.RLock()
+	defer fake.delPrivateDataMutex.RUnlock()
+	return len(fake.delPrivateDataArgsForCall)
+}
+
+func (fake *MockStub) DelPrivateDataArgsForCall(i int) (string, string) {
+	fake.delPrivateDataMutex.RLock()
+	defer fake.delPrivateDataMutex.RUnlock()
+	return fake.delPrivateDataArgsForCall[i].collection, fake.delPrivateDataArgsForCall[i].key
+}
+
+func (fake *MockStub) DelPrivateDataReturns(result1 error) {
+	fake.DelPrivateDataStub = nil
+	fake.delPrivateDataReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockStub) DelPrivateDataReturnsOnCall(i int, result1 error) {
+	fake.DelPrivateDataStub = nil
+	if fake.delPrivateDataReturnsOnCall == nil {
+		fake.delPrivateDataReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.delPrivateDataReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockStub) GetPrivateDataByRange(collection string, startKey string, endKey string) (shim.StateQueryIteratorInterface, error) {
+	fake.getPrivateDataByRangeMutex.Lock()
+	ret, specificReturn := fake.getPrivateDataByRangeReturnsOnCall[len(fake.getPrivateDataByRangeArgsForCall)]
+	fake.getPrivateDataByRangeArgsForCall = append(fake.getPrivateDataByRangeArgsForCall, struct {
+		collection string
+		startKey   string
+		endKey     string
+	}{collection, startKey, endKey})
+	fake.recordInvocation("GetPrivateDataByRange", []interface{}{collection, startKey, endKey})
+	fake.getPrivateDataByRangeMutex.Unlock()
+	if fake.GetPrivateDataByRangeStub != nil {
+		return fake.GetPrivateDataByRangeStub(collection, startKey, endKey)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getPrivateDataByRangeReturns.result1, fake.getPrivateDataByRangeReturns.result2
+}
+
+func (fake *MockStub) GetPrivateDataByRangeCallCount() int {
+	fake.getPrivateDataByRangeMutex.RLock()
+	defer fake.getPrivateDataByRangeMutex.RUnlock()
+	return len(fake.getPrivateDataByRangeArgsForCall)
+}
+
+func (fake *MockStub) GetPrivateDataByRangeArgsForCall(i int) (string, string, string) {
+	fake.getPrivateDataByRangeMutex.RLock()
+	defer fake.getPrivateDataByRangeMutex.RUnlock()
+	return fake.getPrivateDataByRangeArgsForCall[i].collection, fake.getPrivateDataByRangeArgsForCall[i].startKey, fake.getPrivateDataByRangeArgsForCall[i].endKey
+}
+
+func (fake *MockStub) GetPrivateDataByRangeReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
+	fake.GetPrivateDataByRangeStub = nil
+	fake.getPrivateDataByRangeReturns = struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockStub) GetPrivateDataByRangeReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
+	fake.GetPrivateDataByRangeStub = nil
+	if fake.getPrivateDataByRangeReturnsOnCall == nil {
+		fake.getPrivateDataByRangeReturnsOnCall = make(map[int]struct {
+			result1 shim.StateQueryIteratorInterface
+			result2 error
+		})
+	}
+	fake.getPrivateDataByRangeReturnsOnCall[i] = struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockStub) GetPrivateDataByPartialCompositeKey(collection string, objectType string, keys []string) (shim.StateQueryIteratorInterface, error) {
+	var keysCopy []string
+	if keys != nil {
+		keysCopy = make([]string, len(keys))
+		copy(keysCopy, keys)
+	}
+	fake.getPrivateDataByPartialCompositeKeyMutex.Lock()
+	ret, specificReturn := fake.getPrivateDataByPartialCompositeKeyReturnsOnCall[len(fake.getPrivateDataByPartialCompositeKeyArgsForCall)]
+	fake.getPrivateDataByPartialCompositeKeyArgsForCall = append(fake.getPrivateDataByPartialCompositeKeyArgsForCall, struct {
+		collection string
+		objectType string
+		keys       []string
+	}{collection, objectType, keysCopy})
+	fake.recordInvocation("GetPrivateDataByPartialCompositeKey", []interface{}{collection, objectType, keysCopy})
+	fake.getPrivateDataByPartialCompositeKeyMutex.Unlock()
+	if fake.GetPrivateDataByPartialCompositeKeyStub != nil {
+		return fake.GetPrivateDataByPartialCompositeKeyStub(collection, objectType, keys)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getPrivateDataByPartialCompositeKeyReturns.result1, fake.getPrivateDataByPartialCompositeKeyReturns.result2
+}
+
+func (fake *MockStub) GetPrivateDataByPartialCompositeKeyCallCount() int {
+	fake.getPrivateDataByPartialCompositeKeyMutex.RLock()
+	defer fake.getPrivateDataByPartialCompositeKeyMutex.RUnlock()
+	return len(fake.getPrivateDataByPartialCompositeKeyArgsForCall)
+}
+
+func (fake *MockStub) GetPrivateDataByPartialCompositeKeyArgsForCall(i int) (string, string, []string) {
+	fake.getPrivateDataByPartialCompositeKeyMutex.RLock()
+	defer fake.getPrivateDataByPartialCompositeKeyMutex.RUnlock()
+	return fake.getPrivateDataByPartialCompositeKeyArgsForCall[i].collection, fake.getPrivateDataByPartialCompositeKeyArgsForCall[i].objectType, fake.getPrivateDataByPartialCompositeKeyArgsForCall[i].keys
+}
+
+func (fake *MockStub) GetPrivateDataByPartialCompositeKeyReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
+	fake.GetPrivateDataByPartialCompositeKeyStub = nil
+	fake.getPrivateDataByPartialCompositeKeyReturns = struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockStub) GetPrivateDataByPartialCompositeKeyReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
+	fake.GetPrivateDataByPartialCompositeKeyStub = nil
+	if fake.getPrivateDataByPartialCompositeKeyReturnsOnCall == nil {
+		fake.getPrivateDataByPartialCompositeKeyReturnsOnCall = make(map[int]struct {
+			result1 shim.StateQueryIteratorInterface
+			result2 error
+		})
+	}
+	fake.getPrivateDataByPartialCompositeKeyReturnsOnCall[i] = struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockStub) GetPrivateDataQueryResult(collection string, query string) (shim.StateQueryIteratorInterface, error) {
+	fake.getPrivateDataQueryResultMutex.Lock()
+	ret, specificReturn := fake.getPrivateDataQueryResultReturnsOnCall[len(fake.getPrivateDataQueryResultArgsForCall)]
+	fake.getPrivateDataQueryResultArgsForCall = append(fake.getPrivateDataQueryResultArgsForCall, struct {
+		collection string
+		query      string
+	}{collection, query})
+	fake.recordInvocation("GetPrivateDataQueryResult", []interface{}{collection, query})
+	fake.getPrivateDataQueryResultMutex.Unlock()
+	if fake.GetPrivateDataQueryResultStub != nil {
+		return fake.GetPrivateDataQueryResultStub(collection, query)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getPrivateDataQueryResultReturns.result1, fake.getPrivateDataQueryResultReturns.result2
+}
+
+func (fake *MockStub) GetPrivateDataQueryResultCallCount() int {
+	fake.getPrivateDataQueryResultMutex.RLock()
+	defer fake.getPrivateDataQueryResultMutex.RUnlock()
+	return len(fake.getPrivateDataQueryResultArgsForCall)
+}
+
+func (fake *MockStub) GetPrivateDataQueryResultArgsForCall(i int) (string, string) {
+	fake.getPrivateDataQueryResultMutex.RLock()
+	defer fake.getPrivateDataQueryResultMutex.RUnlock()
+	return fake.getPrivateDataQueryResultArgsForCall[i].collection, fake.getPrivateDataQueryResultArgsForCall[i].query
+}
+
+func (fake *MockStub) GetPrivateDataQueryResultReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
+	fake.GetPrivateDataQueryResultStub = nil
+	fake.getPrivateDataQueryResultReturns = struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockStub) GetPrivateDataQueryResultReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
+	fake.GetPrivateDataQueryResultStub = nil
+	if fake.getPrivateDataQueryResultReturnsOnCall == nil {
+		fake.getPrivateDataQueryResultReturnsOnCall = make(map[int]struct {
+			result1 shim.StateQueryIteratorInterface
+			result2 error
+		})
+	}
+	fake.getPrivateDataQueryResultReturnsOnCall[i] = struct {
+		result1 shim.StateQueryIteratorInterface
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *MockStub) GetCreator() ([]byte, error) {
 	fake.getCreatorMutex.Lock()
 	ret, specificReturn := fake.getCreatorReturnsOnCall[len(fake.getCreatorArgsForCall)]
@@ -1400,6 +1802,18 @@ func (fake *MockStub) Invocations() map[string][][]interface{} {
 	defer fake.getQueryResultMutex.RUnlock()
 	fake.getHistoryForKeyMutex.RLock()
 	defer fake.getHistoryForKeyMutex.RUnlock()
+	fake.getPrivateDataMutex.RLock()
+	defer fake.getPrivateDataMutex.RUnlock()
+	fake.putPrivateDataMutex.RLock()
+	defer fake.putPrivateDataMutex.RUnlock()
+	fake.delPrivateDataMutex.RLock()
+	defer fake.delPrivateDataMutex.RUnlock()
+	fake.getPrivateDataByRangeMutex.RLock()
+	defer fake.getPrivateDataByRangeMutex.RUnlock()
+	fake.getPrivateDataByPartialCompositeKeyMutex.RLock()
+	defer fake.getPrivateDataByPartialCompositeKeyMutex.RUnlock()
+	fake.getPrivateDataQueryResultMutex.RLock()
+	defer fake.getPrivateDataQueryResultMutex.RUnlock()
 	fake.getCreatorMutex.RLock()
 	defer fake.getCreatorMutex.RUnlock()
 	fake.getTransientMutex.RLock()
