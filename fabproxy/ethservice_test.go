@@ -9,7 +9,9 @@ package fabproxy_test
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -346,15 +348,12 @@ var _ = Describe("Ethservice", func() {
 
 	Describe("GetTransactionReceipt", func() {
 		var (
-			sampleResponse      channel.Response
 			sampleTransaction   *peer.ProcessedTransaction
 			sampleBlock         *common.Block
 			sampleTransactionID string
 		)
 
 		BeforeEach(func() {
-			sampleResponse = channel.Response{}
-
 			var err error
 			sampleTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458"), []byte("sample arg 2")}, []byte("sample-response"))
 			Expect(err).ToNot(HaveOccurred())
@@ -556,12 +555,197 @@ var _ = Describe("Ethservice", func() {
 			Expect(reply).To(Equal("0x0"))
 		})
 	})
+
+	Describe("GetBlockByNumber", func() {
+		Context("when provided with bad parameters", func() {
+			var reply fabproxy.Block
+
+			It("returns an error when arg length is not 2", func() {
+				var arg []interface{}
+				err := ethservice.GetBlockByNumber(&http.Request{}, &arg, &reply)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("returns an error when the first arg is not a string", func() {
+				arg := make([]interface{}, 2)
+				arg[0] = false
+				err := ethservice.GetBlockByNumber(&http.Request{}, &arg, &reply)
+				Expect(err).To(HaveOccurred())
+			})
+			It("returns an error when first arg is not a named block or numbered block", func() {
+				arg := make([]interface{}, 2)
+				arg[0] = "hurf%&"
+				err := ethservice.GetBlockByNumber(&http.Request{}, &arg, &reply)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("returns an error, when the second arg is not a booleand", func() {
+				arg := make([]interface{}, 2)
+				arg[0] = "latest"
+				arg[1] = "durf"
+				err := ethservice.GetBlockByNumber(&http.Request{}, &arg, &reply)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when there are good parameters", func() {
+			var (
+				reply                fabproxy.Block
+				args                 []interface{}
+				fullTransactions     bool
+				requestedBlockNumber string
+			)
+
+			JustBeforeEach(func() {
+				args = make([]interface{}, 2)
+				args[0] = requestedBlockNumber
+				args[1] = fullTransactions
+			})
+
+			Context("when asking for partial transactions", func() {
+				BeforeEach(func() {
+					fullTransactions = false
+				})
+
+				Context("returns an error when querying the ledger info results in an error", func() {
+					BeforeEach(func() {
+						requestedBlockNumber = "latest"
+						mockLedgerClient.QueryInfoReturns(nil, fmt.Errorf("no block info"))
+					})
+
+					It("returns a no blockchain info error when requesting a named block", func() {
+						err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+						Expect(err).To(MatchError(ContainSubstring("no block info")))
+					})
+				})
+
+				Context("when querying the ledger for a block results in an error", func() {
+					BeforeEach(func() {
+						requestedBlockNumber = "0xa"
+						mockLedgerClient.QueryBlockReturns(nil, fmt.Errorf("no block"))
+					})
+
+					It("returns the error", func() {
+						err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+						Expect(err).To(HaveOccurred())
+					})
+
+					Context("when querying for a named block", func() {
+						BeforeEach(func() {
+							requestedBlockNumber = "latest"
+							mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 1}}, nil)
+						})
+
+						It("returns an error", func() {
+							err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+							Expect(err).To(HaveOccurred())
+						})
+					})
+				})
+
+				It("returns an error when asked for pending blocks", func() {
+					args[0] = "pending"
+					err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+					Expect(err).To(HaveOccurred())
+				})
+
+				Context("when a block is requested by number", func() {
+					var uintBlockNumber uint64
+
+					BeforeEach(func() {
+						requestedBlockNumber = "abc0"
+
+						var err error
+						uintBlockNumber, err = strconv.ParseUint(requestedBlockNumber, 16, 64)
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					It("requests a block by number", func() {
+						sampleBlock := GetSampleBlockWithTransactions(uintBlockNumber)
+						mockLedgerClient.QueryBlockReturns(&sampleBlock, nil)
+
+						err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(reply.Number).To(Equal("0x"+requestedBlockNumber), "block number")
+						Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
+						Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
+						txns := reply.Transactions
+						Expect(txns).To(HaveLen(2))
+						Expect(txns[0]).To(BeEquivalentTo("0x1234"))
+						Expect(txns[1]).To(BeEquivalentTo("0x1234"))
+					})
+				})
+
+				Context("when the block is requested by name", func() {
+					var uintBlockNumber uint64
+
+					BeforeEach(func() {
+						requestedBlockNumber = "latest"
+
+						var err error
+						uintBlockNumber, err = strconv.ParseUint("abc0", 16, 64)
+						Expect(err).ToNot(HaveOccurred())
+
+						mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: uintBlockNumber + 1}}, nil)
+					})
+
+					It("returns the block", func() {
+						sampleBlock := GetSampleBlockWithTransactions(uintBlockNumber)
+						mockLedgerClient.QueryBlockReturns(&sampleBlock, nil)
+
+						err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(reply.Number).To(Equal("0xabc0"), "block number")
+						Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
+						Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
+						txns := reply.Transactions
+						Expect(txns).To(HaveLen(2))
+						Expect(txns[0]).To(BeEquivalentTo("0x1234"))
+						Expect(txns[1]).To(BeEquivalentTo("0x1234"))
+
+					})
+				})
+			})
+
+			Context("when asking for full transactions", func() {
+				BeforeEach(func() {
+					fullTransactions = true
+				})
+
+				It("returns an unimplemented error", func() {
+					err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+		})
+	})
 })
 
 func GetSampleBlock(blkNumber uint64, blkHash []byte) (*common.Block, error) {
 	return &common.Block{
 		Header: &common.BlockHeader{Number: blkNumber, DataHash: blkHash},
 	}, nil
+}
+
+func GetSampleBlockWithTransactions(blockNumber uint64) common.Block {
+	tx, err := GetSampleTransaction([][]byte{[]byte("12345678"), []byte("sample arg 1")}, []byte("sample-response1"))
+	Expect(err).ToNot(HaveOccurred())
+	txn1, err := proto.Marshal(tx.TransactionEnvelope)
+	Expect(err).ToNot(HaveOccurred())
+
+	tx, err = GetSampleTransaction([][]byte{[]byte("98765432"), []byte("sample arg 2")}, []byte("sample-response2"))
+	txn2, err := proto.Marshal(tx.TransactionEnvelope)
+	Expect(err).ToNot(HaveOccurred())
+
+	phash := []byte("abc\x00")
+	dhash := []byte("def\xFF")
+	return common.Block{
+		Header: &common.BlockHeader{Number: blockNumber,
+			PreviousHash: phash,
+			DataHash:     dhash},
+		Data: &common.BlockData{Data: [][]byte{txn1, txn2}},
+	}
 }
 
 func GetSampleTransaction(inputArgs [][]byte, txResponse []byte) (*peer.ProcessedTransaction, error) {
@@ -634,7 +818,16 @@ func GetSampleTransaction(inputArgs [][]byte, txResponse []byte) (*peer.Processe
 		return &peer.ProcessedTransaction{}, err
 	}
 
+	chdr := &common.ChannelHeader{TxId: "1234"}
+	chdrBytes, err := proto.Marshal(chdr)
+	if err != nil {
+		return &peer.ProcessedTransaction{}, err
+	}
+
 	payload := &common.Payload{
+		Header: &common.Header{
+			ChannelHeader: chdrBytes,
+		},
 		Data: actionsPayload,
 	}
 

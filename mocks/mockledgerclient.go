@@ -12,6 +12,33 @@ import (
 )
 
 type MockLedgerClient struct {
+	QueryInfoStub        func(options ...ledger.RequestOption) (*fab.BlockchainInfoResponse, error)
+	queryInfoMutex       sync.RWMutex
+	queryInfoArgsForCall []struct {
+		options []ledger.RequestOption
+	}
+	queryInfoReturns struct {
+		result1 *fab.BlockchainInfoResponse
+		result2 error
+	}
+	queryInfoReturnsOnCall map[int]struct {
+		result1 *fab.BlockchainInfoResponse
+		result2 error
+	}
+	QueryBlockStub        func(blockNumber uint64, options ...ledger.RequestOption) (*common.Block, error)
+	queryBlockMutex       sync.RWMutex
+	queryBlockArgsForCall []struct {
+		blockNumber uint64
+		options     []ledger.RequestOption
+	}
+	queryBlockReturns struct {
+		result1 *common.Block
+		result2 error
+	}
+	queryBlockReturnsOnCall map[int]struct {
+		result1 *common.Block
+		result2 error
+	}
 	QueryBlockByTxIDStub        func(txid fab.TransactionID, options ...ledger.RequestOption) (*common.Block, error)
 	queryBlockByTxIDMutex       sync.RWMutex
 	queryBlockByTxIDArgsForCall []struct {
@@ -42,6 +69,109 @@ type MockLedgerClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *MockLedgerClient) QueryInfo(options ...ledger.RequestOption) (*fab.BlockchainInfoResponse, error) {
+	fake.queryInfoMutex.Lock()
+	ret, specificReturn := fake.queryInfoReturnsOnCall[len(fake.queryInfoArgsForCall)]
+	fake.queryInfoArgsForCall = append(fake.queryInfoArgsForCall, struct {
+		options []ledger.RequestOption
+	}{options})
+	fake.recordInvocation("QueryInfo", []interface{}{options})
+	fake.queryInfoMutex.Unlock()
+	if fake.QueryInfoStub != nil {
+		return fake.QueryInfoStub(options...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.queryInfoReturns.result1, fake.queryInfoReturns.result2
+}
+
+func (fake *MockLedgerClient) QueryInfoCallCount() int {
+	fake.queryInfoMutex.RLock()
+	defer fake.queryInfoMutex.RUnlock()
+	return len(fake.queryInfoArgsForCall)
+}
+
+func (fake *MockLedgerClient) QueryInfoArgsForCall(i int) []ledger.RequestOption {
+	fake.queryInfoMutex.RLock()
+	defer fake.queryInfoMutex.RUnlock()
+	return fake.queryInfoArgsForCall[i].options
+}
+
+func (fake *MockLedgerClient) QueryInfoReturns(result1 *fab.BlockchainInfoResponse, result2 error) {
+	fake.QueryInfoStub = nil
+	fake.queryInfoReturns = struct {
+		result1 *fab.BlockchainInfoResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLedgerClient) QueryInfoReturnsOnCall(i int, result1 *fab.BlockchainInfoResponse, result2 error) {
+	fake.QueryInfoStub = nil
+	if fake.queryInfoReturnsOnCall == nil {
+		fake.queryInfoReturnsOnCall = make(map[int]struct {
+			result1 *fab.BlockchainInfoResponse
+			result2 error
+		})
+	}
+	fake.queryInfoReturnsOnCall[i] = struct {
+		result1 *fab.BlockchainInfoResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLedgerClient) QueryBlock(blockNumber uint64, options ...ledger.RequestOption) (*common.Block, error) {
+	fake.queryBlockMutex.Lock()
+	ret, specificReturn := fake.queryBlockReturnsOnCall[len(fake.queryBlockArgsForCall)]
+	fake.queryBlockArgsForCall = append(fake.queryBlockArgsForCall, struct {
+		blockNumber uint64
+		options     []ledger.RequestOption
+	}{blockNumber, options})
+	fake.recordInvocation("QueryBlock", []interface{}{blockNumber, options})
+	fake.queryBlockMutex.Unlock()
+	if fake.QueryBlockStub != nil {
+		return fake.QueryBlockStub(blockNumber, options...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.queryBlockReturns.result1, fake.queryBlockReturns.result2
+}
+
+func (fake *MockLedgerClient) QueryBlockCallCount() int {
+	fake.queryBlockMutex.RLock()
+	defer fake.queryBlockMutex.RUnlock()
+	return len(fake.queryBlockArgsForCall)
+}
+
+func (fake *MockLedgerClient) QueryBlockArgsForCall(i int) (uint64, []ledger.RequestOption) {
+	fake.queryBlockMutex.RLock()
+	defer fake.queryBlockMutex.RUnlock()
+	return fake.queryBlockArgsForCall[i].blockNumber, fake.queryBlockArgsForCall[i].options
+}
+
+func (fake *MockLedgerClient) QueryBlockReturns(result1 *common.Block, result2 error) {
+	fake.QueryBlockStub = nil
+	fake.queryBlockReturns = struct {
+		result1 *common.Block
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLedgerClient) QueryBlockReturnsOnCall(i int, result1 *common.Block, result2 error) {
+	fake.QueryBlockStub = nil
+	if fake.queryBlockReturnsOnCall == nil {
+		fake.queryBlockReturnsOnCall = make(map[int]struct {
+			result1 *common.Block
+			result2 error
+		})
+	}
+	fake.queryBlockReturnsOnCall[i] = struct {
+		result1 *common.Block
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *MockLedgerClient) QueryBlockByTxID(txid fab.TransactionID, options ...ledger.RequestOption) (*common.Block, error) {
@@ -151,6 +281,10 @@ func (fake *MockLedgerClient) QueryTransactionReturnsOnCall(i int, result1 *peer
 func (fake *MockLedgerClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.queryInfoMutex.RLock()
+	defer fake.queryInfoMutex.RUnlock()
+	fake.queryBlockMutex.RLock()
+	defer fake.queryBlockMutex.RUnlock()
 	fake.queryBlockByTxIDMutex.RLock()
 	defer fake.queryBlockByTxIDMutex.RUnlock()
 	fake.queryTransactionMutex.RLock()

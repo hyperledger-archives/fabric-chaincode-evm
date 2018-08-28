@@ -33,10 +33,19 @@ type ChannelClient interface {
 
 //go:generate counterfeiter -o ../mocks/mockledgerclient.go --fake-name MockLedgerClient ./ LedgerClient
 type LedgerClient interface {
+	QueryInfo(options ...ledger.RequestOption) (*fab.BlockchainInfoResponse, error)
+	QueryBlock(blockNumber uint64, options ...ledger.RequestOption) (*common.Block, error)
 	QueryBlockByTxID(txid fab.TransactionID, options ...ledger.RequestOption) (*common.Block, error)
 	QueryTransaction(txid fab.TransactionID, options ...ledger.RequestOption) (*peer.ProcessedTransaction, error)
 }
 
+// EthService is the rpc server implementation. Each function is an
+// implementation of one ethereum json-rpc
+// https://github.com/ethereum/wiki/wiki/JSON-RPC
+//
+// Arguments and return values are formatted as HEX value encoding
+// https://github.com/ethereum/wiki/wiki/JSON-RPC#hex-value-encoding
+//
 //go:generate counterfeiter -o ../mocks/mockethservice.go --fake-name MockEthService ./ EthService
 type EthService interface {
 	GetCode(r *http.Request, arg *string, reply *string) error
@@ -46,6 +55,7 @@ type EthService interface {
 	Accounts(r *http.Request, arg *string, reply *[]string) error
 	EstimateGas(r *http.Request, args *EthArgs, reply *string) error
 	GetBalance(r *http.Request, p *[]string, reply *string) error
+	GetBlockByNumber(r *http.Request, p *[]interface{}, reply *Block) error
 }
 
 type ethService struct {
@@ -274,5 +284,165 @@ func (s *ethService) EstimateGas(r *http.Request, _ *EthArgs, reply *string) err
 func (s *ethService) GetBalance(r *http.Request, p *[]string, reply *string) error {
 	fmt.Println("GetBalance called")
 	*reply = "0x0"
+	return nil
+}
+
+// Block is an eth return struct
+// defined https://github.com/ethereum/wiki/wiki/JSON-RPC#returns-26
+type Block struct {
+	Number     string `json:"number"`     // number: QUANTITY - the block number. null when its pending block.
+	Hash       string `json:"hash"`       // hash: DATA, 32 Bytes - hash of the block. null when its pending block.
+	ParentHash string `json:"parentHash"` // parentHash: DATA, 32 Bytes - hash of the parent block.
+	// size: QUANTITY - integer the size of this block in bytes.
+	// timestamp: QUANTITY - the unix timestamp for when the block was collated.
+	Transactions []interface{} `json:"transactions"` // transactions: Array - Array of transaction objects, or 32 Bytes transaction hashes depending on the last given parameter.
+}
+
+// https://github.com/ethereum/wiki/wiki/JSON-RPC#the-default-block-parameter
+func parseAsDefaultBlock(input string) (*defaultBlock, error) {
+	// check if it's one of the nameed-blocks
+	if input == "latest" || input == "earliest" || input == "pending" {
+		return &defaultBlock{namedBlock: input}, nil
+	}
+	// check if it's a number
+	// RPC defines it as a hex-string (could use 0 middle arg for more lenient parsing)
+	decoded, parseErr := strconv.ParseUint(input, 16, 64)
+	if parseErr == nil {
+		return &defaultBlock{blockNumber: decoded}, nil
+	}
+	// neither
+	return nil, fmt.Errorf("not a named block OR failed to parse as a number err %q", parseErr)
+}
+
+// integer of a block number, or the string "earliest", "latest" or "pending", as in the default block parameter.
+type defaultBlock struct {
+	namedBlock  string
+	blockNumber uint64
+}
+
+func (b *defaultBlock) IsNamedBlock() bool {
+	if b.namedBlock == "" {
+		return false
+	}
+	return true
+}
+
+// https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getblockbynumber
+func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *Block) error {
+	fmt.Println("Received a request for GetBlockByNumber")
+	params := *p
+	fmt.Println("Params are : ", params)
+
+	// handle params
+	// must have two params
+	numParams := len(params)
+	if numParams != 2 {
+		return fmt.Errorf("need 2 params, got %q", numParams)
+	}
+	// first arg is string of block to get
+	number, ok := params[0].(string)
+	if !ok {
+		fmt.Printf("Incorrect argument received: %#v", params[0])
+		return fmt.Errorf("Incorrect first parameter sent, must be string")
+	}
+	block, err := parseAsDefaultBlock(strip0x(number))
+	if err != nil {
+		return err
+	}
+	// second arg is bool for full txn or hash txn
+	fullTransactions, ok := params[1].(bool)
+	if !ok {
+		return fmt.Errorf("Incorrect second parameter sent, must be boolean")
+	}
+
+	if fullTransactions {
+		return fmt.Errorf("Unimplemented: fabric-evm does not currently support returning full transaction objects")
+	}
+
+	getBlockByNumber := func(number uint64) (Block, error) {
+		block, err := s.ledgerClient.QueryBlock(number)
+		if err != nil {
+			return Block{}, fmt.Errorf("Failed to query the ledger: %v", err)
+		}
+
+		blkHeader := block.GetHeader()
+
+		// each data is a txn
+		data := block.GetData().GetData()
+		txns := make([]interface{}, len(data))
+
+		// drill into the block to find the transaction ids it contains
+		for idx, d := range data {
+			if d != nil { // can a data be empty? Is this an error?
+				env := &common.Envelope{}
+				if err := proto.Unmarshal(d, env); err != nil {
+					return Block{}, err
+				}
+
+				payload := &common.Payload{}
+				if err := proto.Unmarshal(env.GetPayload(), payload); err != nil {
+					return Block{}, err
+				}
+
+				chdr := &common.ChannelHeader{}
+				if err := proto.Unmarshal(payload.GetHeader().GetChannelHeader(), chdr); err != nil {
+					return Block{}, err
+				}
+
+				// returning full transactions is unimplemented,
+				// so the hash-only case is the only case.
+				fmt.Println("block has transaction hash:", chdr.TxId)
+				txns[idx] = "0x" + chdr.TxId
+			}
+		}
+
+		blk := Block{
+			Number:       "0x" + strconv.FormatUint(number, 16),
+			Hash:         "0x" + hex.EncodeToString(blkHeader.GetDataHash()),
+			ParentHash:   "0x" + hex.EncodeToString(blkHeader.GetPreviousHash()),
+			Transactions: txns,
+		}
+		fmt.Println("asked for block", number, "found block", blk)
+		return blk, nil
+	}
+
+	if block.IsNamedBlock() {
+		blockName := block.namedBlock
+		switch blockName {
+		case "latest":
+			// latest
+			// qscc GetChainInfo, for a BlockchainInfo
+			// from that take the height
+			// using the height, call GetBlockByNumber
+
+			blockchainInfo, err := s.ledgerClient.QueryInfo()
+			if err != nil {
+				fmt.Println(err)
+				return fmt.Errorf("Failed to query the ledger: %v", err)
+			}
+
+			// height is the block being worked on now, we want the previous block
+			topBlockNumber := blockchainInfo.BCI.GetHeight() - 1
+			// handleNumberedBlock topBlockNumber
+			*reply, err = getBlockByNumber(topBlockNumber)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+		case "earliest":
+			// handleNumberedBlock 0
+			*reply, err = getBlockByNumber(0)
+			if err != nil {
+				return err
+			}
+		case "pending":
+			return fmt.Errorf("Unimplemented: fabric does not have the concept of in-progress blocks being visible.")
+		}
+	} else { // handleNumberedBlock
+		*reply, err = getBlockByNumber(block.blockNumber)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

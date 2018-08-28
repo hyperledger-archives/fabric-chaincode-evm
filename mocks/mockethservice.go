@@ -100,6 +100,19 @@ type MockEthService struct {
 	getBalanceReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetBlockByNumberStub        func(r *http.Request, p *[]interface{}, reply *fabproxy.Block) error
+	getBlockByNumberMutex       sync.RWMutex
+	getBlockByNumberArgsForCall []struct {
+		r     *http.Request
+		p     *[]interface{}
+		reply *fabproxy.Block
+	}
+	getBlockByNumberReturns struct {
+		result1 error
+	}
+	getBlockByNumberReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -454,6 +467,56 @@ func (fake *MockEthService) GetBalanceReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *MockEthService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *fabproxy.Block) error {
+	fake.getBlockByNumberMutex.Lock()
+	ret, specificReturn := fake.getBlockByNumberReturnsOnCall[len(fake.getBlockByNumberArgsForCall)]
+	fake.getBlockByNumberArgsForCall = append(fake.getBlockByNumberArgsForCall, struct {
+		r     *http.Request
+		p     *[]interface{}
+		reply *fabproxy.Block
+	}{r, p, reply})
+	fake.recordInvocation("GetBlockByNumber", []interface{}{r, p, reply})
+	fake.getBlockByNumberMutex.Unlock()
+	if fake.GetBlockByNumberStub != nil {
+		return fake.GetBlockByNumberStub(r, p, reply)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.getBlockByNumberReturns.result1
+}
+
+func (fake *MockEthService) GetBlockByNumberCallCount() int {
+	fake.getBlockByNumberMutex.RLock()
+	defer fake.getBlockByNumberMutex.RUnlock()
+	return len(fake.getBlockByNumberArgsForCall)
+}
+
+func (fake *MockEthService) GetBlockByNumberArgsForCall(i int) (*http.Request, *[]interface{}, *fabproxy.Block) {
+	fake.getBlockByNumberMutex.RLock()
+	defer fake.getBlockByNumberMutex.RUnlock()
+	return fake.getBlockByNumberArgsForCall[i].r, fake.getBlockByNumberArgsForCall[i].p, fake.getBlockByNumberArgsForCall[i].reply
+}
+
+func (fake *MockEthService) GetBlockByNumberReturns(result1 error) {
+	fake.GetBlockByNumberStub = nil
+	fake.getBlockByNumberReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) GetBlockByNumberReturnsOnCall(i int, result1 error) {
+	fake.GetBlockByNumberStub = nil
+	if fake.getBlockByNumberReturnsOnCall == nil {
+		fake.getBlockByNumberReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.getBlockByNumberReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -471,6 +534,8 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.estimateGasMutex.RUnlock()
 	fake.getBalanceMutex.RLock()
 	defer fake.getBalanceMutex.RUnlock()
+	fake.getBlockByNumberMutex.RLock()
+	defer fake.getBlockByNumberMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
