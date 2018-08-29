@@ -43,25 +43,6 @@ node ('hyp-x') { // trigger build on x86_64 node
           }
       }
 
-// Build Build Images
-      stage("Build-Images") {
-          try {
-                 dir("${ROOTDIR}") {
-                 sh '''
-                    [ -e gopath/src/github.com/hyperledger/fabric ] || mkdir -p $PROJECT_DIR
-                    cd $PROJECT_DIR
-                    git clone git://cloud.hyperledger.org/mirror/fabric && cd fabric
-                    git checkout "$GERRIT_BRANCH"
-                    make buildenv
-                    cd ../fabric-chaincode-evm && make docker
-                 '''
-                 }
-          }
-          catch (err) {
-                 failure_stage = "build images"
-                 throw err
-          }
-      }
 
 // Run license-checks
       stage("Checks") {

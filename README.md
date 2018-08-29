@@ -24,34 +24,17 @@ for information on how to contribute to this repository.
 
 Please see the design document in [FAB-6590](https://jira.hyperledger.org/browse/FAB-6590).
 
-## Building the hyperledger/fabric-peer with installed plugin image
+## Deploying the Fabric EVM Chaincode
 
-The easiest way to consume the Fabric EVM chaincode plugin is to either pull the `hyperledger/fabric-peer-evm:amd64-latest` docker image from DockerHub. This is
-a `hyperledger/fabric-peer` image with the EVM chaincode plugin pre-installed:
+This chaincode can be deployed like any other user chaincode to Hyperledger
+Fabric. The chaincode has no instantiation arguments.
 
-```
-docker pull hyperledger/fabric-peer-evm:amd64-latest
-```
-
-Or, you can build the same image from this repository if you need a different
-architecture. We will be publishing additional architectures as our CI matures.
-
-```
-mkdir -p $GOPATH/src/github.com/hyperledger
-cd $GOPATH/src/github.com/hyperledger
-git clone https://github.com/hyperledger/fabric-chaincode-evm.git
-cd fabric-chaincode-evm
-git checkout master
-make docker
-```
-
-You can run the end-2-end test to ensure you have a stable image.
-
+You can run the end-2-end test in which a sample Fabric Network is run and the
+chaincode is installed with the CCID: `evmcc`
 ```
 make integration-test
 ```
-
-Once you have an image, you can use that wherever you would normally use the `hyperledger/fabric-peer` image. The end-2-end test above is derivative of the hyperledger/fabric/examples/e2e_cli test. You can compare them to see what is
+The end-2-end test is derivative of the hyperledger/fabric/examples/e2e_cli test. You can compare them to see what is
 different.
 
 To interact with the EVM (deploying a contract, executing transactions against

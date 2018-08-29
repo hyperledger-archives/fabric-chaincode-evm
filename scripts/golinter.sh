@@ -6,7 +6,7 @@
 
 declare -a arr=(
 "./statemanager"
-"./plugin"
+"./evmcc"
 )
 
 # place the Go build cache directory into the default build tree if it exists

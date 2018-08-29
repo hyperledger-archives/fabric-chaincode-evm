@@ -197,15 +197,16 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 		Context("when less than 2 args are given", func() {
 			Context("when only one argument is given", func() {
 				Context("when the argument is account", func() {
-					var (
-						callerAddress account.Address
-						err           error
-					)
+					var callerAddress account.Address
+
 					BeforeEach(func() {
 						stub.GetArgsReturns([][]byte{[]byte("account")})
 						stub.GetCreatorReturns(creator, nil)
 						si := &msp.SerializedIdentity{IdBytes: []byte(user0Cert)}
+
+						var err error
 						callerAddress, err = identityToAddr(si.IdBytes)
+						Expect(err).ToNot(HaveOccurred())
 					})
 
 					It("will return the caller address of the contract", func() {
