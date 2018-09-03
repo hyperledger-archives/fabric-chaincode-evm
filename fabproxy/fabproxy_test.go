@@ -99,4 +99,45 @@ var _ = Describe("Fabproxy", func() {
 
 		Expect(respBody).To(Equal(expectedBody))
 	})
+
+	Context("when the request has Cross-Origin Resource Sharing Headers", func() {
+		BeforeEach(func() {
+			var err error
+			body := strings.NewReader("")
+			//OPTIONS pre-check used to see the CORS options of the server
+			req, err = http.NewRequest("OPTIONS", proxyAddr, body)
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Origin", "[http://example.com]")
+		})
+
+		Context("when the request method is POST", func() {
+			BeforeEach(func() {
+				//curl -X OPTIONS http://localhost:5000 -H "Origin: http://example.com" -H "Access-Control-Request-Method: POST"
+				req.Header.Set("Access-Control-Request-Method", "POST")
+			})
+
+			It("successfully processes the request", func() {
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+				Expect(resp.Header.Get("Access-Control-Allow-Origin")).To(Equal("*"))
+			})
+		})
+
+		Context("when the request method is not POST", func() {
+			BeforeEach(func() {
+				//curl -X OPTIONS http://localhost:5000 -H "Origin: http://example.com" -H "Access-Control-Request-Method: GET"
+				req.Header.Set("Access-Control-Request-Method", "GET")
+			})
+
+			It("successfully processes the request", func() {
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusMethodNotAllowed))
+			})
+		})
+	})
 })

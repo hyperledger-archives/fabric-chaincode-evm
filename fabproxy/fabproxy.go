@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/rpc/v2"
 )
@@ -37,7 +38,11 @@ func (p *FabProxy) Start(port int) {
 	r := mux.NewRouter()
 	r.Handle("/", p.rpcServer)
 
-	p.httpServer = &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", port)}
+	allowedHeaders := handlers.AllowedHeaders([]string{"Origin", "Content-Type"})
+	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
+	allowedMethods := handlers.AllowedMethods([]string{"POST"})
+
+	p.httpServer = &http.Server{Handler: handlers.CORS(allowedHeaders, allowedOrigins, allowedMethods)(r), Addr: fmt.Sprintf(":%d", port)}
 	p.httpServer.ListenAndServe()
 }
 
