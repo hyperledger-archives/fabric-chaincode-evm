@@ -11,10 +11,6 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/onsi/ginkgo"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/onsi/gomega"
 
 [[constraint]]
@@ -31,6 +27,10 @@
   name = "github.com/tendermint/go-crypto"
 
 #Constraints from Fabric
+[[constraint]]
+  revision = "a3b6351eb1ff8e1bfa30b2f55d7e282186ed8fee"
+  name = "github.com/onsi/ginkgo"
+
 [[override]]
   revision = "57142e89befe90977da6dce7762f9fcc70f28da1"
   name = "github.com/docker/docker"
