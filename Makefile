@@ -16,7 +16,7 @@
 #   - unit-test - runs the go-test based unit tests
 #   - integration-test - runs the e2e_cli based test
 
-PACKAGES = ./statemanager/... ./evmcc/...
+PACKAGES = ./statemanager/... ./evmcc/... ./fabproxy/
 
 EXECUTABLES ?= go git curl
 K := $(foreach exec,$(EXECUTABLES),\
