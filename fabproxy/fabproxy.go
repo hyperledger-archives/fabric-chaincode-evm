@@ -29,12 +29,17 @@ func NewFabProxy(service EthService) *FabProxy {
 	}
 
 	rpcServer.RegisterCodec(NewRPCCodec(), "application/json")
-	rpcServer.RegisterService(service, "eth")
-	rpcServer.RegisterService(&NetService{}, "net")
+	msg := "this panic indicates a programming error, and is unreachable"
+	if err := rpcServer.RegisterService(service, "eth"); err != nil {
+		panic(msg)
+	}
+	if err := rpcServer.RegisterService(&NetService{}, "net"); err != nil {
+		panic(msg)
+	}
 	return proxy
 }
 
-func (p *FabProxy) Start(port int) {
+func (p *FabProxy) Start(port int) error {
 	r := mux.NewRouter()
 	r.Handle("/", p.rpcServer)
 
@@ -43,7 +48,7 @@ func (p *FabProxy) Start(port int) {
 	allowedMethods := handlers.AllowedMethods([]string{"POST"})
 
 	p.httpServer = &http.Server{Handler: handlers.CORS(allowedHeaders, allowedOrigins, allowedMethods)(r), Addr: fmt.Sprintf(":%d", port)}
-	fmt.Println(p.httpServer.ListenAndServe())
+	return p.httpServer.ListenAndServe()
 }
 
 func (p *FabProxy) Shutdown() error {
