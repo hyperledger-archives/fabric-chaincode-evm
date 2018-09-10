@@ -16,6 +16,7 @@
 #   - unit-test - runs the go-test based unit tests
 #   - integration-test - runs the e2e_cli based test
 #   - docker-images - pulls the latest docker ccenv and couchdb images needed for integration tests
+#   - update-mocks - update the counterfeiter test doubles
 #
 ARCH=$(shell go env GOARCH)
 BASEIMAGE_RELEASE=0.4.10
@@ -76,3 +77,7 @@ docker-images:
 integration-test: docker-images
 	@echo "Running integration-test"
 	@scripts/run-integration-tests.sh
+
+.PHONY: update-mocks
+update-mocks:
+	@go generate ./fabproxy/

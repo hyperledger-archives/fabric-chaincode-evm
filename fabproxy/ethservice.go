@@ -25,16 +25,19 @@ import (
 
 var ZeroAddress = make([]byte, 20)
 
+//go:generate counterfeiter -o ../mocks/mockchannelclient.go --fake-name MockChannelClient ./ ChannelClient
 type ChannelClient interface {
 	Query(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 	Execute(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 }
 
+//go:generate counterfeiter -o ../mocks/mockledgerclient.go --fake-name MockLedgerClient ./ LedgerClient
 type LedgerClient interface {
 	QueryBlockByTxID(txid fab.TransactionID, options ...ledger.RequestOption) (*common.Block, error)
 	QueryTransaction(txid fab.TransactionID, options ...ledger.RequestOption) (*peer.ProcessedTransaction, error)
 }
 
+//go:generate counterfeiter -o ../mocks/mockethservice.go --fake-name MockEthService ./ EthService
 type EthService interface {
 	GetCode(r *http.Request, arg *string, reply *string) error
 	Call(r *http.Request, args *EthArgs, reply *string) error
