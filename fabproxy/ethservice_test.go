@@ -537,6 +537,15 @@ var _ = Describe("Ethservice", func() {
 			})
 		})
 	})
+
+	Describe("EstimateGas", func() {
+		It("always returns zero", func() {
+			var reply string
+			err := ethservice.EstimateGas(&http.Request{}, &fabproxy.EthArgs{}, &reply)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(reply).To(Equal("0x0"))
+		})
+	})
 })
 
 func GetSampleBlock(blkNumber uint64, blkHash []byte) (*common.Block, error) {

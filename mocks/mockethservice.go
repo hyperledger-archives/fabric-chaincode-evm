@@ -74,6 +74,19 @@ type MockEthService struct {
 	accountsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	EstimateGasStub        func(r *http.Request, args *fabproxy.EthArgs, reply *string) error
+	estimateGasMutex       sync.RWMutex
+	estimateGasArgsForCall []struct {
+		r     *http.Request
+		args  *fabproxy.EthArgs
+		reply *string
+	}
+	estimateGasReturns struct {
+		result1 error
+	}
+	estimateGasReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -328,6 +341,56 @@ func (fake *MockEthService) AccountsReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *MockEthService) EstimateGas(r *http.Request, args *fabproxy.EthArgs, reply *string) error {
+	fake.estimateGasMutex.Lock()
+	ret, specificReturn := fake.estimateGasReturnsOnCall[len(fake.estimateGasArgsForCall)]
+	fake.estimateGasArgsForCall = append(fake.estimateGasArgsForCall, struct {
+		r     *http.Request
+		args  *fabproxy.EthArgs
+		reply *string
+	}{r, args, reply})
+	fake.recordInvocation("EstimateGas", []interface{}{r, args, reply})
+	fake.estimateGasMutex.Unlock()
+	if fake.EstimateGasStub != nil {
+		return fake.EstimateGasStub(r, args, reply)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.estimateGasReturns.result1
+}
+
+func (fake *MockEthService) EstimateGasCallCount() int {
+	fake.estimateGasMutex.RLock()
+	defer fake.estimateGasMutex.RUnlock()
+	return len(fake.estimateGasArgsForCall)
+}
+
+func (fake *MockEthService) EstimateGasArgsForCall(i int) (*http.Request, *fabproxy.EthArgs, *string) {
+	fake.estimateGasMutex.RLock()
+	defer fake.estimateGasMutex.RUnlock()
+	return fake.estimateGasArgsForCall[i].r, fake.estimateGasArgsForCall[i].args, fake.estimateGasArgsForCall[i].reply
+}
+
+func (fake *MockEthService) EstimateGasReturns(result1 error) {
+	fake.EstimateGasStub = nil
+	fake.estimateGasReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) EstimateGasReturnsOnCall(i int, result1 error) {
+	fake.EstimateGasStub = nil
+	if fake.estimateGasReturnsOnCall == nil {
+		fake.estimateGasReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.estimateGasReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -341,6 +404,8 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.getTransactionReceiptMutex.RUnlock()
 	fake.accountsMutex.RLock()
 	defer fake.accountsMutex.RUnlock()
+	fake.estimateGasMutex.RLock()
+	defer fake.estimateGasMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -41,6 +41,7 @@ type EthService interface {
 	SendTransaction(r *http.Request, args *EthArgs, reply *string) error
 	GetTransactionReceipt(r *http.Request, arg *string, reply *TxReceipt) error
 	Accounts(r *http.Request, arg *string, reply *[]string) error
+	EstimateGas(r *http.Request, args *EthArgs, reply *string) error
 }
 
 type ethService struct {
@@ -245,4 +246,19 @@ func getPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeProposalPayl
 		return ccProposalPayload, nil, err
 	}
 	return ccProposalPayload, respPayload, nil
+}
+
+// EstimateGas accepts the same arguments as Call but all arguments are
+// optional.  This implementation ignores all arguments and returns a zero
+// estimate.
+//
+// The intention is to estimate how much gas is necessary to allow a transaction
+// to complete.
+//
+// EVM-chaincode does not require gas to run transactions. The chaincode will
+// give enough gas per transaction.
+func (s *ethService) EstimateGas(r *http.Request, _ *EthArgs, reply *string) error {
+	fmt.Println("EstimateGas called")
+	*reply = "0x0"
+	return nil
 }
