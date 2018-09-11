@@ -100,6 +100,32 @@ var _ = Describe("Fabproxy", func() {
 		Expect(respBody).To(Equal(expectedBody))
 	})
 
+	It("starts a server that uses the hardcoded netservice", func() {
+		var err error
+		body := strings.NewReader(`{"jsonrpc":"2.0","method":"net_version","id":1}`)
+		req, err = http.NewRequest("POST", proxyAddr, body)
+		Expect(err).ToNot(HaveOccurred())
+
+		resp, err := client.Do(req)
+		Expect(err).ToNot(HaveOccurred())
+
+		type responseBody struct {
+			JsonRPC string `json:"jsonrpc"`
+			ID      int    `json:"id"`
+			Result  string `json:"result"`
+		}
+		expectedBody := responseBody{JsonRPC: "2.0", ID: 1, Result: "fabric-evm"}
+
+		rBody, err := ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		var respBody responseBody
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(respBody).To(Equal(expectedBody))
+	})
+
 	Context("when the request has Cross-Origin Resource Sharing Headers", func() {
 		BeforeEach(func() {
 			var err error
