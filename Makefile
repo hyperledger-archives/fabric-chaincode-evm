@@ -15,10 +15,16 @@
 #   - linter - runs all code checks
 #   - unit-test - runs the go-test based unit tests
 #   - integration-test - runs the e2e_cli based test
+#   - docker-images - pulls the latest docker ccenv and couchdb images needed for integration tests
+#
+ARCH=$(shell go env GOARCH)
+BASEIMAGE_RELEASE=0.4.10
+BASE_DOCKER_NS ?= hyperledger
+BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
 
 PACKAGES = ./statemanager/... ./evmcc/... ./fabproxy/
 
-EXECUTABLES ?= go git curl
+EXECUTABLES ?= go git curl docker
 K := $(foreach exec,$(EXECUTABLES),\
 	$(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH: Check dependencies")))
 
@@ -58,7 +64,15 @@ check-deps:
 changelog:
 	@scripts/changelog.sh v$(PREV_VERSION) v$(BASE_VERSION)
 
+docker-images:
+	docker pull $(BASE_DOCKER_NS)/fabric-couchdb:$(BASE_DOCKER_TAG)
+	docker tag $(BASE_DOCKER_NS)/fabric-couchdb:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-couchdb
+	docker pull $(BASE_DOCKER_NS)/fabric-zookeeper:$(BASE_DOCKER_TAG)
+	docker tag $(BASE_DOCKER_NS)/fabric-zookeeper:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-zookeeper
+	docker pull $(BASE_DOCKER_NS)/fabric-kafka:$(BASE_DOCKER_TAG)
+	docker tag $(BASE_DOCKER_NS)/fabric-kafka:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-kafka
+
 .PHONY: integration-test
-integration-test:
+integration-test: docker-images
 	@echo "Running integration-test"
-	@cd e2e_cli && ./network_setup.sh down && ./network_setup.sh up mychannel 1
+	@scripts/run-integration-tests.sh

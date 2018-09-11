@@ -29,20 +29,17 @@ Please see the design document in [FAB-6590](https://jira.hyperledger.org/browse
 This chaincode can be deployed like any other user chaincode to Hyperledger
 Fabric. The chaincode has no instantiation arguments.
 
-You can run the end-2-end test in which a sample Fabric Network is run and the
+You can run the integration test in which a sample Fabric Network is run and the
 chaincode is installed with the CCID: `evmcc`
 ```
 make integration-test
 ```
-The end-2-end test is derivative of the hyperledger/fabric/examples/e2e_cli test. You can compare them to see what is
+The end-2-end test is derivative of the hyperledger/fabric/integration/e2e test. You can compare them to see what is
 different.
 
 To interact with the EVM (deploying a contract, executing transactions against
 that contract), you will need to leverage one of the Fabric SDKs for the time
-being while we continue development of the Web3-Fabric proxy. You can see from
-the [e2e_cli/scripts/script.sh](https://github.com/hyperledger/fabric-chaincode-evm/blob/master/e2e_cli/scripts/script.sh)
-script in the end-2-end test how to interact with the EVM chaincode using the
-Fabric CLI.
+being while we continue development of the Web3-Fabric proxy.
 
 Basically, the interaction is the same as with any other chaincode, except that
 the first argument of a chaincode invoke is the address for the contract.
