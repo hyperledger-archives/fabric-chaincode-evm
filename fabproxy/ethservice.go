@@ -45,6 +45,7 @@ type EthService interface {
 	GetTransactionReceipt(r *http.Request, arg *string, reply *TxReceipt) error
 	Accounts(r *http.Request, arg *string, reply *[]string) error
 	EstimateGas(r *http.Request, args *EthArgs, reply *string) error
+	GetBalance(r *http.Request, p *[]string, reply *string) error
 }
 
 type ethService struct {
@@ -262,6 +263,16 @@ func getPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeProposalPayl
 // give enough gas per transaction.
 func (s *ethService) EstimateGas(r *http.Request, _ *EthArgs, reply *string) error {
 	fmt.Println("EstimateGas called")
+	*reply = "0x0"
+	return nil
+}
+
+// GetBalance takes an address and a block, but this implementation
+// does not check or use either parameter.
+//
+// Always returns zero.
+func (s *ethService) GetBalance(r *http.Request, p *[]string, reply *string) error {
+	fmt.Println("GetBalance called")
 	*reply = "0x0"
 	return nil
 }
