@@ -113,6 +113,19 @@ type MockEthService struct {
 	getBlockByNumberReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetTransactionByHashStub        func(r *http.Request, txID *string, reply *fabproxy.Transaction) error
+	getTransactionByHashMutex       sync.RWMutex
+	getTransactionByHashArgsForCall []struct {
+		r     *http.Request
+		txID  *string
+		reply *fabproxy.Transaction
+	}
+	getTransactionByHashReturns struct {
+		result1 error
+	}
+	getTransactionByHashReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -517,6 +530,56 @@ func (fake *MockEthService) GetBlockByNumberReturnsOnCall(i int, result1 error) 
 	}{result1}
 }
 
+func (fake *MockEthService) GetTransactionByHash(r *http.Request, txID *string, reply *fabproxy.Transaction) error {
+	fake.getTransactionByHashMutex.Lock()
+	ret, specificReturn := fake.getTransactionByHashReturnsOnCall[len(fake.getTransactionByHashArgsForCall)]
+	fake.getTransactionByHashArgsForCall = append(fake.getTransactionByHashArgsForCall, struct {
+		r     *http.Request
+		txID  *string
+		reply *fabproxy.Transaction
+	}{r, txID, reply})
+	fake.recordInvocation("GetTransactionByHash", []interface{}{r, txID, reply})
+	fake.getTransactionByHashMutex.Unlock()
+	if fake.GetTransactionByHashStub != nil {
+		return fake.GetTransactionByHashStub(r, txID, reply)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.getTransactionByHashReturns.result1
+}
+
+func (fake *MockEthService) GetTransactionByHashCallCount() int {
+	fake.getTransactionByHashMutex.RLock()
+	defer fake.getTransactionByHashMutex.RUnlock()
+	return len(fake.getTransactionByHashArgsForCall)
+}
+
+func (fake *MockEthService) GetTransactionByHashArgsForCall(i int) (*http.Request, *string, *fabproxy.Transaction) {
+	fake.getTransactionByHashMutex.RLock()
+	defer fake.getTransactionByHashMutex.RUnlock()
+	return fake.getTransactionByHashArgsForCall[i].r, fake.getTransactionByHashArgsForCall[i].txID, fake.getTransactionByHashArgsForCall[i].reply
+}
+
+func (fake *MockEthService) GetTransactionByHashReturns(result1 error) {
+	fake.GetTransactionByHashStub = nil
+	fake.getTransactionByHashReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) GetTransactionByHashReturnsOnCall(i int, result1 error) {
+	fake.GetTransactionByHashStub = nil
+	if fake.getTransactionByHashReturnsOnCall == nil {
+		fake.getTransactionByHashReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.getTransactionByHashReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -536,6 +599,8 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.getBalanceMutex.RUnlock()
 	fake.getBlockByNumberMutex.RLock()
 	defer fake.getBlockByNumberMutex.RUnlock()
+	fake.getTransactionByHashMutex.RLock()
+	defer fake.getTransactionByHashMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
