@@ -56,22 +56,22 @@ type ethService struct {
 }
 
 type EthArgs struct {
-	To       string
-	From     string
-	Gas      string
-	GasPrice string
-	Value    string
-	Data     string
-	Nonce    string
+	To       string `json:"to"`
+	From     string `json:"from"`
+	Gas      string `json:"gas"`
+	GasPrice string `json:"gasPrice"`
+	Value    string `json:"value"`
+	Data     string `json:"data"`
+	Nonce    string `json:"nonce"`
 }
 
 type TxReceipt struct {
-	TransactionHash   string
-	BlockHash         string
-	BlockNumber       string
-	ContractAddress   string
-	GasUsed           int
-	CumulativeGasUsed int
+	TransactionHash   string `json:"transactionHash"`
+	BlockHash         string `json:"blockHash"`
+	BlockNumber       string `json:"blockNumber"`
+	ContractAddress   string `json:"contractAddress"`
+	GasUsed           int    `json:"gasUsed"`
+	CumulativeGasUsed int    `json:"cumulativeGasUsed"`
 }
 
 func NewEthService(channelClient ChannelClient, ledgerClient LedgerClient, channelID string, ccid string) EthService {
