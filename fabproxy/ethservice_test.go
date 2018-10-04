@@ -359,7 +359,7 @@ var _ = Describe("Ethservice", func() {
 			sampleTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458"), []byte("sample arg 2")}, []byte("sample-response"))
 			Expect(err).ToNot(HaveOccurred())
 
-			sampleBlock, err = GetSampleBlock(1, []byte("12345abcd"))
+			sampleBlock, err = GetSampleBlock(31, []byte("12345abcd"))
 			Expect(err).ToNot(HaveOccurred())
 
 			mockLedgerClient.QueryBlockByTxIDReturns(sampleBlock, nil)
@@ -386,7 +386,7 @@ var _ = Describe("Ethservice", func() {
 			Expect(reply).To(Equal(fabproxy.TxReceipt{
 				TransactionHash:   sampleTransactionID,
 				BlockHash:         hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
-				BlockNumber:       "1",
+				BlockNumber:       "0x1f",
 				GasUsed:           0,
 				CumulativeGasUsed: 0,
 			}))
@@ -423,7 +423,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(fabproxy.TxReceipt{
 					TransactionHash:   sampleTransactionID,
 					BlockHash:         hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
-					BlockNumber:       "1",
+					BlockNumber:       "0x1f",
 					ContractAddress:   string(contractAddress),
 					GasUsed:           0,
 					CumulativeGasUsed: 0,
@@ -453,7 +453,7 @@ var _ = Describe("Ethservice", func() {
 					Expect(reply).To(Equal(fabproxy.TxReceipt{
 						TransactionHash:   sampleTransactionID,
 						BlockHash:         hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
-						BlockNumber:       "1",
+						BlockNumber:       "0x1f",
 						ContractAddress:   string(contractAddress),
 						GasUsed:           0,
 						CumulativeGasUsed: 0,

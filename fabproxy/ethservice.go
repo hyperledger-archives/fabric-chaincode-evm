@@ -168,7 +168,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 	receipt := TxReceipt{
 		TransactionHash:   *txID,
 		BlockHash:         hex.EncodeToString(blkHeader.GetDataHash()),
-		BlockNumber:       strconv.FormatUint(blkHeader.GetNumber(), 10),
+		BlockNumber:       "0x" + strconv.FormatUint(blkHeader.GetNumber(), 16),
 		GasUsed:           0,
 		CumulativeGasUsed: 0,
 	}
