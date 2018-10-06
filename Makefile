@@ -78,6 +78,6 @@ integration-test: docker-images
 	@echo "Running integration-test"
 	@scripts/run-integration-tests.sh
 
-.PHONY: update-mocks
+.PHONY:
 update-mocks:
 	@go generate ./fabproxy/

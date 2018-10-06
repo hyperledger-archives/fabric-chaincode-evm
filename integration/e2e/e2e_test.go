@@ -15,42 +15,26 @@ import (
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/hyperledger/fabric-chaincode-evm/integration/helpers"
+	"github.com/hyperledger/fabric/integration/nwo"
+	"github.com/hyperledger/fabric/integration/nwo/commands"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/tedsuo/ifrit"
 
-	"github.com/hyperledger/fabric/integration/nwo"
-	"github.com/hyperledger/fabric/integration/nwo/commands"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("EndToEnd", func() {
 	var (
-		testDir     string
-		client      *docker.Client
-		network     *nwo.Network
-		chaincode   nwo.Chaincode
-		process     ifrit.Process
-		zeroAddress = "0000000000000000000000000000000000000000"
-		/* SimpleStorage Contract
-		pragma solidity ^0.4.0;
-
-		contract SimpleStorage {
-		    uint storedData;
-
-		    function set(uint x) public {
-		        storedData = x;
-		    }
-
-		    function get() public constant returns (uint) {
-		        return storedData;
-		    }
-		}
-		*/
-
-		//Compiled SimpleStorage contract
-		compileBytecode = "6060604052341561000f57600080fd5b60d38061001d6000396000f3006060604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c14606e575b600080fd5b3415605857600080fd5b606c60048080359060200190919050506094565b005b3415607857600080fd5b607e609e565b6040518082815260200191505060405180910390f35b8060008190555050565b600080549050905600a165627a7a72305820122f55f799d70b5f6dbfd4312efb65cdbfaacddedf7c36249b8b1e915a8dd85b0029"
+		testDir       string
+		client        *docker.Client
+		network       *nwo.Network
+		chaincode     nwo.Chaincode
+		process       ifrit.Process
+		zeroAddress   = "0000000000000000000000000000000000000000"
+		SimpleStorage = helpers.SimpleStorageContract()
 	)
 
 	BeforeEach(func() {
@@ -106,7 +90,7 @@ var _ = Describe("EndToEnd", func() {
 			ChannelID: "testchannel",
 			Orderer:   network.OrdererAddress(orderer, nwo.ListenPort),
 			Name:      "evmcc",
-			Ctor:      fmt.Sprintf(`{"Args":["%s","%s"]}`, zeroAddress, compileBytecode),
+			Ctor:      fmt.Sprintf(`{"Args":["%s","%s"]}`, zeroAddress, SimpleStorage.CompiledBytecode),
 			PeerAddresses: []string{
 				network.PeerAddress(network.Peer("Org1", "peer0"), nwo.ListenPort),
 				network.PeerAddress(network.Peer("Org2", "peer1"), nwo.ListenPort),
@@ -126,9 +110,8 @@ var _ = Describe("EndToEnd", func() {
 			ChannelID: "testchannel",
 			Orderer:   network.OrdererAddress(orderer, nwo.ListenPort),
 			Name:      "evmcc",
-			//Set function hash: 60fe47b1
 			//set(3)
-			Ctor: fmt.Sprintf(`{"Args":["%s","60fe47b10000000000000000000000000000000000000000000000000000000000000003"]}`, contractAddr),
+			Ctor: fmt.Sprintf(`{"Args":["%s","%s0000000000000000000000000000000000000000000000000000000000000003"]}`, contractAddr, SimpleStorage.FunctionHashes["set"]),
 			PeerAddresses: []string{
 				network.PeerAddress(network.Peer("Org1", "peer0"), nwo.ListenPort),
 				network.PeerAddress(network.Peer("Org2", "peer1"), nwo.ListenPort),
@@ -140,12 +123,11 @@ var _ = Describe("EndToEnd", func() {
 		Expect(sess.Err).To(gbytes.Say("Chaincode invoke successful. result: status:200"))
 
 		By("querying the smart contract")
-		sess, err = network.PeerUserSession(peer, "User1", ChaincodeQueryWithHex{
+		sess, err = network.PeerUserSession(peer, "User1", helpers.ChaincodeQueryWithHex{
 			ChannelID: "testchannel",
 			Name:      "evmcc",
-			//get function hash: 6d4ce63c
 			//get()
-			Ctor: fmt.Sprintf(`{"Args":["%s","6d4ce63c"]}`, contractAddr),
+			Ctor: fmt.Sprintf(`{"Args":["%s","%s"]}`, contractAddr, SimpleStorage.FunctionHashes["get"]),
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sess, time.Minute).Should(gexec.Exit(0))
