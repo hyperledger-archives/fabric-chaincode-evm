@@ -7,6 +7,7 @@ GOTOOLS = counterfeiter dep golint goimports protoc-gen-go ginkgo gocov gocov-xm
 BUILD_DIR ?= .build
 GOTOOLS_GOPATH ?= $(BUILD_DIR)/gotools
 GOTOOLS_BINDIR ?= $(GOPATH)/bin
+GOROOT ?= $(GOPATH)
 
 # go tool->path mapping
 go.fqp.counterfeiter := github.com/maxbrunsfeld/counterfeiter
@@ -35,15 +36,13 @@ gotool.golint:
 gotool.protoc-gen-go:
 	@echo "Building github.com/golang/protobuf/protoc-gen-go -> protoc-gen-go"
 	@mkdir -p $(GOTOOLS_GOPATH)/src/github.com/golang/protobuf/
-	@cp -R $(GOPATH)/src/github.com/hyperledger/fabric/vendor/github.com/golang/protobuf/* $(GOTOOLS_GOPATH)/src/github.com/golang/protobuf
+	@cp -R $(GOPATH)/src/github.com/hyperledger/fabric-chaincode-evm/vendor/github.com/golang/protobuf/* $(GOTOOLS_GOPATH)/src/github.com/golang/protobuf
 	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install github.com/golang/protobuf/protoc-gen-go
 
 # Special override for ginkgo since we want to use the version vendored with the project
 gotool.ginkgo:
 	@echo "Building github.com/onsi/ginkgo/ginkgo -> ginkgo"
-	@mkdir -p $(GOTOOLS_GOPATH)/src/github.com/onsi/ginkgo/ginkgo/
-	@cp -R $(GOPATH)/src/github.com/hyperledger/fabric/vendor/github.com/onsi/ginkgo/* $(GOTOOLS_GOPATH)/src/github.com/onsi/ginkgo
-	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install github.com/onsi/ginkgo/ginkgo
+	@go install ./vendor/github.com/onsi/ginkgo/ginkgo
 
 # Lock to a versioned dep
 gotool.dep: DEP_VERSION ?= "v0.4.1"

@@ -40,7 +40,7 @@ main() {
     popd
 
     echo "Running integration tests..."
-    go test "${dirs[@]}"
+    ginkgo -race -keepGoing --slowSpecThreshold 80 -r "${dirs[@]}"
 }
 
 main "$@"
