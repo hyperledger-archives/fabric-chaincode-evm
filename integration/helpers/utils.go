@@ -12,6 +12,54 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+type JsonRPCRequest struct {
+	JsonRPC string      `json:"jsonrpc"`
+	ID      int         `json:"id"`
+	Method  string      `json:"method"`
+	Params  interface{} `json:"params,omitempty"`
+}
+
+type JsonRPCError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    string `json:"data"`
+}
+
+type JsonRPCResponse struct {
+	JsonRPC string       `json:"jsonrpc"`
+	ID      int          `json:"id"`
+	Result  string       `json:"result", omitempty`
+	Error   JsonRPCError `json:"error,omitempty"`
+}
+
+type JsonRPCArrayResponse struct {
+	JsonRPC string       `json:"jsonrpc"`
+	ID      int          `json:"id"`
+	Result  []string     `json:"result", omitempty`
+	Error   JsonRPCError `json:"error,omitempty"`
+}
+
+type JsonRPCTxReceipt struct {
+	JsonRPC string       `json:"jsonrpc"`
+	ID      int          `json:"id"`
+	Result  TxReceipt    `json:"result"`
+	Error   JsonRPCError `json:"error,omitempty"`
+}
+
+type TxReceipt struct {
+	TransactionHash  string `json:"transactionHash"`
+	TransactionIndex string `json:"transactionIndex"`
+	BlockNumber      string `json:"blockNumber"`
+	BlockHash        string `json:"blockHash"`
+	ContractAddress  string `json:"contractAddress, omitempty"`
+}
+
+type MessageParams struct {
+	To   string `json:"to"`
+	From string `json:"from,omitempty"`
+	Data string `json:"data,omitempty"`
+}
+
 type ChaincodeQueryWithHex struct {
 	ChannelID string
 	Name      string
