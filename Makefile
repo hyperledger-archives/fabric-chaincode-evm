@@ -19,7 +19,7 @@
 #   - update-mocks - update the counterfeiter test doubles
 #
 ARCH=$(shell go env GOARCH)
-BASEIMAGE_RELEASE=0.4.10
+BASEIMAGE_RELEASE=0.4.13
 BASE_DOCKER_NS ?= hyperledger
 BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
 
