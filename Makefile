@@ -48,9 +48,9 @@ include gotools.mk
 .PHONY: gotools
 gotools: gotools-install
 
-unit-test: $(PROJECT_FILES)
+unit-test: $(PROJECT_FILES) gotool.ginkgo
 	@echo "Running unit-tests"
-	@go test -tags "$(GO_TAGS)" $(PACKAGES)
+	@ginkgo -r -keepGoing -race -tags "$(GO_TAGS)" $(PACKAGES)
 
 unit-tests: unit-test
 
@@ -74,7 +74,7 @@ docker-images:
 	docker tag $(BASE_DOCKER_NS)/fabric-kafka:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-kafka
 
 .PHONY: integration-test
-integration-test: docker-images
+integration-test: docker-images gotool.ginkgo
 	@echo "Running integration-test"
 	@scripts/run-integration-tests.sh
 
