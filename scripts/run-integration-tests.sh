@@ -40,7 +40,7 @@ main() {
     popd
 
     echo "Running integration tests..."
-    ginkgo -race -keepGoing --slowSpecThreshold 80 -r "${dirs[@]}"
+    ginkgo -noColor -randomizeAllSpecs -race -keepGoing --slowSpecThreshold 80 -r "${dirs[@]}"
 }
 
 main "$@"

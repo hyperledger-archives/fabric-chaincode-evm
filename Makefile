@@ -50,7 +50,7 @@ gotools: gotools-install
 
 unit-test: $(PROJECT_FILES) gotool.ginkgo
 	@echo "Running unit-tests"
-	@ginkgo -r -keepGoing -race -tags "$(GO_TAGS)" $(PACKAGES)
+	@ginkgo -r -randomizeAllSpecs -noColor -keepGoing -race -tags "$(GO_TAGS)" $(PACKAGES)
 
 unit-tests: unit-test
 
