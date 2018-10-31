@@ -54,7 +54,7 @@ unit-test: $(PROJECT_FILES) gotool.ginkgo
 
 unit-tests: unit-test
 
-linter: check-deps
+linter: gotools check-deps
 	@echo "LINT: Running code checks.."
 	@scripts/golinter.sh
 

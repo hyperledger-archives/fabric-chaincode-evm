@@ -51,13 +51,13 @@ node ('hyp-x') { // trigger build on x86_64 node
           try {
                  dir("${ROOTDIR}/$PROJECT_DIR/fabric-chaincode-evm") {
                  sh '''
-                    echo "------> Run license checks"
-                    make license
+                    echo "------> Run license, spelling, linter checks"
+                    make basic-checks
                  '''
                  }
           }
           catch (err) {
-                 failure_stage = "license"
+                 failure_stage = "basic-checks"
                  throw err
           }
       }

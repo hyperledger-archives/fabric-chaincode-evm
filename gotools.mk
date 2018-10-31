@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-GOTOOLS = counterfeiter dep golint goimports protoc-gen-go ginkgo gocov gocov-xml misspell mockery manifest-tool
+GOTOOLS = counterfeiter dep golint goimports ginkgo gocov gocov-xml misspell mockery manifest-tool
 BUILD_DIR ?= .build
 GOTOOLS_GOPATH ?= $(BUILD_DIR)/gotools
 GOTOOLS_BINDIR ?= $(GOPATH)/bin
@@ -32,13 +32,6 @@ gotool.golint:
 	@git clone https://github.com/golang/lint.git $(GOTOOLS_GOPATH)/src/golang.org/x/lint
 	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install golang.org/x/lint/golint
 
-# Special override for protoc-gen-go since we want to use the version vendored with the project
-gotool.protoc-gen-go:
-	@echo "Building github.com/golang/protobuf/protoc-gen-go -> protoc-gen-go"
-	@mkdir -p $(GOTOOLS_GOPATH)/src/github.com/golang/protobuf/
-	@cp -R $(GOPATH)/src/github.com/hyperledger/fabric-chaincode-evm/vendor/github.com/golang/protobuf/* $(GOTOOLS_GOPATH)/src/github.com/golang/protobuf
-	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install github.com/golang/protobuf/protoc-gen-go
-
 # Special override for ginkgo since we want to use the version vendored with the project
 gotool.ginkgo:
 	@echo "Building github.com/onsi/ginkgo/ginkgo -> ginkgo"
@@ -62,4 +55,3 @@ gotool.%:
 $(GOTOOLS_BINDIR)/%:
 	$(eval TOOL = ${subst $(GOTOOLS_BINDIR)/,,${@}})
 	@$(MAKE) -f gotools.mk gotool.$(TOOL)
-
