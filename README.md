@@ -1,6 +1,6 @@
-# Hyperledger Fabric EVM chaincode plugin
+# Hyperledger Fabric EVM chaincode
 
-This is the project for the Hyperledger Fabric chaincode plugin for the
+This is the project for the Hyperledger Fabric chaincode, integrating the
 Burrow EVM. At its essence, this project enables one to use the Hyperledger
 Fabric permissioned blockchain platform to interact with Ethereum smart
 contracts written in an EVM compatible language such as Solidity or Vyper.
