@@ -703,19 +703,57 @@ var _ = Describe("Ethservice", func() {
 						Expect(txns).To(HaveLen(2))
 						Expect(txns[0]).To(BeEquivalentTo("0x5678"))
 						Expect(txns[1]).To(BeEquivalentTo("0x1234"))
-
 					})
 				})
 			})
 
 			Context("when asking for full transactions", func() {
+				var uintBlockNumber uint64
 				BeforeEach(func() {
+					requestedBlockNumber = "abc0"
 					fullTransactions = true
+
+					var err error
+					uintBlockNumber, err = strconv.ParseUint("abc0", 16, 64)
+					Expect(err).ToNot(HaveOccurred())
+
+					mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: uintBlockNumber + 1}}, nil)
 				})
 
-				It("returns an unimplemented error", func() {
+				It("returns a block with transactions with detail", func() {
+					sampleBlock := GetSampleBlockWithTransactions(uintBlockNumber)
+					mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
+
 					err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
-					Expect(err).To(HaveOccurred())
+					Expect(err).ToNot(HaveOccurred())
+
+					blockNumber := "0x" + requestedBlockNumber
+					Expect(reply.Number).To(Equal(blockNumber), "block number")
+
+					blockHash := "0x" + hex.EncodeToString(sampleBlock.Header.DataHash)
+					Expect(reply.Hash).To(Equal(blockHash), "block data hash")
+					Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
+
+					txns := reply.Transactions
+					Expect(txns).To(HaveLen(2))
+
+					t0, ok := txns[0].(fabproxy.Transaction)
+					Expect(ok).To(BeTrue())
+					Expect(t0.BlockHash).To(Equal(blockHash))
+					Expect(t0.BlockNumber).To(Equal(blockNumber))
+					Expect(t0.To).To(Equal("0x12345678"))
+					Expect(t0.Input).To(Equal("0xsample arg 1"))
+					Expect(t0.TransactionIndex).To(Equal("0x0"))
+					Expect(t0.Hash).To(Equal("0x5678"))
+
+					t1, ok := txns[1].(fabproxy.Transaction)
+					Expect(ok).To(BeTrue())
+					Expect(t1.BlockHash).To(Equal(blockHash))
+					Expect(t1.BlockNumber).To(Equal(blockNumber))
+					Expect(t1.To).To(Equal("0x98765432"))
+					Expect(t1.Input).To(Equal("0xsample arg 2"))
+					Expect(t1.TransactionIndex).To(Equal("0x1"))
+					Expect(t1.Hash).To(Equal("0x1234"))
 				})
 			})
 		})

@@ -356,10 +356,6 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 		return fmt.Errorf("Incorrect second parameter sent, must be boolean")
 	}
 
-	if fullTransactions {
-		return fmt.Errorf("Unimplemented: fabric-evm does not currently support returning full transaction objects")
-	}
-
 	getBlockByNumber := func(number uint64) (Block, error) {
 		block, err := s.ledgerClient.QueryBlock(number)
 		if err != nil {
@@ -368,15 +364,18 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 
 		blkHeader := block.GetHeader()
 
+		blockHash := "0x" + hex.EncodeToString(blkHeader.GetDataHash())
+		blockNumber := "0x" + strconv.FormatUint(number, 16)
+
 		// each data is a txn
 		data := block.GetData().GetData()
 		txns := make([]interface{}, len(data))
 
 		// drill into the block to find the transaction ids it contains
-		for idx, d := range data {
-			if d != nil { // can a data be empty? Is this an error?
+		for index, transactionData := range data {
+			if transactionData != nil { // can a data be empty? Is this an error?
 				env := &common.Envelope{}
-				if err := proto.Unmarshal(d, env); err != nil {
+				if err := proto.Unmarshal(transactionData, env); err != nil {
 					return Block{}, err
 				}
 
@@ -393,13 +392,25 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 				// returning full transactions is unimplemented,
 				// so the hash-only case is the only case.
 				fmt.Println("block has transaction hash:", chdr.TxId)
-				txns[idx] = "0x" + chdr.TxId
+
+				if fullTransactions {
+					txn := Transaction{
+						BlockHash:        blockHash,
+						BlockNumber:      blockNumber,
+						TransactionIndex: "0x" + strconv.FormatUint(uint64(index), 16),
+						Hash:             "0x" + chdr.TxId,
+					}
+					txn.fillTransactionFromPayload(payload)
+					txns[index] = txn
+				} else {
+					txns[index] = "0x" + chdr.TxId
+				}
 			}
 		}
 
 		blk := Block{
-			Number:       "0x" + strconv.FormatUint(number, 16),
-			Hash:         "0x" + hex.EncodeToString(blkHeader.GetDataHash()),
+			Number:       blockNumber,
+			Hash:         blockHash,
 			ParentHash:   "0x" + hex.EncodeToString(blkHeader.GetPreviousHash()),
 			Transactions: txns,
 		}
@@ -466,6 +477,54 @@ type Transaction struct { // object, or null when no transaction was found:
 	Hash             string `json:"hash"`             //: DATA, 32 Bytes - hash of the transaction.
 }
 
+// fillTransactionFromPayload takes a payload and fills in the fields
+// of the transaction. It overwrites any existing fields, but does not
+// clear all fields before doing so.
+func (txn *Transaction) fillTransactionFromPayload(p *common.Payload) error {
+	var err error
+	txActions := &peer.Transaction{}
+	err = proto.Unmarshal(p.GetData(), txActions)
+	if err != nil {
+		return err
+	}
+
+	ccPropPayload, _, err := getPayloads(txActions.GetActions()[0])
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal transaction actions: %s", err.Error())
+	}
+
+	invokeSpec := &peer.ChaincodeInvocationSpec{}
+	err = proto.Unmarshal(ccPropPayload.GetInput(), invokeSpec)
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal ChaincodeInvocationSpec in transaction: %s", err.Error())
+	}
+
+	// callee, input data is standard case, also handle getcode & account cases
+	args := invokeSpec.GetChaincodeSpec().GetInput().Args
+
+	if len(args) == 1 && string(args[0]) == "account" || len(args) != 2 {
+		return nil // no more data available to fill the transaction
+	}
+
+	// check first arg for getCode, which is looking up a contract, and does not have `to` & `from`.
+	if string(args[0]) == "getCode" {
+		return nil // no more data available to fill the transaction
+	}
+
+	// At this point, this is either an EVM Contract Deploy,
+	// or an EVM Contract Invoke. We don't care about the
+	// specific case, fill in the fields directly.
+	_, err = hex.DecodeString(string(args[0]))
+	if err != nil {
+		return err
+	}
+	txn.To = "0x" + string(args[0])
+
+	// Second arg is input data
+	txn.Input = "0x" + string(args[1])
+	return nil
+}
+
 // GetTransactionByHash takes a TransactionID as a string and returns the
 // details of the transaction.
 //
@@ -525,46 +584,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 
 			txn.TransactionIndex = "0x" + strconv.FormatUint(uint64(index), 16)
 
-			txActions := &peer.Transaction{}
-			err = proto.Unmarshal(payload.GetData(), txActions)
-			if err != nil {
-				return err
-			}
-
-			ccPropPayload, _, err := getPayloads(txActions.GetActions()[0])
-			if err != nil {
-				return fmt.Errorf("Failed to unmarshal transaction: %s", err.Error())
-			}
-
-			invokeSpec := &peer.ChaincodeInvocationSpec{}
-			err = proto.Unmarshal(ccPropPayload.GetInput(), invokeSpec)
-			if err != nil {
-				return fmt.Errorf("Failed to unmarshal transaction: %s", err.Error())
-			}
-
-			// callee, input data is standard case, also handle getcode & account cases
-			args := invokeSpec.GetChaincodeSpec().GetInput().Args
-
-			if len(args) == 1 && string(args[0]) == "account" || len(args) != 2 {
-				break // no more data available to fill the transaction
-			}
-
-			// check first arg for getCode, which is looking up a contract, and does not have `to` & `from`.
-			if string(args[0]) == "getCode" {
-				break // no more data available to fill the transaction
-			}
-
-			// At this point, this is either an EVM Contract Deploy,
-			// or an EVM Contract Invoke. We don't care about the
-			// specific case, fill in the fields directly.
-			_, err = hex.DecodeString(string(args[0]))
-			if err != nil {
-				return err
-			}
-			txn.To = "0x" + string(args[0])
-
-			// Second arg is input data
-			txn.Input = "0x" + string(args[1])
+			txn.fillTransactionFromPayload(payload)
 
 			// found exactly the transaction needed, stop processing transactions in the block
 			break
