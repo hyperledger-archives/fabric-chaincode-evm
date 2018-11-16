@@ -200,7 +200,7 @@ var _ = Describe("Fabproxy", func() {
 		receipt := rpcResp.Result
 
 		Expect(receipt.ContractAddress).ToNot(Equal(""))
-		Expect(receipt.TransactionHash).To(Equal(txHash))
+		Expect(receipt.TransactionHash).To(Equal("0x" + txHash))
 		checkHexEncoded(receipt.BlockNumber)
 		checkHexEncoded(receipt.BlockHash)
 		checkHexEncoded(receipt.TransactionIndex)
@@ -246,7 +246,7 @@ var _ = Describe("Fabproxy", func() {
 			return rpcResp.Error
 		}, LongEventualTimeout).Should(BeZero())
 		receipt = rpcResp.Result
-		Expect(receipt.TransactionHash).To(Equal(txHash))
+		Expect(receipt.TransactionHash).To(Equal("0x" + txHash))
 		checkHexEncoded(receipt.BlockNumber)
 		checkHexEncoded(receipt.BlockHash)
 		checkHexEncoded(receipt.TransactionIndex)
@@ -272,10 +272,8 @@ var _ = Describe("Fabproxy", func() {
 func checkHexEncoded(value string) {
 	// Check to see that the result is a hexadecimal string
 	// Check if the prefix is provided
-	if strings.Contains(value, "0x") {
-		value = value[2:]
-	}
+	Expect(value[0:2]).To(Equal("0x"))
 
 	// Ensure the string is hex
-	Expect(value).To(MatchRegexp(fmt.Sprintf(`[0-9A-Fa-f]{%d}`, len(value))))
+	Expect(value).To(MatchRegexp(fmt.Sprintf(`[0-9A-Fa-f]{%d}`, len(value[2:]))))
 }

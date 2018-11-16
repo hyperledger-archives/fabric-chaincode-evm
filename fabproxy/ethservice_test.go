@@ -349,21 +349,25 @@ var _ = Describe("Ethservice", func() {
 	Describe("GetTransactionReceipt", func() {
 		var (
 			sampleTransaction   *peer.ProcessedTransaction
+			otherTransaction    *peer.ProcessedTransaction
 			sampleBlock         *common.Block
 			sampleTransactionID string
 		)
 
 		BeforeEach(func() {
 			var err error
-			sampleTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458"), []byte("sample arg 2")}, []byte("sample-response"), "1234")
+
+			sampleTransactionID = "1234567123"
+			sampleTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458"), []byte("sample arg 2")}, []byte("sample-response"), sampleTransactionID)
 			Expect(err).ToNot(HaveOccurred())
 
-			sampleBlock, err = GetSampleBlock(31, []byte("12345abcd"))
+			otherTransaction, err = GetSampleTransaction([][]byte{[]byte("1234567"), []byte("sample arg 3")}, []byte("sample-response 2"), "5678")
+			Expect(err).ToNot(HaveOccurred())
+
+			sampleBlock = GetSampleBlockWithTransaction(31, []byte("12345abcd"), otherTransaction, sampleTransaction)
 			Expect(err).ToNot(HaveOccurred())
 
 			mockLedgerClient.QueryBlockByTxIDReturns(sampleBlock, nil)
-			mockLedgerClient.QueryTransactionReturns(sampleTransaction, nil)
-			sampleTransactionID = "1234567123"
 		})
 
 		It("returns the transaction receipt associated to that transaction address", func() {
@@ -372,22 +376,19 @@ var _ = Describe("Ethservice", func() {
 			err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(mockLedgerClient.QueryTransactionCallCount()).To(Equal(1))
-			txID, reqOpts := mockLedgerClient.QueryTransactionArgsForCall(0)
-			Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
-			Expect(reqOpts).To(HaveLen(0))
-
 			Expect(mockLedgerClient.QueryBlockByTxIDCallCount()).To(Equal(1))
-			txID, reqOpts = mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
+			txID, reqOpts := mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
 			Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
 			Expect(reqOpts).To(HaveLen(0))
 
 			Expect(reply).To(Equal(fabproxy.TxReceipt{
-				TransactionHash:   sampleTransactionID,
-				BlockHash:         hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+				TransactionHash:   "0x" + sampleTransactionID,
+				TransactionIndex:  "0x1",
+				BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
 				BlockNumber:       "0x1f",
 				GasUsed:           0,
 				CumulativeGasUsed: 0,
+				To:                "0x82373458",
 			}))
 		})
 
@@ -398,9 +399,11 @@ var _ = Describe("Ethservice", func() {
 				zeroAddress := make([]byte, hex.EncodedLen(len(fabproxy.ZeroAddress)))
 				hex.Encode(zeroAddress, fabproxy.ZeroAddress)
 
-				tx, err := GetSampleTransaction([][]byte{zeroAddress, []byte("sample arg 2")}, contractAddress, "1234")
+				tx, err := GetSampleTransaction([][]byte{zeroAddress, []byte("sample arg 2")}, contractAddress, sampleTransactionID)
 				*sampleTransaction = *tx
 				Expect(err).ToNot(HaveOccurred())
+
+				*sampleBlock = *GetSampleBlockWithTransaction(31, []byte("12345abcd"), sampleTransaction, otherTransaction)
 			})
 
 			It("returns the contract address in the transaction receipt", func() {
@@ -409,19 +412,15 @@ var _ = Describe("Ethservice", func() {
 				err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(mockLedgerClient.QueryTransactionCallCount()).To(Equal(1))
-				txID, reqOpts := mockLedgerClient.QueryTransactionArgsForCall(0)
-				Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
-				Expect(reqOpts).To(HaveLen(0))
-
 				Expect(mockLedgerClient.QueryBlockByTxIDCallCount()).To(Equal(1))
-				txID, reqOpts = mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
+				txID, reqOpts := mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
 				Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
 				Expect(reqOpts).To(HaveLen(0))
 
 				Expect(reply).To(Equal(fabproxy.TxReceipt{
-					TransactionHash:   sampleTransactionID,
-					BlockHash:         hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					TransactionHash:   "0x" + sampleTransactionID,
+					TransactionIndex:  "0x0",
+					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
 					BlockNumber:       "0x1f",
 					ContractAddress:   string(contractAddress),
 					GasUsed:           0,
@@ -439,19 +438,15 @@ var _ = Describe("Ethservice", func() {
 					err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(mockLedgerClient.QueryTransactionCallCount()).To(Equal(1))
-					txID, reqOpts := mockLedgerClient.QueryTransactionArgsForCall(0)
-					Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID[2:])))
-					Expect(reqOpts).To(HaveLen(0))
-
 					Expect(mockLedgerClient.QueryBlockByTxIDCallCount()).To(Equal(1))
-					txID, reqOpts = mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
+					txID, reqOpts := mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
 					Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID[2:])))
 					Expect(reqOpts).To(HaveLen(0))
 
 					Expect(reply).To(Equal(fabproxy.TxReceipt{
 						TransactionHash:   sampleTransactionID,
-						BlockHash:         hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+						TransactionIndex:  "0x0",
+						BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
 						BlockNumber:       "0x1f",
 						ContractAddress:   string(contractAddress),
 						GasUsed:           0,
@@ -461,17 +456,76 @@ var _ = Describe("Ethservice", func() {
 			})
 		})
 
-		Context("when the ledger errors when processing a transaction query for the transaction", func() {
+		Context("when requested transaction is not an evm smart contract transaction", func() {
+			var (
+				tooFewArgsTransaction, tooManyArgsTransaction, getCodeTransaction *peer.ProcessedTransaction
+				txnID1, txnID2, txnID3                                            string
+			)
 			BeforeEach(func() {
-				mockLedgerClient.QueryTransactionReturns(nil, errors.New("boom!"))
+				var err error
+
+				txnID1 = "1234567123"
+				txnID2 = "2234567123"
+				txnID3 = "3234567123"
+
+				tooFewArgsTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458")}, []byte("sample-response"), txnID1)
+				Expect(err).ToNot(HaveOccurred())
+
+				tooManyArgsTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458"), []byte("sample-arg2"), []byte("sample-arg3")}, []byte("sample-response"), txnID2)
+				Expect(err).ToNot(HaveOccurred())
+
+				getCodeTransaction, err = GetSampleTransaction([][]byte{[]byte("getCode"), []byte("sample-arg")}, []byte("sample-response 2"), txnID3)
+				Expect(err).ToNot(HaveOccurred())
+
+				sampleBlock = GetSampleBlockWithTransaction(31, []byte("12345abcd"), tooFewArgsTransaction, tooManyArgsTransaction, getCodeTransaction)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockLedgerClient.QueryBlockByTxIDReturns(sampleBlock, nil)
 			})
 
-			It("returns a corresponding error", func() {
+			It("does not provide to field when the requested tx has less than 2 args", func() {
 				var reply fabproxy.TxReceipt
+				err := ethservice.GetTransactionReceipt(&http.Request{}, &txnID1, &reply)
+				Expect(err).ToNot(HaveOccurred())
 
-				err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
-				Expect(err).To(MatchError(ContainSubstring("Failed to query the ledger")))
-				Expect(reply).To(BeZero())
+				Expect(reply).To(Equal(fabproxy.TxReceipt{
+					TransactionHash:   "0x" + txnID1,
+					TransactionIndex:  "0x0",
+					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockNumber:       "0x1f",
+					GasUsed:           0,
+					CumulativeGasUsed: 0,
+				}))
+			})
+
+			It("does not provide to field when the requested tx has more than 2 args", func() {
+				var reply fabproxy.TxReceipt
+				err := ethservice.GetTransactionReceipt(&http.Request{}, &txnID2, &reply)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(reply).To(Equal(fabproxy.TxReceipt{
+					TransactionHash:   "0x" + txnID2,
+					TransactionIndex:  "0x1",
+					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockNumber:       "0x1f",
+					GasUsed:           0,
+					CumulativeGasUsed: 0,
+				}))
+			})
+
+			It("does not provide to field when the requested tx is a getCode", func() {
+				var reply fabproxy.TxReceipt
+				err := ethservice.GetTransactionReceipt(&http.Request{}, &txnID3, &reply)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(reply).To(Equal(fabproxy.TxReceipt{
+					TransactionHash:   "0x" + txnID3,
+					TransactionIndex:  "0x2",
+					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockNumber:       "0x1f",
+					GasUsed:           0,
+					CumulativeGasUsed: 0,
+				}))
 			})
 		})
 
@@ -579,7 +633,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("returns an error, when the second arg is not a booleand", func() {
+			It("returns an error, when the second arg is not a boolean", func() {
 				arg := make([]interface{}, 2)
 				arg[0] = "latest"
 				arg[1] = "durf"
@@ -643,12 +697,6 @@ var _ = Describe("Ethservice", func() {
 					})
 				})
 
-				It("returns an error when asked for pending blocks", func() {
-					args[0] = "pending"
-					err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
-					Expect(err).To(HaveOccurred())
-				})
-
 				Context("when a block is requested by number", func() {
 					var uintBlockNumber uint64
 
@@ -661,7 +709,7 @@ var _ = Describe("Ethservice", func() {
 					})
 
 					It("requests a block by number", func() {
-						sampleBlock := GetSampleBlockWithTransactions(uintBlockNumber)
+						sampleBlock := GetSampleBlock(uintBlockNumber)
 						mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
 
 						err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
@@ -679,31 +727,74 @@ var _ = Describe("Ethservice", func() {
 
 				Context("when the block is requested by name", func() {
 					var uintBlockNumber uint64
-
 					BeforeEach(func() {
-						requestedBlockNumber = "latest"
-
-						var err error
-						uintBlockNumber, err = strconv.ParseUint("abc0", 16, 64)
-						Expect(err).ToNot(HaveOccurred())
-
-						mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: uintBlockNumber + 1}}, nil)
+						fullTransactions = false
 					})
 
-					It("returns the block", func() {
-						sampleBlock := GetSampleBlockWithTransactions(uintBlockNumber)
-						mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
+					Context("when asked for the latest block", func() {
+						BeforeEach(func() {
+							requestedBlockNumber = "latest"
 
+							var err error
+							uintBlockNumber, err = strconv.ParseUint("abc0", 16, 64)
+							Expect(err).ToNot(HaveOccurred())
+
+							mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: uintBlockNumber + 1}}, nil)
+						})
+
+						It("returns the most recently formed block", func() {
+							sampleBlock := GetSampleBlock(uintBlockNumber)
+							mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
+
+							err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+							Expect(err).ToNot(HaveOccurred())
+							Expect(reply.Number).To(Equal("0xabc0"), "block number")
+							Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
+							Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
+
+							Expect(mockLedgerClient.QueryBlockCallCount()).To(Equal(1))
+							requestBlockNumber, _ := mockLedgerClient.QueryBlockArgsForCall(0)
+							Expect(requestBlockNumber).To(Equal(uintBlockNumber))
+
+							txns := reply.Transactions
+							Expect(txns).To(HaveLen(2))
+							Expect(txns[0]).To(BeEquivalentTo("0x5678"))
+							Expect(txns[1]).To(BeEquivalentTo("0x1234"))
+						})
+					})
+
+					Context("when asked for the earliest block", func() {
+						BeforeEach(func() {
+							requestedBlockNumber = "earliest"
+						})
+
+						It("returns the first block", func() {
+							sampleBlock := GetSampleBlock(0)
+							mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
+
+							err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+							Expect(err).ToNot(HaveOccurred())
+							Expect(reply.Number).To(Equal("0x0"), "block number")
+							Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
+							Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
+
+							Expect(mockLedgerClient.QueryBlockCallCount()).To(Equal(1))
+							requestBlockNumber, _ := mockLedgerClient.QueryBlockArgsForCall(0)
+							Expect(requestBlockNumber).To(Equal(uint64(0)))
+
+							txns := reply.Transactions
+							Expect(txns).To(HaveLen(2))
+							Expect(txns[0]).To(BeEquivalentTo("0x5678"))
+							Expect(txns[1]).To(BeEquivalentTo("0x1234"))
+						})
+					})
+
+					It("returns an error when asked for pending blocks", func() {
+						args[0] = "pending"
 						err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
-						Expect(err).ToNot(HaveOccurred())
-						Expect(reply.Number).To(Equal("0xabc0"), "block number")
-						Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
-						Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
-						txns := reply.Transactions
-						Expect(txns).To(HaveLen(2))
-						Expect(txns[0]).To(BeEquivalentTo("0x5678"))
-						Expect(txns[1]).To(BeEquivalentTo("0x1234"))
+						Expect(err).To(HaveOccurred())
 					})
+
 				})
 			})
 
@@ -721,7 +812,7 @@ var _ = Describe("Ethservice", func() {
 				})
 
 				It("returns a block with transactions with detail", func() {
-					sampleBlock := GetSampleBlockWithTransactions(uintBlockNumber)
+					sampleBlock := GetSampleBlock(uintBlockNumber)
 					mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
 
 					err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
@@ -781,7 +872,7 @@ var _ = Describe("Ethservice", func() {
 
 		It("gets a transaction", func() {
 			txID := "0x1234"
-			block := GetSampleBlockWithTransactions(1)
+			block := GetSampleBlock(1)
 			mockLedgerClient.QueryBlockByTxIDReturns(block, nil)
 			err := ethservice.GetTransactionByHash(&http.Request{}, &txID, &reply)
 			Expect(err).ToNot(HaveOccurred())
@@ -792,16 +883,78 @@ var _ = Describe("Ethservice", func() {
 			Expect(reply.To).To(Equal("0x98765432"))
 			Expect(reply.Input).To(Equal("0xsample arg 2"))
 		})
+
+		Context("when requested transaction is not an evm smart contract transaction", func() {
+			var (
+				tooFewArgsTransaction, tooManyArgsTransaction, getCodeTransaction *peer.ProcessedTransaction
+				sampleBlock                                                       *common.Block
+				txnID1, txnID2, txnID3                                            string
+			)
+			BeforeEach(func() {
+				var err error
+
+				txnID1 = "1234567123"
+				txnID2 = "2234567123"
+				txnID3 = "3234567123"
+
+				tooFewArgsTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458")}, []byte("sample-response"), txnID1)
+				Expect(err).ToNot(HaveOccurred())
+
+				tooManyArgsTransaction, err = GetSampleTransaction([][]byte{[]byte("82373458"), []byte("sample-arg2"), []byte("sample-arg3")}, []byte("sample-response"), txnID2)
+				Expect(err).ToNot(HaveOccurred())
+
+				getCodeTransaction, err = GetSampleTransaction([][]byte{[]byte("getCode"), []byte("sample-arg")}, []byte("sample-response 2"), txnID3)
+				Expect(err).ToNot(HaveOccurred())
+
+				sampleBlock = GetSampleBlockWithTransaction(31, []byte("12345abcd"), tooFewArgsTransaction, tooManyArgsTransaction, getCodeTransaction)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockLedgerClient.QueryBlockByTxIDReturns(sampleBlock, nil)
+			})
+
+			It("does not provide to or input field when the requested tx has less than 2 args", func() {
+				var reply fabproxy.Transaction
+				err := ethservice.GetTransactionByHash(&http.Request{}, &txnID1, &reply)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(reply).To(Equal(fabproxy.Transaction{
+					Hash:             "0x" + txnID1,
+					TransactionIndex: "0x0",
+					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockNumber:      "0x1f",
+				}))
+			})
+
+			It("does not provide to field when the requested transaction has more than 2 args", func() {
+				var reply fabproxy.Transaction
+				err := ethservice.GetTransactionByHash(&http.Request{}, &txnID2, &reply)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(reply).To(Equal(fabproxy.Transaction{
+					Hash:             "0x" + txnID2,
+					TransactionIndex: "0x1",
+					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockNumber:      "0x1f",
+				}))
+			})
+
+			It("does not provide to field when the requested transaction is a getCode", func() {
+				var reply fabproxy.Transaction
+				err := ethservice.GetTransactionByHash(&http.Request{}, &txnID3, &reply)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(reply).To(Equal(fabproxy.Transaction{
+					Hash:             "0x" + txnID3,
+					TransactionIndex: "0x2",
+					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockNumber:      "0x1f",
+				}))
+			})
+		})
 	})
 })
 
-func GetSampleBlock(blkNumber uint64, blkHash []byte) (*common.Block, error) {
-	return &common.Block{
-		Header: &common.BlockHeader{Number: blkNumber, DataHash: blkHash},
-	}, nil
-}
-
-func GetSampleBlockWithTransactions(blockNumber uint64) *common.Block {
+func GetSampleBlock(blockNumber uint64) *common.Block {
 	tx, err := GetSampleTransaction([][]byte{[]byte("12345678"), []byte("sample arg 1")}, []byte("sample-response1"), "5678")
 	Expect(err).ToNot(HaveOccurred())
 	txn1, err := proto.Marshal(tx.TransactionEnvelope)
@@ -818,6 +971,26 @@ func GetSampleBlockWithTransactions(blockNumber uint64) *common.Block {
 			PreviousHash: phash,
 			DataHash:     dhash},
 		Data: &common.BlockData{Data: [][]byte{txn1, txn2}},
+	}
+}
+
+func GetSampleBlockWithTransaction(blockNumber uint64, blkHash []byte, txns ...*peer.ProcessedTransaction) *common.Block {
+
+	blockData := [][]byte{}
+
+	for _, tx := range txns {
+		txn, err := proto.Marshal(tx.TransactionEnvelope)
+		Expect(err).ToNot(HaveOccurred())
+
+		blockData = append(blockData, txn)
+	}
+
+	phash := []byte("abc\x00")
+	return &common.Block{
+		Header: &common.BlockHeader{Number: blockNumber,
+			PreviousHash: phash,
+			DataHash:     blkHash},
+		Data: &common.BlockData{Data: blockData},
 	}
 }
 
