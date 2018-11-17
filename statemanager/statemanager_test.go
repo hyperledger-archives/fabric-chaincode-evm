@@ -63,7 +63,9 @@ var _ = Describe("Statemanager", func() {
 			expectedAcct := account.ConcreteAccount{
 				Address: addr,
 				Code:    []byte("account code"),
-			}.Account()
+			}.MutableAccount()
+
+			expectedAcct.SetPermissions(statemanager.ContractPerms)
 
 			acct, err := sm.GetAccount(addr)
 			Expect(err).ToNot(HaveOccurred())

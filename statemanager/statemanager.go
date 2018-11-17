@@ -11,8 +11,21 @@ import (
 
 	"github.com/hyperledger/burrow/account"
 	"github.com/hyperledger/burrow/binary"
+	"github.com/hyperledger/burrow/permission"
+	"github.com/hyperledger/burrow/permission/types"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
+
+//Permissions for contract to send CallTx or SendTx to another contract
+const ContractPermFlags = permission.Call | permission.Send
+
+var ContractPerms = types.AccountPermissions{
+	Base: types.BasePermissions{
+		Perms:  ContractPermFlags,
+		SetBit: ContractPermFlags,
+	},
+	Roles: []string{},
+}
 
 type StateManager interface {
 	GetAccount(address account.Address) (account.Account, error)
@@ -46,10 +59,14 @@ func (s *stateManager) GetAccount(address account.Address) (account.Account, err
 		return account.ConcreteAccount{}.Account(), nil
 	}
 
-	return account.ConcreteAccount{
+	acct := account.ConcreteAccount{
 		Address: address,
 		Code:    code,
-	}.Account(), nil
+	}.MutableAccount()
+
+	//Setting permission on account to allow contract invocations and queries
+	acct.SetPermissions(ContractPerms)
+	return acct, nil
 }
 
 func (s *stateManager) GetStorage(address account.Address, key binary.Word256) (binary.Word256, error) {
