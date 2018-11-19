@@ -7,9 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
-	"fmt"
 	"os"
 	"strconv"
+
+	"go.uber.org/zap"
 
 	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
@@ -30,7 +31,12 @@ const usage = `FabProxy uses environment variables to be able to start communica
 	  PORT - Port the FabProxy will be running on. Default is 5000
 	`
 
+var logger *zap.SugaredLogger
+
 func main() {
+	rawLogger, _ := zap.NewProduction()
+	logger := rawLogger.Named("fab3").Sugar()
+
 	cfg := grabEnvVar("FABPROXY_CONFIG", true, "Path to the Fabric SDK GO config file")
 	org := grabEnvVar("FABPROXY_ORG", true, "Org of the user specified")
 	user := grabEnvVar("FABPROXY_USER", true, "User to be used for proxy")
@@ -43,52 +49,46 @@ func main() {
 		var err error
 		portNumber, err = strconv.Atoi(port)
 		if err != nil {
-			fmt.Printf("Failed to convert the environment variable `PORT`, %s,  to an int\n", port)
-			os.Exit(1)
+			logger.Fatalf("Failed to convert the environment variable `PORT`, %s,  to an int\n", port)
 		}
 	}
 
 	sdk, err := fabsdk.New(config.FromFile(cfg))
 	if err != nil {
-		fmt.Printf("Failed to create Fabric SDK Client: %s\n", err.Error())
-		os.Exit(1)
+		logger.Fatalf("Failed to create Fabric SDK Client: %s\n", err.Error())
 	}
 	defer sdk.Close()
 
 	clientChannelContext := sdk.ChannelContext(ch, fabsdk.WithUser(user), fabsdk.WithOrg(org))
 	client, err := channel.New(clientChannelContext)
 	if err != nil {
-		fmt.Printf("Failed to create Fabric SDK Channel Client: %s\n", err.Error())
-		os.Exit(1)
+		logger.Fatalf("Failed to create Fabric SDK Channel Client: %s\n", err.Error())
 	}
 
 	ledger, err := ledger.New(clientChannelContext)
 	if err != nil {
-		fmt.Printf("Failed to create Fabric SDK Ledger Client: %s\n", err.Error())
-		os.Exit(1)
+		logger.Fatalf("Failed to create Fabric SDK Ledger Client: %s\n", err.Error())
 	}
 
-	ethService := fabproxy.NewEthService(client, ledger, ch, ccid)
+	ethService := fabproxy.NewEthService(client, ledger, ch, ccid, logger)
 
-	fmt.Printf("Starting Fab Proxy on port %d\n", portNumber)
+	logger.Infof("Starting Fab Proxy on port %d\n", portNumber)
 	proxy := fabproxy.NewFabProxy(ethService)
 	err = proxy.Start(portNumber)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logger.Fatal(err)
 	}
 	defer func() {
-		fmt.Println("Shutting down the Fab Proxy")
+		logger.Info("Shutting down the Fab Proxy")
 		proxy.Shutdown()
-		fmt.Println("Fab Proxy has exited")
+		logger.Info("Fab Proxy has exited")
 	}()
 }
 
 func grabEnvVar(varName string, required bool, description string) string {
 	envVar := os.Getenv(varName)
 	if required && envVar == "" {
-		fmt.Printf("Fab Proxy requires the environment variable %s to be set\n\n%s\n\n", varName, usage)
-		os.Exit(1)
+		logger.Fatalf("Fab Proxy requires the environment variable %s to be set\n\n%s\n\n", varName, usage)
 	}
 	return envVar
 }

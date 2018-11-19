@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
 	fabproxy_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fabproxy"
@@ -21,6 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -34,13 +37,15 @@ var _ = Describe("Ethservice", func() {
 		mockLedgerClient *fabproxy_mocks.MockLedgerClient
 		channelID        string
 	)
+	rawLogger, _ := zap.NewProduction()
+	logger := rawLogger.Sugar()
 
 	BeforeEach(func() {
 		mockChClient = &fabproxy_mocks.MockChannelClient{}
 		mockLedgerClient = &fabproxy_mocks.MockLedgerClient{}
 		channelID = "test-channel"
 
-		ethservice = fabproxy.NewEthService(mockChClient, mockLedgerClient, channelID, evmcc)
+		ethservice = fabproxy.NewEthService(mockChClient, mockLedgerClient, channelID, evmcc, logger)
 	})
 
 	Describe("GetCode", func() {

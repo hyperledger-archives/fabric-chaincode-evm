@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
+	"go.uber.org/zap"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -64,6 +66,7 @@ type ethService struct {
 	ledgerClient  LedgerClient
 	channelID     string
 	ccid          string
+	logger        *zap.SugaredLogger
 }
 
 type EthArgs struct {
@@ -116,8 +119,8 @@ type Block struct {
 	Transactions []interface{} `json:"transactions"` // transactions: Array - Array of transaction objects, or 32 Bytes transaction hashes depending on the last given parameter.
 }
 
-func NewEthService(channelClient ChannelClient, ledgerClient LedgerClient, channelID string, ccid string) EthService {
-	return &ethService{channelClient: channelClient, ledgerClient: ledgerClient, channelID: channelID, ccid: ccid}
+func NewEthService(channelClient ChannelClient, ledgerClient LedgerClient, channelID string, ccid string, logger *zap.SugaredLogger) EthService {
+	return &ethService{channelClient: channelClient, ledgerClient: ledgerClient, channelID: channelID, ccid: ccid, logger: logger.Named("ethservice")}
 }
 
 func (s *ethService) GetCode(r *http.Request, arg *string, reply *string) error {
@@ -231,7 +234,7 @@ func (s *ethService) Accounts(r *http.Request, arg *string, reply *[]string) err
 // EVM-chaincode does not require gas to run transactions. The chaincode will
 // give enough gas per transaction.
 func (s *ethService) EstimateGas(r *http.Request, _ *EthArgs, reply *string) error {
-	fmt.Println("EstimateGas called")
+	s.logger.Debug("EstimateGas called")
 	*reply = "0x0"
 	return nil
 }
@@ -241,16 +244,16 @@ func (s *ethService) EstimateGas(r *http.Request, _ *EthArgs, reply *string) err
 //
 // Always returns zero.
 func (s *ethService) GetBalance(r *http.Request, p *[]string, reply *string) error {
-	fmt.Println("GetBalance called")
+	s.logger.Debug("GetBalance called")
 	*reply = "0x0"
 	return nil
 }
 
 // https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getblockbynumber
 func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *Block) error {
-	fmt.Println("Received a request for GetBlockByNumber")
+	s.logger.Debug("Received a request for GetBlockByNumber")
 	params := *p
-	fmt.Println("Params are : ", params)
+	s.logger.Debug("Params are : ", params)
 
 	// handle params
 	// must have two params
@@ -261,7 +264,7 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 	// first arg is string of block to get
 	number, ok := params[0].(string)
 	if !ok {
-		fmt.Printf("Incorrect argument received: %#v", params[0])
+		s.logger.Debugf("Incorrect argument received: %#v", params[0])
 		return fmt.Errorf("Incorrect first parameter sent, must be string")
 	}
 
@@ -312,7 +315,7 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 
 		// returning full transactions is unimplemented,
 		// so the hash-only case is the only case.
-		fmt.Println("block has transaction hash:", chdr.TxId)
+		s.logger.Debug("block has transaction hash:", chdr.TxId)
 
 		if fullTransactions {
 			txn := Transaction{
@@ -340,7 +343,7 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 		ParentHash:   "0x" + hex.EncodeToString(blkHeader.GetPreviousHash()),
 		Transactions: txns,
 	}
-	fmt.Println("asked for block", number, "found block", blk)
+	s.logger.Debug("asked for block", number, "found block", blk)
 
 	*reply = blk
 	return nil
@@ -362,7 +365,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 	if strippedTxId == "" {
 		return fmt.Errorf("txID was empty")
 	}
-	fmt.Println("GetTransactionByHash", strippedTxId) // logging input to function
+	s.logger.Debug("GetTransactionByHash", strippedTxId) // logging input to function
 
 	txn := Transaction{
 		Hash: "0x" + strippedTxId,
@@ -421,7 +424,7 @@ func (s *ethService) parseBlockNum(input string) (uint64, error) {
 
 		blockchainInfo, err := s.ledgerClient.QueryInfo()
 		if err != nil {
-			fmt.Println(err)
+			s.logger.Debug(err)
 			return 0, fmt.Errorf("Failed to query the ledger: %v", err)
 		}
 
@@ -540,7 +543,6 @@ func findTransaction(txID string, blockData [][]byte) (string, *common.Payload, 
 			return "", &common.Payload{}, err
 		}
 
-		fmt.Println("transaction hash:", chdr.TxId)
 		// early exit to try next transaction
 		if txID != chdr.TxId {
 			// transaction does not match, go to next

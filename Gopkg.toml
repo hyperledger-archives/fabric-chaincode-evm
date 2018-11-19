@@ -51,6 +51,10 @@
   revision = "6b78f7a22d950103fb2669aabb969f56d42d283b"
   name = "github.com/hyperledger/fabric-amcl"
 
+[[constraint]]
+  name = "go.uber.org/zap"
+  version = "1.9.0"
+
 #Constraints from fabric-sdk-go
 [[override]]
   revision = "aafc9e6bc7b7bb53ddaa75a5ef49a17d6e654be5"
