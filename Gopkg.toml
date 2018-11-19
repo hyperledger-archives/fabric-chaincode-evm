@@ -63,3 +63,13 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+  [[prune.project]]
+      name = "github.com/onsi/ginkgo"
+      unused-packages = false
+      non-go = true
+
+  [[prune.project]]
+      name = "github.com/onsi/gomega"
+      unused-packages = false
+      non-go = true
