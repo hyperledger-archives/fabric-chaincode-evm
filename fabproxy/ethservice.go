@@ -484,7 +484,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 	fmt.Println("GetTransactionByHash", strippedTxId) // logging input to function
 
 	txn := Transaction{
-		Hash: *txID,
+		Hash: "0x" + strippedTxId,
 	}
 
 	block, err := s.ledgerClient.QueryBlockByTxID(fab.TransactionID(strippedTxId))
