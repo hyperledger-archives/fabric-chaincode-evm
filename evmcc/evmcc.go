@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/burrow/binary"
 	"github.com/hyperledger/burrow/execution/evm"
 	"github.com/hyperledger/burrow/logging"
+	evm_event "github.com/hyperledger/fabric-chaincode-evm/event"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -80,6 +81,9 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 	state := statemanager.NewStateManager(stub)
 	vm := evm.NewVM(state, newParams(), callerAddr, nil, evmLogger)
 
+	evmgr := evm_event.NewEventManager(stub)
+	vm.SetPublisher(evmgr)
+
 	if calleeAddr == account.ZeroAddress {
 		logger.Debugf("Deploy contract")
 
@@ -129,6 +133,13 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 		output, err := vm.Call(callerAcct, account.AsMutableAccount(calleeAcct), calleeAcct.Code().Bytes(), input, 0, &gas)
 		if err != nil {
 			return shim.Error(fmt.Sprintf("failed to execute contract: %s", err.Error()))
+		}
+
+		// Passing the function hash of the method that has triggered the event
+		// The function hash is the first 8 bytes of the Input argument
+		er := evmgr.Flush(string(args[1][0:8]))
+		if er != nil {
+			return shim.Error(fmt.Sprintf("error in Flush: %s", er.Error()))
 		}
 
 		return shim.Success(output)
