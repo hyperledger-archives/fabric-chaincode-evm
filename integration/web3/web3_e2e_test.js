@@ -39,6 +39,22 @@ function TestVotingContract(fabProxyAddress1, fabProxyAddress2){
   var user2VotingContract = user2.eth.contract(vote.votingContractABI)
 
   var deployedContract = user1VotingContract.new(['a','b'], {data: vote.compiledVotingContract})
+  var contractTransaction = user1.eth.getTransaction(deployedContract.transactionHash)
+  if ( ! contractTransaction.input.includes(vote.compiledVotingContract) ){
+    console.log("getTransaction should return transaction with full details that includes the compiled contract")
+    console.log(contractTransaction)
+    console.log(vote.compiledVotingContract)
+    console.log(contractTransaction.input)
+    process.exit(1)
+  }
+  var contractTransactionBlock = user1.eth.getBlock(contractTransaction.blockNumber, false)
+  if ( contractTransactionBlock.transactions[contractTransaction.transactionIndex] != contractTransaction.hash ) {
+    console.log("getBlock should have a block with the same transaction as before")
+    console.log(contractTransactionBlock)
+    console.log(contractTransaction)
+    process.exit(1)
+  }
+
   var contractAddress = user1.eth.getTransactionReceipt(deployedContract.transactionHash).contractAddress
   var user1Contract = user1VotingContract.at(contractAddress)
   var user2Contract = user2VotingContract.at(contractAddress)
@@ -71,6 +87,8 @@ function TestVotingContract(fabProxyAddress1, fabProxyAddress2){
 
   // User2 should be able to vote
   user2Contract.vote('0')
+
+  // Check the votes
   CheckProposal(user1Contract.proposals('0'), 'a',2)
   CheckProposal(user1Contract.proposals('1'), 'b',0)
 
