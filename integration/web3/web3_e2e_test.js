@@ -2,8 +2,10 @@
 Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
-
+solidityEvent = require("web3/lib/web3/event.js");
 vote = require('./voting_contract.js')
+instructor = require('./instructor_contract.js')
+
 Web3 = require('web3')
 web3 = new Web3()
 
@@ -61,7 +63,7 @@ function TestVotingContract(fabProxyAddress1, fabProxyAddress2){
 
   deployedRuntimeCode = user1.eth.getCode(contractAddress)
   if (deployedRuntimeCode != vote.runtimeVotingContract){
-    console.log("Failed to deploy smart contract")
+    console.log("Failed to deploy Voting smart contract")
     process.exit(1)
   }
 
@@ -93,9 +95,89 @@ function TestVotingContract(fabProxyAddress1, fabProxyAddress2){
   CheckProposal(user1Contract.proposals('1'), 'b',0)
 
   console.log("Successfully able to deploy Voting Smart Contract and interact with it")
-  process.exit(0)
 }
 
+function TestInstructorContractEvents(fabProxyAddress){
+  var user = new Web3(new Web3.providers.HttpProvider(fabProxyAddress))
+
+  // Get user addresses
+  var userAddr = user.eth.accounts[0]
+  if (userAddr == ""){
+    console.log("Unable to query user1's account address")
+    process.exit(1)
+  }
+  user.eth.defaultAccount = userAddr
+
+  // Create and Deploy Contract Objects
+  var instructorContract = user.eth.contract(instructor.instructorContractABI)
+
+  var deployedContract = instructorContract.new(['a','b'], {data: instructor.compiledInstructorContract})
+  var contractAddress = user.eth.getTransactionReceipt(deployedContract.transactionHash).contractAddress
+  var userContract = instructorContract.at(contractAddress)
+
+  deployedRuntimeCode = user.eth.getCode(contractAddress)
+  if (deployedRuntimeCode != instructor.runtimeInstructorContract){
+    console.log("Failed to deploy Instructor smart contract")
+    process.exit(1)
+  }
+
+  txID = userContract.setInstructor('0x53616d', 25, 30000)
+  receipt = user.eth.getTransactionReceipt(txID)
+  if (receipt.logs == null) {
+    console.log("No logs were found for Instructor Contract transaction")
+    process.exit(1)
+  }
+  var logs = receipt.logs
+
+  if (logs.length != 1) {
+    // Instructor Contract should only produce one log object
+    console.log("Only one log should exist from instructor contract transaction")
+    process.exit(1)
+  }
+
+  if (logs[0].topics.length != 2) {
+    // Setter Event should two topics, 1. setter signature, 2. value of indexed param
+    console.log("Setter event should have two topics")
+    process.exit(1)
+  }
+
+  if (logs[0].topics[0] != "0x" + instructor.setterEventSignature) {
+    console.log("First topic should be the Event Signature: Setter(bytes32,uint,uint)")
+    console.log("Expect topic: 0x" + logs[0].topics[0] + " to equal: 0x" + instructor.setterEventSignature )
+    process.exit(1)
+  }
+
+  EventDecoder(logs, instructor.instructorContractABI)
+  decodedEvent = logs[0]
+
+  if (decodedEvent.event != "Setter"){
+    console.log("Incorrect Event in decoded event")
+    process.exit(1)
+  }
+
+  eventArgs = decodedEvent.args
+  if (eventArgs.name != '0x53616d0000000000000000000000000000000000000000000000000000000000'){
+    console.log("Event has incorrect name")
+    console.log("Expected name " + eventArgs.name + " to equal 0x53616d0000000000000000000000000000000000000000000000000000000000")
+    process.exit(1)
+  }
+
+  if (eventArgs.age.toNumber() != 25){
+    console.log("Event has the wrong age")
+    console.log("Expected age " + eventArgs.age.toNumber() + " to equal 25")
+    process.exit(1)
+  }
+
+  if (eventArgs.salary.toNumber() != 30000){
+    console.log("Event has the wrong salary")
+    console.log("Expected salary " + eventArgs.salary.toNumber() + " to equal 30000")
+    process.exit(1)
+  }
+
+  console.log("Successfully able to deploy Instructor Smart Contract, see events, and interact with it")
+}
+
+//Check Proposal checks the proposal object in the Voting Contract
 function CheckProposal(proposal, expectedName, expectedCount){
   var proposalName = web3.toUtf8(proposal[0])
   if ( proposalName != expectedName ){
@@ -109,9 +191,27 @@ function CheckProposal(proposal, expectedName, expectedCount){
   }
 }
 
+//This function will in place decode the log objects that match events in the abi
+function EventDecoder(logs, abi){
+  var decoders = abi.filter(function (json) {
+    return json.type === 'event';
+  }).map(function(json) {
+    return new solidityEvent(null, json, null);
+  });
+
+  return logs.map(function (log) {
+    return decoders.find(function(decoder) {
+      return (decoder.signature() == log.topics[0].replace("0x",""));
+    }).decode(log);
+  })
+}
+
+
 console.log("Starting Web3 E2E Test")
 // node web3_e2e_test.js addr1 addr2
 var user1Address = process.argv[2]
 var user2Address = process.argv[3]
 
 TestVotingContract(user1Address, user2Address)
+TestInstructorContractEvents(user1Address)
+console.log("Finished Web3 Tests")
