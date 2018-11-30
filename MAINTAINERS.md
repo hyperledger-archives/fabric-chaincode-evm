@@ -6,7 +6,7 @@
 | Christopher Ferris | christo4ferris | ChristopherFerris | cbf | chrisfer@us.ibm.com |
 | Gari Singh | mastersingh24 | mastersingh24 | garisingh | gari.r.singh@gmail.com |
 | Jay Guo | guoger | guojiannan1101 | guoger | guojiannan@cn.ibm.com |
-| Morgan Bauer | MorganBauer | MHBauer | mbauer | mbauer@us.ibm.com |
+| Morgan Bauer | MHBauer | MHBauer | MHBauer | mbauer@us.ibm.com |
 | Swetha Repakula | swetharepakula | swetharepakula | swetha | srepaku@us.ibm.com |
 
 Also: <a href="https://github.com/hyperledger/fabric/blob/master/docs/source/MAINTAINERS.rst">Please see the Release Manager section here</a>
