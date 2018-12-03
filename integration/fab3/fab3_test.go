@@ -24,6 +24,8 @@ import (
 	"github.com/tedsuo/ifrit"
 )
 
+const LongEventualTimeout = time.Minute
+
 func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, params interface{}) (*http.Response, error) {
 	request := helpers.JsonRPCRequest{
 		JsonRPC: "2.0",
@@ -113,21 +115,21 @@ var _ = Describe("Fabproxy", func() {
 		proxyPort := network.ReservePort()
 		proxyRunner := helpers.FabProxyRunner(components.Paths["fabproxy"], proxyConfigPath, "Org1", "User1", channelName, ccid, proxyPort)
 		proxy = ifrit.Invoke(proxyRunner)
-		Eventually(proxy.Ready(), 15*time.Second).Should(BeClosed())
+		Eventually(proxy.Ready(), LongEventualTimeout).Should(BeClosed())
 		proxyAddress = fmt.Sprintf("http://127.0.0.1:%d", proxyPort)
 	})
 
 	AfterEach(func() {
 		if process != nil {
 			process.Signal(syscall.SIGTERM)
-			Eventually(process.Wait(), time.Minute).Should(Receive())
+			Eventually(process.Wait(), LongEventualTimeout).Should(Receive())
 		}
 		if network != nil {
 			network.Cleanup()
 		}
 		if proxy != nil {
 			proxy.Signal(syscall.SIGTERM)
-			Eventually(proxy.Wait(), time.Minute).Should(Receive())
+			Eventually(proxy.Wait(), LongEventualTimeout).Should(Receive())
 		}
 		os.RemoveAll(testDir)
 	})
@@ -193,7 +195,7 @@ var _ = Describe("Fabproxy", func() {
 			err = json.Unmarshal(rBody, &rpcResp)
 			Expect(err).ToNot(HaveOccurred())
 			return rpcResp.Error
-		}, 5*time.Second).Should(BeZero())
+		}, LongEventualTimeout).Should(BeZero())
 
 		receipt := rpcResp.Result
 
@@ -242,7 +244,7 @@ var _ = Describe("Fabproxy", func() {
 			err = json.Unmarshal(rBody, &rpcResp)
 			Expect(err).ToNot(HaveOccurred())
 			return rpcResp.Error
-		}, 5*time.Second).Should(BeZero())
+		}, LongEventualTimeout).Should(BeZero())
 		receipt = rpcResp.Result
 		Expect(receipt.TransactionHash).To(Equal(txHash))
 		checkHexEncoded(receipt.BlockNumber)

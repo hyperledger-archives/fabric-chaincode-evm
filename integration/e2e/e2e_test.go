@@ -26,6 +26,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const LongEventualTimeout = time.Minute
+
 var _ = Describe("EndToEnd", func() {
 	var (
 		testDir       string
@@ -64,7 +66,7 @@ var _ = Describe("EndToEnd", func() {
 	AfterEach(func() {
 		if process != nil {
 			process.Signal(syscall.SIGTERM)
-			Eventually(process.Wait(), time.Minute).Should(Receive())
+			Eventually(process.Wait(), LongEventualTimeout).Should(Receive())
 		}
 		if network != nil {
 			network.Cleanup()
@@ -98,7 +100,7 @@ var _ = Describe("EndToEnd", func() {
 			WaitForEvent: true,
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(sess, time.Minute).Should(gexec.Exit(0))
+		Eventually(sess, LongEventualTimeout).Should(gexec.Exit(0))
 		Expect(sess.Err).To(gbytes.Say("Chaincode invoke successful. result: status:200"))
 
 		output := sess.Err.Contents()
@@ -119,7 +121,7 @@ var _ = Describe("EndToEnd", func() {
 			WaitForEvent: true,
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(sess, time.Minute).Should(gexec.Exit(0))
+		Eventually(sess, LongEventualTimeout).Should(gexec.Exit(0))
 		Expect(sess.Err).To(gbytes.Say("Chaincode invoke successful. result: status:200"))
 
 		By("querying the smart contract")
@@ -130,7 +132,7 @@ var _ = Describe("EndToEnd", func() {
 			Ctor: fmt.Sprintf(`{"Args":["%s","%s"]}`, contractAddr, SimpleStorage.FunctionHashes["get"]),
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(sess, time.Minute).Should(gexec.Exit(0))
+		Eventually(sess, LongEventualTimeout).Should(gexec.Exit(0))
 		output, _ = sess.Command.CombinedOutput()
 		fmt.Println(string(output))
 		Expect(sess.Out).To(gbytes.Say("0000000000000000000000000000000000000000000000000000000000000003"))
