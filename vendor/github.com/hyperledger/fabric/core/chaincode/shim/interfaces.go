@@ -27,6 +27,9 @@ type Chaincode interface {
 	Invoke(stub ChaincodeStubInterface) pb.Response
 }
 
+//go:generate counterfeiter -o ../../scc/lscc/mock/chaincode_stub.go --fake-name ChaincodeStub . ChaincodeStubInterface
+//go:generate counterfeiter -o ../../chaincode/lifecycle/mock/chaincode_stub.go --fake-name ChaincodeStub . ChaincodeStubInterface
+
 // ChaincodeStubInterface is used by deployable chaincode apps to access and
 // modify their ledgers
 type ChaincodeStubInterface interface {
@@ -97,9 +100,20 @@ type ChaincodeStubInterface interface {
 	// the ledger when the transaction is validated and successfully committed.
 	DelState(key string) error
 
+	// SetStateValidationParameter sets the key-level endorsement policy for `key`.
+	SetStateValidationParameter(key string, ep []byte) error
+
+	// GetStateValidationParameter retrieves the key-level endorsement policy
+	// for `key`. Note that this will introduce a read dependency on `key` in
+	// the transaction's readset.
+	GetStateValidationParameter(key string) ([]byte, error)
+
 	// GetStateByRange returns a range iterator over a set of keys in the
 	// ledger. The iterator can be used to iterate over all keys
 	// between the startKey (inclusive) and endKey (exclusive).
+	// However, if the number of keys between startKey and endKey is greater than the
+	// totalQueryLimit (defined in core.yaml), this iterator cannot be used
+	// to fetch all keys (results will be capped by the totalQueryLimit).
 	// The keys are returned by the iterator in lexical order. Note
 	// that startKey and endKey can be empty string, which implies unbounded range
 	// query on start or end.
@@ -108,17 +122,59 @@ type ChaincodeStubInterface interface {
 	// has not changed since transaction endorsement (phantom reads detected).
 	GetStateByRange(startKey, endKey string) (StateQueryIteratorInterface, error)
 
+	// GetStateByRangeWithPagination returns a range iterator over a set of keys in the
+	// ledger. The iterator can be used to fetch keys between the startKey (inclusive)
+	// and endKey (exclusive).
+	// When an empty string is passed as a value to the bookmark argument, the returned
+	// iterator can be used to fetch the first `pageSize` keys between the startKey
+	// (inclusive) and endKey (exclusive).
+	// When the bookmark is a non-emptry string, the iterator can be used to fetch
+	// the first `pageSize` keys between the bookmark (inclusive) and endKey (exclusive).
+	// Note that only the bookmark present in a prior page of query results (ResponseMetadata)
+	// can be used as a value to the bookmark argument. Otherwise, an empty string must
+	// be passed as bookmark.
+	// The keys are returned by the iterator in lexical order. Note
+	// that startKey and endKey can be empty string, which implies unbounded range
+	// query on start or end.
+	// Call Close() on the returned StateQueryIteratorInterface object when done.
+	// This call is only supported in a read only transaction.
+	GetStateByRangeWithPagination(startKey, endKey string, pageSize int32,
+		bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error)
+
 	// GetStateByPartialCompositeKey queries the state in the ledger based on
 	// a given partial composite key. This function returns an iterator
 	// which can be used to iterate over all composite keys whose prefix matches
-	// the given partial composite key. The `objectType` and attributes are
-	// expected to have only valid utf8 strings and should not contain
-	// U+0000 (nil byte) and U+10FFFF (biggest and unallocated code point).
+	// the given partial composite key. However, if the number of matching composite
+	// keys is greater than the totalQueryLimit (defined in core.yaml), this iterator
+	// cannot be used to fetch all matching keys (results will be limited by the totalQueryLimit).
+	// The `objectType` and attributes are expected to have only valid utf8 strings and
+	// should not contain U+0000 (nil byte) and U+10FFFF (biggest and unallocated code point).
 	// See related functions SplitCompositeKey and CreateCompositeKey.
 	// Call Close() on the returned StateQueryIteratorInterface object when done.
 	// The query is re-executed during validation phase to ensure result set
 	// has not changed since transaction endorsement (phantom reads detected).
 	GetStateByPartialCompositeKey(objectType string, keys []string) (StateQueryIteratorInterface, error)
+
+	// GetStateByPartialCompositeKeyWithPagination queries the state in the ledger based on
+	// a given partial composite key. This function returns an iterator
+	// which can be used to iterate over the composite keys whose
+	// prefix matches the given partial composite key.
+	// When an empty string is passed as a value to the bookmark argument, the returned
+	// iterator can be used to fetch the first `pageSize` composite keys whose prefix
+	// matches the given partial composite key.
+	// When the bookmark is a non-emptry string, the iterator can be used to fetch
+	// the first `pageSize` keys between the bookmark (inclusive) and the last matching
+	// composite key.
+	// Note that only the bookmark present in a prior page of query result (ResponseMetadata)
+	// can be used as a value to the bookmark argument. Otherwise, an empty string must
+	// be passed as bookmark.
+	// The `objectType` and attributes are expected to have only valid utf8 strings
+	// and should not contain U+0000 (nil byte) and U+10FFFF (biggest and unallocated
+	// code point). See related functions SplitCompositeKey and CreateCompositeKey.
+	// Call Close() on the returned StateQueryIteratorInterface object when done.
+	// This call is only supported in a read only transaction.
+	GetStateByPartialCompositeKeyWithPagination(objectType string, keys []string,
+		pageSize int32, bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error)
 
 	// CreateCompositeKey combines the given `attributes` to form a composite
 	// key. The objectType and attributes are expected to have only valid utf8
@@ -137,7 +193,11 @@ type ChaincodeStubInterface interface {
 	// only supported for state databases that support rich query,
 	// e.g.CouchDB. The query string is in the native syntax
 	// of the underlying state database. An iterator is returned
-	// which can be used to iterate (next) over the query result set.
+	// which can be used to iterate over all keys in the query result set.
+	// However, if the number of keys in the query result set is greater than the
+	// totalQueryLimit (defined in core.yaml), this iterator cannot be used
+	// to fetch all keys in the query result set (results will be limited by
+	// the totalQueryLimit).
 	// The query is NOT re-executed during validation phase, phantom reads are
 	// not detected. That is, other committed transactions may have added,
 	// updated, or removed keys that impact the result set, and this would not
@@ -145,6 +205,22 @@ type ChaincodeStubInterface interface {
 	// should therefore not use GetQueryResult as part of transactions that update
 	// ledger, and should limit use to read-only chaincode operations.
 	GetQueryResult(query string) (StateQueryIteratorInterface, error)
+
+	// GetQueryResultWithPagination performs a "rich" query against a state database.
+	// It is only supported for state databases that support rich query,
+	// e.g., CouchDB. The query string is in the native syntax
+	// of the underlying state database. An iterator is returned
+	// which can be used to iterate over keys in the query result set.
+	// When an empty string is passed as a value to the bookmark argument, the returned
+	// iterator can be used to fetch the first `pageSize` of query results.
+	// When the bookmark is a non-emptry string, the iterator can be used to fetch
+	// the first `pageSize` keys between the bookmark and the last key in the query result.
+	// Note that only the bookmark present in a prior page of query results (ResponseMetadata)
+	// can be used as a value to the bookmark argument. Otherwise, an empty string
+	// must be passed as bookmark.
+	// This call is only supported in a read only transaction.
+	GetQueryResultWithPagination(query string, pageSize int32,
+		bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error)
 
 	// GetHistoryForKey returns a history of key values across time.
 	// For each historic key update, the historic value and associated
@@ -185,6 +261,15 @@ type ChaincodeStubInterface interface {
 	// transient store. The `key` and its value will be deleted from the collection
 	// when the transaction is validated and successfully committed.
 	DelPrivateData(collection, key string) error
+
+	// SetPrivateDataValidationParameter sets the key-level endorsement policy
+	// for the private data specified by `key`.
+	SetPrivateDataValidationParameter(collection, key string, ep []byte) error
+
+	// GetPrivateDataValidationParameter retrieves the key-level endorsement
+	// policy for the private data specified by `key`. Note that this introduces
+	// a read dependency on `key` in the transaction's readset.
+	GetPrivateDataValidationParameter(collection, key string) ([]byte, error)
 
 	// GetPrivateDataByRange returns a range iterator over a set of keys in a
 	// given private collection. The iterator can be used to iterate over all keys

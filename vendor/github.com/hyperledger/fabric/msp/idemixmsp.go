@@ -24,8 +24,8 @@ import (
 	"github.com/hyperledger/fabric-amcl/amcl/FP256BN"
 	"github.com/hyperledger/fabric/idemix"
 	m "github.com/hyperledger/fabric/protos/msp"
-	logging "github.com/op/go-logging"
 	"github.com/pkg/errors"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -169,7 +169,8 @@ func (msp *idemixmsp) Setup(conf1 *m.MSPConfig) error {
 		MspIdentifier: msp.name,
 		Role:          m.MSPRole_MEMBER,
 	}
-	if conf.Signer.IsAdmin {
+
+	if checkRole(int(conf.Signer.Role), ADMIN) {
 		role.Role = m.MSPRole_ADMIN
 	}
 
@@ -193,7 +194,7 @@ func (msp *idemixmsp) Setup(conf1 *m.MSPConfig) error {
 	}
 
 	// Check if credential contains the correct Role attribute value
-	if !bytes.Equal(idemix.BigToBytes(FP256BN.NewBIGint(int(role.Role))), cred.Attrs[AttributeIndexRole]) {
+	if !bytes.Equal(idemix.BigToBytes(FP256BN.NewBIGint(getIdemixRoleFromMSPRole(role))), cred.Attrs[AttributeIndexRole]) {
 		return errors.New("Credential does not contain the correct Role attribute value")
 	}
 
@@ -300,8 +301,6 @@ func (msp *idemixmsp) deserializeIdentityInternal(serializedID []byte) (Identity
 }
 
 func (msp *idemixmsp) Validate(id Identity) error {
-	mspLogger.Infof("Validating identity %s", id)
-
 	var identity *idemixidentity
 	switch t := id.(type) {
 	case *idemixidentity:
@@ -311,6 +310,8 @@ func (msp *idemixmsp) Validate(id Identity) error {
 	default:
 		return errors.Errorf("identity type %T is not recognized", t)
 	}
+
+	mspLogger.Debugf("Validating identity %+v", identity)
 	if identity.GetMSPIdentifier() != msp.name {
 		return errors.Errorf("the supplied identity does not belong to this msp")
 	}
@@ -319,7 +320,7 @@ func (msp *idemixmsp) Validate(id Identity) error {
 
 func (id *idemixidentity) verifyProof() error {
 	ouBytes := []byte(id.OU.OrganizationalUnitIdentifier)
-	attributeValues := []*FP256BN.BIG{idemix.HashModOrder(ouBytes), FP256BN.NewBIGint(int(id.Role.Role))}
+	attributeValues := []*FP256BN.BIG{idemix.HashModOrder(ouBytes), FP256BN.NewBIGint(getIdemixRoleFromMSPRole(id.Role))}
 
 	return id.associationProof.Ver(discloseFlags, id.msp.ipk, nil, attributeValues, rhIndex, id.msp.revocationPK, id.msp.epoch)
 }
@@ -366,6 +367,16 @@ func (msp *idemixmsp) satisfiesPrincipalValidated(id Identity, principal *m.MSPP
 				return errors.Errorf("user is not an admin")
 			}
 			return nil
+		case m.MSPRole_PEER:
+			if msp.version >= MSPv1_3 {
+				return errors.Errorf("idemixmsp only supports client use, so it cannot satisfy an MSPRole PEER principal")
+			}
+			fallthrough
+		case m.MSPRole_CLIENT:
+			if msp.version >= MSPv1_3 {
+				return nil // any valid idemixmsp member must be a client
+			}
+			fallthrough
 		default:
 			return errors.Errorf("invalid MSP role type %d", int32(mspRole.Role))
 		}
@@ -531,7 +542,7 @@ func (id *idemixidentity) Validate() error {
 }
 
 func (id *idemixidentity) Verify(msg []byte, sig []byte) error {
-	if mspLogger.IsEnabledFor(logging.DEBUG) {
+	if mspIdentityLogger.IsEnabledFor(zapcore.DebugLevel) {
 		mspIdentityLogger.Debugf("Verify Idemix sig: msg = %s", hex.Dump(msg))
 		mspIdentityLogger.Debugf("Verify Idemix sig: sig = %s", hex.Dump(sig))
 	}

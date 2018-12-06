@@ -12,7 +12,7 @@ import (
 
 	"github.com/hyperledger/burrow/account"
 	"github.com/hyperledger/burrow/binary"
-	"github.com/hyperledger/fabric-chaincode-evm/mocks"
+	"github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 
 	. "github.com/onsi/ginkgo"
@@ -23,14 +23,14 @@ var _ = Describe("Statemanager", func() {
 
 	var (
 		sm            statemanager.StateManager
-		mockStub      *mocks.MockStub
+		mockStub      *evmcc.MockStub
 		addr          account.Address
 		fakeGetLedger map[string][]byte
 		fakePutLedger map[string][]byte
 	)
 
 	BeforeEach(func() {
-		mockStub = &mocks.MockStub{}
+		mockStub = &evmcc.MockStub{}
 		sm = statemanager.NewStateManager(mockStub)
 
 		var err error

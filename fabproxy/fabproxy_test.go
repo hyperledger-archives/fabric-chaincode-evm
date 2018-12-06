@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
-	"github.com/hyperledger/fabric-chaincode-evm/mocks"
+	fabproxy_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fabproxy"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
@@ -28,7 +28,7 @@ var _ = Describe("Fabproxy", func() {
 	var (
 		proxy          *fabproxy.FabProxy
 		proxyAddr      string
-		mockEthService *mocks.MockEthService
+		mockEthService *fabproxy_mocks.MockEthService
 		req            *http.Request
 		proxyDoneChan  chan struct{}
 		client         *http.Client
@@ -37,7 +37,7 @@ var _ = Describe("Fabproxy", func() {
 
 	BeforeEach(func() {
 		port = config.GinkgoConfig.ParallelNode + 5000
-		mockEthService = &mocks.MockEthService{}
+		mockEthService = &fabproxy_mocks.MockEthService{}
 		client = &http.Client{}
 
 		proxyDoneChan = make(chan struct{}, 1)
@@ -187,7 +187,7 @@ var _ = Describe("fabproxy fails to start", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		mockEthService := &mocks.MockEthService{}
+		mockEthService := &fabproxy_mocks.MockEthService{}
 		proxy := fabproxy.NewFabProxy(mockEthService)
 
 		It("exits instead of starting", func() {

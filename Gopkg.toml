@@ -6,7 +6,7 @@
   name = "github.com/hyperledger/burrow"
 
 [[constraint]]
-  branch = "master"
+  version = "v1.3.0"
   name = "github.com/hyperledger/fabric"
 
 [[constraint]]
@@ -46,6 +46,10 @@
 [[override]]
   version = "1.1.0"
   name = "github.com/golang/protobuf"
+
+[[override]]
+  revision = "6b78f7a22d950103fb2669aabb969f56d42d283b"
+  name = "github.com/hyperledger/fabric-amcl"
 
 #Constraints from fabric-sdk-go
 [[override]]

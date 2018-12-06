@@ -46,6 +46,12 @@ type OrdererTLS struct {
 	ClientRootCAs      []string `yaml:"ClientRootCAs,omitempty"`
 }
 
+type OrdererSASLPlain struct {
+	Enabled  bool   `yaml:"Enabled"`
+	User     string `yaml:"User,omitempty"`
+	Password string `yaml:"Password,omitempty"`
+}
+
 type OrdererKeepalive struct {
 	ServerMinInterval time.Duration `yaml:"ServerMinInterval,omitempty"`
 	ServerInterval    time.Duration `yaml:"ServerInterval,omitempty"`
@@ -61,6 +67,10 @@ type OrdererAuthentication struct {
 	TimeWindow time.Duration `yaml:"TimeWindow,omitempty"`
 }
 
+type OrdererTopic struct {
+	ReplicationFactor int16
+}
+
 type FileLedger struct {
 	Location string `yaml:"Location,omitempty"`
 	Prefix   string `yaml:"Prefix,omitempty"`
@@ -71,9 +81,11 @@ type RAMLedger struct {
 }
 
 type Kafka struct {
-	Retry   *Retry      `yaml:"Retry,omitempty"`
-	Verbose bool        `yaml:"Verbose"`
-	TLS     *OrdererTLS `yaml:"TLS,omitempty"`
+	Retry     *Retry            `yaml:"Retry,omitempty"`
+	Verbose   bool              `yaml:"Verbose"`
+	TLS       *OrdererTLS       `yaml:"TLS,omitempty"`
+	SASLPlain *OrdererSASLPlain `yaml:"SASLPlain,omitempty"`
+	Topic     *OrdererTopic     `yaml:"Topic,omitempty"`
 }
 
 type Retry struct {

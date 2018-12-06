@@ -13,11 +13,11 @@ General:
   ListenAddress: 127.0.0.1
   ListenPort: {{ .OrdererPort Orderer "Listen" }}
   TLS:
-    Enabled: false
-    PrivateKey: tls/server.key
-    Certificate: tls/server.crt
+    Enabled: true
+    PrivateKey: {{ $w.OrdererLocalTLSDir Orderer }}/server.key
+    Certificate: {{ $w.OrdererLocalTLSDir Orderer }}/server.crt
     RootCAs:
-    - tls/ca.crt
+    -  {{ $w.OrdererLocalTLSDir Orderer }}/ca.crt
     ClientAuthRequired: false
     ClientRootCAs:
   Keepalive:
@@ -68,12 +68,18 @@ Kafka:
       RetryMax: 3
     Consumer:
       RetryBackoff: 2s
+  Topic:
+    ReplicationFactor: 1
   Verbose: false
   TLS:
     Enabled: false
     PrivateKey:
     Certificate:
     RootCAs:
+  SASLPlain:
+    Enabled: false
+    User:
+    Password:
   Version:{{ end }}
 Debug:
     BroadcastTraceDir:

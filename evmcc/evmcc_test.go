@@ -16,7 +16,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/account"
 	evm "github.com/hyperledger/fabric-chaincode-evm/evmcc"
-	"github.com/hyperledger/fabric-chaincode-evm/mocks"
+	evmcc_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/msp"
 	"golang.org/x/crypto/sha3"
@@ -36,13 +36,13 @@ var _ = Describe("evmcc", func() {
 
 	var (
 		evmcc      shim.Chaincode
-		stub       *mocks.MockStub
+		stub       *evmcc_mocks.MockStub
 		fakeLedger map[string][]byte
 	)
 
 	BeforeEach(func() {
 		evmcc = &evm.EvmChaincode{}
-		stub = &mocks.MockStub{}
+		stub = &evmcc_mocks.MockStub{}
 		fakeLedger = make(map[string][]byte)
 
 		stub.PutStateStub = func(key string, value []byte) error {

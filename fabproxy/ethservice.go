@@ -25,13 +25,13 @@ import (
 
 var ZeroAddress = make([]byte, 20)
 
-//go:generate counterfeiter -o ../mocks/mockchannelclient.go --fake-name MockChannelClient ./ ChannelClient
+//go:generate counterfeiter -o ../mocks/fabproxy/mockchannelclient.go --fake-name MockChannelClient ./ ChannelClient
 type ChannelClient interface {
 	Query(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 	Execute(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 }
 
-//go:generate counterfeiter -o ../mocks/mockledgerclient.go --fake-name MockLedgerClient ./ LedgerClient
+//go:generate counterfeiter -o ../mocks/fabproxy/mockledgerclient.go --fake-name MockLedgerClient ./ LedgerClient
 type LedgerClient interface {
 	QueryInfo(options ...ledger.RequestOption) (*fab.BlockchainInfoResponse, error)
 	QueryBlock(blockNumber uint64, options ...ledger.RequestOption) (*common.Block, error)
@@ -46,7 +46,7 @@ type LedgerClient interface {
 // Arguments and return values are formatted as HEX value encoding
 // https://github.com/ethereum/wiki/wiki/JSON-RPC#hex-value-encoding
 //
-//go:generate counterfeiter -o ../mocks/mockethservice.go --fake-name MockEthService ./ EthService
+//go:generate counterfeiter -o ../mocks/fabproxy/mockethservice.go --fake-name MockEthService ./ EthService
 type EthService interface {
 	GetCode(r *http.Request, arg *string, reply *string) error
 	Call(r *http.Request, args *EthArgs, reply *string) error

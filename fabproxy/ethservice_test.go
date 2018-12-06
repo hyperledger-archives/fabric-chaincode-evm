@@ -16,7 +16,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
-	"github.com/hyperledger/fabric-chaincode-evm/mocks"
+	fabproxy_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fabproxy"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -30,14 +30,14 @@ var _ = Describe("Ethservice", func() {
 	var (
 		ethservice fabproxy.EthService
 
-		mockChClient     *mocks.MockChannelClient
-		mockLedgerClient *mocks.MockLedgerClient
+		mockChClient     *fabproxy_mocks.MockChannelClient
+		mockLedgerClient *fabproxy_mocks.MockLedgerClient
 		channelID        string
 	)
 
 	BeforeEach(func() {
-		mockChClient = &mocks.MockChannelClient{}
-		mockLedgerClient = &mocks.MockLedgerClient{}
+		mockChClient = &fabproxy_mocks.MockChannelClient{}
+		mockLedgerClient = &fabproxy_mocks.MockLedgerClient{}
 		channelID = "test-channel"
 
 		ethservice = fabproxy.NewEthService(mockChClient, mockLedgerClient, channelID, evmcc)

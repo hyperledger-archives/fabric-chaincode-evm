@@ -22,6 +22,7 @@ ARCH=$(shell go env GOARCH)
 BASEIMAGE_RELEASE=0.4.13
 BASE_DOCKER_NS ?= hyperledger
 BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
+FABRIC_RELEASE = 1.3.0
 
 PACKAGES = ./statemanager/... ./evmcc/... ./fabproxy/
 
@@ -73,6 +74,8 @@ changelog:
 	@scripts/changelog.sh v$(PREV_VERSION) v$(BASE_VERSION)
 
 docker-images:
+	docker pull $(BASE_DOCKER_NS)/fabric-javaenv:$(FABRIC_RELEASE)
+	docker tag $(BASE_DOCKER_NS)/fabric-javaenv:$(FABRIC_RELEASE) $(BASE_DOCKER_NS)/fabric-javaenv:$(ARCH)-latest
 	docker pull $(BASE_DOCKER_NS)/fabric-couchdb:$(BASE_DOCKER_TAG)
 	docker tag $(BASE_DOCKER_NS)/fabric-couchdb:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-couchdb
 	docker pull $(BASE_DOCKER_NS)/fabric-zookeeper:$(BASE_DOCKER_TAG)
@@ -98,4 +101,5 @@ bin/evmcc:
 
 .PHONY:
 update-mocks:
-	@go generate ./fabproxy/
+	go generate ./fabproxy/
+	counterfeiter -o mocks/evmcc/mockstub.go --fake-name MockStub vendor/github.com/hyperledger/fabric/core/chaincode/shim/interfaces.go ChaincodeStubInterface

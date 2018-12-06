@@ -9,28 +9,28 @@ SPDX-License-Identifier: Apache-2.0
 package shim
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric/common/flogging"
 	commonledger "github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric/core/comm"
 	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -51,13 +51,14 @@ const (
 // ChaincodeStub is an object passed to chaincode for shim side handling of
 // APIs.
 type ChaincodeStub struct {
-	TxID           string
-	ChannelId      string
-	chaincodeEvent *pb.ChaincodeEvent
-	args           [][]byte
-	handler        *Handler
-	signedProposal *pb.SignedProposal
-	proposal       *pb.Proposal
+	TxID                       string
+	ChannelId                  string
+	chaincodeEvent             *pb.ChaincodeEvent
+	args                       [][]byte
+	handler                    *Handler
+	signedProposal             *pb.SignedProposal
+	proposal                   *pb.Proposal
+	validationParameterMetakey string
 
 	// Additional fields extracted from the signedProposal
 	creator   []byte
@@ -164,37 +165,54 @@ func IsEnabledForLogLevel(logLevel string) bool {
 	return chaincodeLogger.IsEnabledFor(lvl)
 }
 
+var loggingSetup sync.Once
+
 // SetupChaincodeLogging sets the chaincode logging format and the level
 // to the values of CORE_CHAINCODE_LOGGING_FORMAT, CORE_CHAINCODE_LOGGING_LEVEL
 // and CORE_CHAINCODE_LOGGING_SHIM set from core.yaml by chaincode_support.go
 func SetupChaincodeLogging() {
+	loggingSetup.Do(setupChaincodeLogging)
+}
+
+func setupChaincodeLogging() {
+	// This is the default log config from 1.2
+	const defaultLogFormat = "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
+	const defaultLevel = logging.INFO
+
 	viper.SetEnvPrefix("CORE")
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
 
-	// setup system-wide logging backend
-	logFormat := flogging.SetFormat(viper.GetString("chaincode.logging.format"))
-	flogging.InitBackend(logFormat, logOutput)
+	// setup process-wide logging backend
+	logFormat := viper.GetString("chaincode.logging.format")
+	if logFormat == "" {
+		logFormat = defaultLogFormat
+	}
+
+	formatter := logging.MustStringFormatter(logFormat)
+	backend := logging.NewLogBackend(os.Stderr, "", 0)
+	backendFormatter := logging.NewBackendFormatter(backend, formatter)
+	logging.SetBackend(backendFormatter).SetLevel(defaultLevel, "")
 
 	// set default log level for all modules
 	chaincodeLogLevelString := viper.GetString("chaincode.logging.level")
 	if chaincodeLogLevelString == "" {
-		chaincodeLogger.Infof("Chaincode log level not provided; defaulting to: %s", flogging.DefaultLevel())
-		flogging.InitFromSpec(flogging.DefaultLevel())
-	} else {
-		_, err := LogLevel(chaincodeLogLevelString)
-		if err == nil {
-			flogging.InitFromSpec(chaincodeLogLevelString)
-		} else {
-			chaincodeLogger.Warningf("Error: '%s' for chaincode log level: %s; defaulting to %s", err, chaincodeLogLevelString, flogging.DefaultLevel())
-			flogging.InitFromSpec(flogging.DefaultLevel())
-		}
+		chaincodeLogger.Infof("Chaincode log level not provided; defaulting to: %s", defaultLevel.String())
+		chaincodeLogLevelString = defaultLevel.String()
 	}
+
+	_, err := LogLevel(chaincodeLogLevelString)
+	if err != nil {
+		chaincodeLogger.Warningf("Error: '%s' for chaincode log level: %s; defaulting to %s", err, chaincodeLogLevelString, defaultLevel.String())
+		chaincodeLogLevelString = defaultLevel.String()
+	}
+
+	initFromSpec(chaincodeLogLevelString, defaultLevel)
 
 	// override the log level for the shim logging module - note: if this value is
 	// blank or an invalid log level, then the above call to
-	// `flogging.InitFromSpec` already set the default log level so no action
+	// `initFromSpec` already set the default log level so no action
 	// is required here.
 	shimLogLevelString := viper.GetString("chaincode.logging.shim")
 	if shimLogLevelString != "" {
@@ -210,6 +228,45 @@ func SetupChaincodeLogging() {
 	//chaincode is matched with peer.
 	buildLevel := viper.GetString("chaincode.buildlevel")
 	chaincodeLogger.Infof("Chaincode (build level: %s) starting up ...", buildLevel)
+}
+
+// this has been moved from the 1.2 logging implementation
+func initFromSpec(spec string, defaultLevel logging.Level) {
+	levelAll := defaultLevel
+	var err error
+
+	fields := strings.Split(spec, ":")
+	for _, field := range fields {
+		split := strings.Split(field, "=")
+		switch len(split) {
+		case 1:
+			if levelAll, err = logging.LogLevel(field); err != nil {
+				chaincodeLogger.Warningf("Logging level '%s' not recognized, defaulting to '%s': %s", field, defaultLevel, err)
+				levelAll = defaultLevel // need to reset cause original value was overwritten
+			}
+		case 2:
+			// <module>[,<module>...]=<level>
+			levelSingle, err := logging.LogLevel(split[1])
+			if err != nil {
+				chaincodeLogger.Warningf("Invalid logging level in '%s' ignored", field)
+				continue
+			}
+
+			if split[0] == "" {
+				chaincodeLogger.Warningf("Invalid logging override specification '%s' ignored - no module specified", field)
+			} else {
+				modules := strings.Split(split[0], ",")
+				for _, module := range modules {
+					chaincodeLogger.Debugf("Setting logging level for module '%s' to '%s'", module, levelSingle)
+					logging.SetLevel(levelSingle, module)
+				}
+			}
+		default:
+			chaincodeLogger.Warningf("Invalid logging override '%s' ignored - missing ':'?", field)
+		}
+	}
+
+	logging.SetLevel(levelAll, "") // set the logging level for all modules
 }
 
 // StartInProc is an entry point for system chaincodes bootstrap. It is not an
@@ -339,6 +396,7 @@ func (stub *ChaincodeStub) init(handler *Handler, channelId string, txid string,
 	stub.handler = handler
 	stub.signedProposal = signedProposal
 	stub.decorations = input.Decorations
+	stub.validationParameterMetakey = pb.MetaDataKeys_VALIDATION_PARAMETER.String()
 
 	// TODO: sanity check: verify that every call to init with a nil
 	// signedProposal is a legitimate one, meaning it is an internal call
@@ -400,6 +458,23 @@ func (stub *ChaincodeStub) GetState(key string) ([]byte, error) {
 	return stub.handler.handleGetState(collection, key, stub.ChannelId, stub.TxID)
 }
 
+// SetStateValidationParameter documentation can be found in interfaces.go
+func (stub *ChaincodeStub) SetStateValidationParameter(key string, ep []byte) error {
+	return stub.handler.handlePutStateMetadataEntry("", key, stub.validationParameterMetakey, ep, stub.ChannelId, stub.TxID)
+}
+
+// GetStateValidationParameter documentation can be found in interfaces.go
+func (stub *ChaincodeStub) GetStateValidationParameter(key string) ([]byte, error) {
+	md, err := stub.handler.handleGetStateMetadata("", key, stub.ChannelId, stub.TxID)
+	if err != nil {
+		return nil, err
+	}
+	if ep, ok := md[stub.validationParameterMetakey]; ok {
+		return ep, nil
+	}
+	return nil, nil
+}
+
 // PutState documentation can be found in interfaces.go
 func (stub *ChaincodeStub) PutState(key string, value []byte) error {
 	if key == "" {
@@ -410,15 +485,23 @@ func (stub *ChaincodeStub) PutState(key string, value []byte) error {
 	return stub.handler.handlePutState(collection, key, value, stub.ChannelId, stub.TxID)
 }
 
+func (stub *ChaincodeStub) createStateQueryIterator(response *pb.QueryResponse) *StateQueryIterator {
+	return &StateQueryIterator{CommonIterator: &CommonIterator{
+		handler:    stub.handler,
+		channelId:  stub.ChannelId,
+		txid:       stub.TxID,
+		response:   response,
+		currentLoc: 0}}
+}
+
 // GetQueryResult documentation can be found in interfaces.go
 func (stub *ChaincodeStub) GetQueryResult(query string) (StateQueryIteratorInterface, error) {
 	// Access public data by setting the collection to empty string
 	collection := ""
-	response, err := stub.handler.handleGetQueryResult(collection, query, stub.ChannelId, stub.TxID)
-	if err != nil {
-		return nil, err
-	}
-	return &StateQueryIterator{CommonIterator: &CommonIterator{stub.handler, stub.ChannelId, stub.TxID, response, 0}}, nil
+	// ignore QueryResponseMetadata as it is not applicable for a rich query without pagination
+	iterator, _, err := stub.handleGetQueryResult(collection, query, nil)
+
+	return iterator, err
 }
 
 // DelState documentation can be found in interfaces.go
@@ -468,7 +551,21 @@ func (stub *ChaincodeStub) GetPrivateDataByRange(collection, startKey, endKey st
 	if err := validateSimpleKeys(startKey, endKey); err != nil {
 		return nil, err
 	}
-	return stub.handleGetStateByRange(collection, startKey, endKey)
+	// ignore QueryResponseMetadata as it is not applicable for a range query without pagination
+	iterator, _, err := stub.handleGetStateByRange(collection, startKey, endKey, nil)
+
+	return iterator, err
+}
+
+func (stub *ChaincodeStub) createRangeKeysForPartialCompositeKey(objectType string, attributes []string) (string, string, error) {
+	partialCompositeKey, err := stub.CreateCompositeKey(objectType, attributes)
+	if err != nil {
+		return "", "", err
+	}
+	startKey := partialCompositeKey
+	endKey := partialCompositeKey + string(maxUnicodeRuneValue)
+
+	return startKey, endKey, nil
 }
 
 // GetPrivateDataByPartialCompositeKey documentation can be found in interfaces.go
@@ -476,11 +573,15 @@ func (stub *ChaincodeStub) GetPrivateDataByPartialCompositeKey(collection, objec
 	if collection == "" {
 		return nil, fmt.Errorf("collection must not be an empty string")
 	}
-	if partialCompositeKey, err := stub.CreateCompositeKey(objectType, attributes); err == nil {
-		return stub.handleGetStateByRange(collection, partialCompositeKey, partialCompositeKey+string(maxUnicodeRuneValue))
-	} else {
+
+	startKey, endKey, err := stub.createRangeKeysForPartialCompositeKey(objectType, attributes)
+	if err != nil {
 		return nil, err
 	}
+	// ignore QueryResponseMetadata as it is not applicable for a partial composite key query without pagination
+	iterator, _, err := stub.handleGetStateByRange(collection, startKey, endKey, nil)
+
+	return iterator, err
 }
 
 // GetPrivateDataQueryResult documentation can be found in interfaces.go
@@ -488,15 +589,27 @@ func (stub *ChaincodeStub) GetPrivateDataQueryResult(collection, query string) (
 	if collection == "" {
 		return nil, fmt.Errorf("collection must not be an empty string")
 	}
-	response, err := stub.handler.handleGetQueryResult(collection, query, stub.ChannelId, stub.TxID)
+	// ignore QueryResponseMetadata as it is not applicable for a range query without pagination
+	iterator, _, err := stub.handleGetQueryResult(collection, query, nil)
+
+	return iterator, err
+}
+
+// GetPrivateDataValidationParameter documentation can be found in interfaces.go
+func (stub *ChaincodeStub) GetPrivateDataValidationParameter(collection, key string) ([]byte, error) {
+	md, err := stub.handler.handleGetStateMetadata(collection, key, stub.ChannelId, stub.TxID)
 	if err != nil {
 		return nil, err
 	}
-	return &StateQueryIterator{CommonIterator: &CommonIterator{
-		handler:   stub.handler,
-		channelId: stub.ChannelId,
-		txid:      stub.TxID,
-		response:  response}}, nil
+	if ep, ok := md[stub.validationParameterMetakey]; ok {
+		return ep, nil
+	}
+	return nil, nil
+}
+
+// SetPrivateDataValidationParameter documentation can be found in interfaces.go
+func (stub *ChaincodeStub) SetPrivateDataValidationParameter(collection, key string, ep []byte) error {
+	return stub.handler.handlePutStateMetadataEntry(collection, key, stub.validationParameterMetakey, ep, stub.ChannelId, stub.TxID)
 }
 
 // CommonIterator documentation can be found in interfaces.go
@@ -525,12 +638,48 @@ const (
 	HISTORY_QUERY_RESULT
 )
 
-func (stub *ChaincodeStub) handleGetStateByRange(collection, startKey, endKey string) (StateQueryIteratorInterface, error) {
-	response, err := stub.handler.handleGetStateByRange(collection, startKey, endKey, stub.ChannelId, stub.TxID)
+func createQueryResponseMetadata(metadataBytes []byte) (*pb.QueryResponseMetadata, error) {
+	metadata := &pb.QueryResponseMetadata{}
+	err := proto.Unmarshal(metadataBytes, metadata)
 	if err != nil {
 		return nil, err
 	}
-	return &StateQueryIterator{CommonIterator: &CommonIterator{stub.handler, stub.ChannelId, stub.TxID, response, 0}}, nil
+
+	return metadata, nil
+}
+
+func (stub *ChaincodeStub) handleGetStateByRange(collection, startKey, endKey string,
+	metadata []byte) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
+
+	response, err := stub.handler.handleGetStateByRange(collection, startKey, endKey, metadata, stub.ChannelId, stub.TxID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	iterator := stub.createStateQueryIterator(response)
+	responseMetadata, err := createQueryResponseMetadata(response.Metadata)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return iterator, responseMetadata, nil
+}
+
+func (stub *ChaincodeStub) handleGetQueryResult(collection, query string,
+	metadata []byte) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
+
+	response, err := stub.handler.handleGetQueryResult(collection, query, metadata, stub.ChannelId, stub.TxID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	iterator := stub.createStateQueryIterator(response)
+	responseMetadata, err := createQueryResponseMetadata(response.Metadata)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return iterator, responseMetadata, nil
 }
 
 // GetStateByRange documentation can be found in interfaces.go
@@ -542,7 +691,11 @@ func (stub *ChaincodeStub) GetStateByRange(startKey, endKey string) (StateQueryI
 		return nil, err
 	}
 	collection := ""
-	return stub.handleGetStateByRange(collection, startKey, endKey)
+
+	// ignore QueryResponseMetadata as it is not applicable for a range query without pagination
+	iterator, _, err := stub.handleGetStateByRange(collection, startKey, endKey, nil)
+
+	return iterator, err
 }
 
 // GetHistoryForKey documentation can be found in interfaces.go
@@ -624,11 +777,73 @@ func validateSimpleKeys(simpleKeys ...string) error {
 //would be returned.
 func (stub *ChaincodeStub) GetStateByPartialCompositeKey(objectType string, attributes []string) (StateQueryIteratorInterface, error) {
 	collection := ""
-	if partialCompositeKey, err := stub.CreateCompositeKey(objectType, attributes); err == nil {
-		return stub.handleGetStateByRange(collection, partialCompositeKey, partialCompositeKey+string(maxUnicodeRuneValue))
-	} else {
+	startKey, endKey, err := stub.createRangeKeysForPartialCompositeKey(objectType, attributes)
+	if err != nil {
 		return nil, err
 	}
+	// ignore QueryResponseMetadata as it is not applicable for a partial composite key query without pagination
+	iterator, _, err := stub.handleGetStateByRange(collection, startKey, endKey, nil)
+
+	return iterator, err
+}
+
+func createQueryMetadata(pageSize int32, bookmark string) ([]byte, error) {
+	// Construct the QueryMetadata with a page size and a bookmark needed for pagination
+	metadata := &pb.QueryMetadata{PageSize: pageSize, Bookmark: bookmark}
+	metadataBytes, err := proto.Marshal(metadata)
+	if err != nil {
+		return nil, err
+	}
+	return metadataBytes, nil
+}
+
+func (stub *ChaincodeStub) GetStateByRangeWithPagination(startKey, endKey string, pageSize int32,
+	bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
+
+	if startKey == "" {
+		startKey = emptyKeySubstitute
+	}
+	if err := validateSimpleKeys(startKey, endKey); err != nil {
+		return nil, nil, err
+	}
+
+	collection := ""
+
+	metadata, err := createQueryMetadata(pageSize, bookmark)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return stub.handleGetStateByRange(collection, startKey, endKey, metadata)
+}
+
+func (stub *ChaincodeStub) GetStateByPartialCompositeKeyWithPagination(objectType string, keys []string,
+	pageSize int32, bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
+
+	collection := ""
+
+	metadata, err := createQueryMetadata(pageSize, bookmark)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	startKey, endKey, err := stub.createRangeKeysForPartialCompositeKey(objectType, keys)
+	if err != nil {
+		return nil, nil, err
+	}
+	return stub.handleGetStateByRange(collection, startKey, endKey, metadata)
+}
+
+func (stub *ChaincodeStub) GetQueryResultWithPagination(query string, pageSize int32,
+	bookmark string) (StateQueryIteratorInterface, *pb.QueryResponseMetadata, error) {
+	// Access public data by setting the collection to empty string
+	collection := ""
+
+	metadata, err := createQueryMetadata(pageSize, bookmark)
+	if err != nil {
+		return nil, nil, err
+	}
+	return stub.handleGetQueryResult(collection, query, metadata)
 }
 
 func (iter *StateQueryIterator) Next() (*queryresult.KV, error) {

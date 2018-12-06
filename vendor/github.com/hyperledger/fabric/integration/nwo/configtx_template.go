@@ -47,7 +47,7 @@ Organizations:{{ range .PeerOrgs }}
 
 Channel: &ChannelDefaults
   Capabilities:
-    V1_1: true
+    V1_3: true
   Policies:
     Readers:
       Type: ImplicitMeta
@@ -106,7 +106,7 @@ Profiles:{{ range .Profiles }}
     {{- else }}
     Application:
       Capabilities:
-        V1_2: true
+        V1_3: true
       Organizations:{{ range .Organizations }}
       - *{{ ($w.Organization .).MSPID }}
       {{- end}}

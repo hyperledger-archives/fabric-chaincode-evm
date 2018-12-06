@@ -125,6 +125,19 @@ var _ = Describe("EndToEnd", func() {
 		Eventually(sess, LongEventualTimeout).Should(gexec.Exit(0))
 		Expect(sess.Err).To(gbytes.Say("Chaincode invoke successful. result: status:200"))
 
+		By("verifying SimpleStorage runtime bytecode")
+		sess, err = network.PeerUserSession(peer, "User1", commands.ChaincodeQuery{
+			ChannelID: "testchannel",
+			Name:      "evmcc",
+			//get()
+			Ctor: fmt.Sprintf(`{"Args":["getCode","%s"]}`, contractAddr),
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(sess, LongEventualTimeout).Should(gexec.Exit(0))
+		output, _ = sess.Command.CombinedOutput()
+		fmt.Println(string(output))
+		Expect(sess.Out).To(gbytes.Say(SimpleStorage.RuntimeBytecode))
+
 		By("querying the smart contract")
 		sess, err = network.PeerUserSession(peer, "User1", helpers.ChaincodeQueryWithHex{
 			ChannelID: "testchannel",

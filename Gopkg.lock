@@ -224,6 +224,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/grpc-ecosystem/go-grpc-middleware"
+  packages = ["."]
+  revision = "c250d6563d4d4c20252cd865923440e829844f4e"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/hashicorp/hcl"
   packages = [
@@ -263,7 +269,6 @@
   version = "v0.18.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hyperledger/fabric"
   packages = [
     "bccsp",
@@ -274,8 +279,10 @@
     "bccsp/utils",
     "common/crypto",
     "common/flogging",
+    "common/flogging/fabenc",
     "common/ledger",
     "common/metadata",
+    "common/tools/configtxlator/update",
     "common/util",
     "core/chaincode/platforms",
     "core/chaincode/platforms/ccmetadata",
@@ -283,8 +290,6 @@
     "core/comm",
     "core/config",
     "core/container/util",
-    "gossip/api",
-    "gossip/common",
     "idemix",
     "integration/helpers",
     "integration/nwo",
@@ -293,23 +298,23 @@
     "integration/runner",
     "msp",
     "protos/common",
-    "protos/discovery",
-    "protos/gossip",
     "protos/ledger/queryresult",
+    "protos/ledger/rwset",
+    "protos/ledger/rwset/kvrwset",
     "protos/msp",
     "protos/peer",
     "protos/utils"
   ]
-  revision = "81fb533d88269567c7b9be105fdd49e163999685"
+  revision = "ab0a67ad7102f1281736e2c309e9a0ef91b08fd9"
+  version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hyperledger/fabric-amcl"
   packages = [
     "amcl",
     "amcl/FP256BN"
   ]
-  revision = "82c3cb92585cff1e3e3b621d49c53174c03b8d63"
+  revision = "6b78f7a22d950103fb2669aabb969f56d42d283b"
 
 [[projects]]
   branch = "master"
@@ -706,6 +711,32 @@
   version = "v3.3.2"
 
 [[projects]]
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
+
+[[projects]]
+  name = "go.uber.org/multierr"
+  packages = ["."]
+  revision = "3c4937480c32f4c13a875a1829af76c98ca3d40a"
+  version = "v1.1.0"
+
+[[projects]]
+  name = "go.uber.org/zap"
+  packages = [
+    ".",
+    "buffer",
+    "internal/bufferpool",
+    "internal/color",
+    "internal/exit",
+    "zapcore",
+    "zapgrpc"
+  ]
+  revision = "ff33455a0e382e8a81d14dd7c922020b6b5e7982"
+  version = "v1.9.1"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
@@ -834,6 +865,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8a0488ce0fa7ef538382fb4ec2e7e6b733ac77cdeb4d1f32aa5eb0c160f25129"
+  inputs-digest = "4f34a49c098afd954b00fcb8f22d9446cf09f30dc340805fad7f2865fdde21da"
   solver-name = "gps-cdcl"
   solver-version = 1

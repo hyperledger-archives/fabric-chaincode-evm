@@ -80,7 +80,7 @@ orderers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      allow-insecure: true
+      allow-insecure: false
     tlsCACerts:
       path: %s/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 peers:
@@ -92,7 +92,7 @@ peers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      allow-insecure: true
+      allow-insecure: false
     tlsCACerts:
       path: %s/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
@@ -104,7 +104,7 @@ peers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      allow-insecure: true
+      allow-insecure: false
     tlsCACerts:
       path: %s/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
@@ -116,7 +116,7 @@ peers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      allow-insecure: true
+      allow-insecure: false
     tlsCACerts:
       path: %s/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
@@ -128,7 +128,7 @@ peers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      allow-insecure: true
+      allow-insecure: false
     tlsCACerts:
       path: %s/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
