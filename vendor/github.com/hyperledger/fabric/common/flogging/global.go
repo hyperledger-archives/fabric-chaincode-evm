@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package flogging
 
 import (
-	"regexp"
 	"strings"
 
 	"go.uber.org/zap/zapcore"
@@ -46,49 +45,25 @@ func Init(config Config) {
 //
 // Used in tests and in the package init
 func Reset() {
-	Global.ResetLevels()
 	Global.Apply(Config{})
 }
 
-// GetModuleLevel gets the current logging level for the specified module.
-func GetModuleLevel(module string) string {
-	return strings.ToUpper(Global.Level(module).String())
+// GetLoggerLevel gets the current logging level for the logger with the
+// provided name.
+func GetLoggerLevel(loggerName string) string {
+	return strings.ToUpper(Global.Level(loggerName).String())
 }
 
-// SetModuleLevels sets the logging level for the modules that match the
-// supplied regular expression. Can be used to dynamically change the log level
-// for the module.
-func SetModuleLevels(moduleRegexp, level string) error {
-	re, err := regexp.Compile(moduleRegexp)
+// MustGetLogger creates a logger with the specified name. If an invalid name
+// is provided, the operation will panic.
+func MustGetLogger(loggerName string) *FabricLogger {
+	return Global.Logger(loggerName)
+}
+
+// ActivateSpec is used to activate a logging specification.
+func ActivateSpec(spec string) {
+	err := Global.ActivateSpec(spec)
 	if err != nil {
-		return err
+		panic(err)
 	}
-
-	Global.SetLevels(re, NameToLevel(level))
-	return nil
-}
-
-// SetModuleLevel sets the logging level for a single module.
-func SetModuleLevel(module string, level string) error {
-	Global.SetLevel(module, NameToLevel(level))
-	return nil
-}
-
-// MustGetLogger is used in place of `logging.MustGetLogger` to allow us to
-// store a map of all modules and submodules that have loggers in the logging.
-func MustGetLogger(module string) *FabricLogger {
-	return Global.Logger(module)
-}
-
-// GetModuleLevels takes a snapshot of the global module level information and
-// returns it as a map. The map can then be used to restore logging levels to
-// values in the snapshot.
-func GetModuleLevels() map[string]zapcore.Level {
-	return Global.Levels()
-}
-
-// RestoreLevels sets the global module level information to the contents of the
-// provided map.
-func RestoreLevels(levels map[string]zapcore.Level) {
-	Global.RestoreLevels(levels)
 }

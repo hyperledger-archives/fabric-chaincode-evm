@@ -6,12 +6,8 @@
   name = "github.com/hyperledger/burrow"
 
 [[constraint]]
-  version = "v1.3.0"
+  version = "1.4.0"
   name = "github.com/hyperledger/fabric"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/onsi/gomega"
 
 [[constraint]]
   branch = "master"
@@ -31,8 +27,16 @@
   revision = "a3b6351eb1ff8e1bfa30b2f55d7e282186ed8fee"
   name = "github.com/onsi/ginkgo"
 
+[[constraint]]
+  version = "1.4.2"
+  name = "github.com/onsi/gomega"
+
 [[override]]
-  revision = "57142e89befe90977da6dce7762f9fcc70f28da1"
+  version = "=1.3.0"
+  name= "github.com/fsouza/go-dockerclient"
+
+[[override]]
+  revision = "0c5f8d2b9b23ab8d23529b3effdcf53bb058298c"
   name = "github.com/docker/docker"
 
 [[override]]

@@ -93,3 +93,62 @@ func BasicKafka() *Config {
 	config.Consensus.Brokers = 1
 	return config
 }
+
+func BasicEtcdRaft() *Config {
+	config := BasicSolo()
+	config.Consensus.Type = "etcdraft"
+	config.Profiles = []*Profile{{
+		Name:     "SampleDevModeEtcdRaft",
+		Orderers: []string{"orderer"},
+	}, {
+		Name:          "TwoOrgsChannel",
+		Consortium:    "SampleConsortium",
+		Organizations: []string{"Org1", "Org2"},
+	}}
+	config.SystemChannel.Profile = "SampleDevModeEtcdRaft"
+	return config
+}
+
+func MultiChannelEtcdRaft() *Config {
+	config := BasicSolo()
+	config.Consensus.Type = "etcdraft"
+	config.Profiles = []*Profile{{
+		Name:     "SampleDevModeEtcdRaft",
+		Orderers: []string{"orderer"},
+	}, {
+		Name:          "TwoOrgsChannel",
+		Consortium:    "SampleConsortium",
+		Organizations: []string{"Org1", "Org2"},
+	}}
+	config.SystemChannel.Profile = "SampleDevModeEtcdRaft"
+	config.Channels = []*Channel{
+		{Name: "testchannel1", Profile: "TwoOrgsChannel"},
+		{Name: "testchannel2", Profile: "TwoOrgsChannel"}}
+
+	for _, peer := range config.Peers {
+		peer.Channels = []*PeerChannel{
+			{Name: "testchannel1", Anchor: true},
+			{Name: "testchannel2", Anchor: true},
+		}
+	}
+
+	return config
+}
+
+func MultiNodeEtcdRaft() *Config {
+	config := BasicEtcdRaft()
+	config.Orderers = []*Orderer{
+		{Name: "orderer1", Organization: "OrdererOrg"},
+		{Name: "orderer2", Organization: "OrdererOrg"},
+		{Name: "orderer3", Organization: "OrdererOrg"},
+	}
+	config.Profiles = []*Profile{{
+		Name:     "SampleDevModeEtcdRaft",
+		Orderers: []string{"orderer1", "orderer2", "orderer3"},
+	}, {
+		Name:          "TwoOrgsChannel",
+		Consortium:    "SampleConsortium",
+		Organizations: []string{"Org1", "Org2"},
+	}}
+	return config
+}

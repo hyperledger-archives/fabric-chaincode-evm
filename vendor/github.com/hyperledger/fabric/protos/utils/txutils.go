@@ -7,9 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package utils
 
 import (
-	"fmt"
-
 	"bytes"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/bccsp"
@@ -159,7 +158,7 @@ func CreateSignedTx(proposal *peer.Proposal, signer msp.SigningIdentity, resps .
 	for n, r := range resps {
 		if n == 0 {
 			a1 = r.Payload
-			if r.Response.Status != 200 {
+			if r.Response.Status < 200 || r.Response.Status >= 400 {
 				return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.Response.Status, r.Response.Message)
 			}
 			continue

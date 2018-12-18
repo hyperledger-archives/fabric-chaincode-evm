@@ -11,7 +11,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-
 	"strings"
 
 	"github.com/hyperledger/fabric/common/flogging"
@@ -55,7 +54,7 @@ type Registry struct {
 	PackageWriter PackageWriter
 }
 
-var logger = flogging.MustGetLogger("chaincode-platform")
+var logger = flogging.MustGetLogger("chaincode.platform")
 
 func NewRegistry(platformTypes ...Platform) *Registry {
 	platforms := make(map[string]Platform)

@@ -11,15 +11,14 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/common/tools/configtxlator/update"
 	"github.com/hyperledger/fabric/integration/nwo/commands"
 	"github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/utils"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 )
 
 // GetConfigBlock retrieves the current config block for a channel and
@@ -90,6 +89,56 @@ func UpdateConfig(n *Network, orderer *Orderer, channel string, current, updated
 
 	for _, signer := range additionalSigners {
 		sess, err := n.PeerAdminSession(signer, commands.SignConfigTx{File: updateFile})
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
+	}
+
+	// get current configuration block number
+	currentBlockNumber := CurrentConfigBlockNumber(n, submitter, orderer, channel)
+
+	sess, err := n.PeerAdminSession(submitter, commands.ChannelUpdate{
+		ChannelID: channel,
+		Orderer:   n.OrdererAddress(orderer, ListenPort),
+		File:      updateFile,
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
+	Expect(sess.Err).To(gbytes.Say("Successfully submitted channel update"))
+
+	// wait for the block to be committed
+	ccb := func() uint64 { return CurrentConfigBlockNumber(n, submitter, orderer, channel) }
+	Eventually(ccb, n.EventuallyTimeout).Should(BeNumerically(">", currentBlockNumber))
+}
+
+// UpdateOrdererConfig computes, signs, and submits a configuration update which requires orderers signature and waits
+// for the update to complete.
+func UpdateOrdererConfig(n *Network, orderer *Orderer, channel string, current, updated *common.Config, submitter *Peer, additionalSigners ...*Orderer) {
+	tempDir, err := ioutil.TempDir("", "updateConfig")
+	Expect(err).NotTo(HaveOccurred())
+	defer os.RemoveAll(tempDir)
+
+	// compute update
+	configUpdate, err := update.Compute(current, updated)
+	Expect(err).NotTo(HaveOccurred())
+	configUpdate.ChannelId = channel
+
+	signedEnvelope, err := utils.CreateSignedEnvelope(
+		common.HeaderType_CONFIG_UPDATE,
+		channel,
+		nil, // local signer
+		&common.ConfigUpdateEnvelope{ConfigUpdate: utils.MarshalOrPanic(configUpdate)},
+		0, // message version
+		0, // epoch
+	)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(signedEnvelope).NotTo(BeNil())
+
+	updateFile := filepath.Join(tempDir, "update.pb")
+	err = ioutil.WriteFile(updateFile, utils.MarshalOrPanic(signedEnvelope), 0600)
+	Expect(err).NotTo(HaveOccurred())
+
+	for _, signer := range additionalSigners {
+		sess, err := n.OrdererAdminSession(signer, submitter, commands.SignConfigTx{File: updateFile})
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
 	}

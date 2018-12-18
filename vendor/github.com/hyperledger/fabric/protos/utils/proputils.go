@@ -8,7 +8,6 @@ package utils
 
 import (
 	"encoding/binary"
-
 	"encoding/hex"
 
 	"github.com/golang/protobuf/proto"
@@ -249,7 +248,7 @@ func CreateChaincodeProposalWithTransient(typ common.HeaderType, chainID string,
 	}
 
 	// compute txid
-	txid, err := ComputeProposalTxID(nonce, creator)
+	txid, err := ComputeTxID(nonce, creator)
 	if err != nil {
 		return nil, "", err
 	}
@@ -269,7 +268,7 @@ func CreateChaincodeProposalWithTxIDAndTransient(typ common.HeaderType, chainID 
 
 	// compute txid unless provided by tests
 	if txid == "" {
-		txid, err = ComputeProposalTxID(nonce, creator)
+		txid, err = ComputeTxID(nonce, creator)
 		if err != nil {
 			return nil, "", err
 		}
@@ -424,12 +423,16 @@ func GetBytesEnvelope(env *common.Envelope) ([]byte, error) {
 
 // GetActionFromEnvelope extracts a ChaincodeAction message from a
 // serialized Envelope
+// TODO: fix function name as per FAB-11831
 func GetActionFromEnvelope(envBytes []byte) (*peer.ChaincodeAction, error) {
 	env, err := GetEnvelopeFromBlock(envBytes)
 	if err != nil {
 		return nil, err
 	}
+	return GetActionFromEnvelopeMsg(env)
+}
 
+func GetActionFromEnvelopeMsg(env *common.Envelope) (*peer.ChaincodeAction, error) {
 	payl, err := GetPayload(env)
 	if err != nil {
 		return nil, err
@@ -572,9 +575,9 @@ func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, pr
 	return CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, chainID, lsccSpec, creator)
 }
 
-// ComputeProposalTxID computes TxID as the Hash computed
+// ComputeTxID computes TxID as the Hash computed
 // over the concatenation of nonce and creator.
-func ComputeProposalTxID(nonce, creator []byte) (string, error) {
+func ComputeTxID(nonce, creator []byte) (string, error) {
 	// TODO: Get the Hash function to be used from
 	// channel configuration
 	digest, err := factory.GetDefault().Hash(
@@ -586,10 +589,10 @@ func ComputeProposalTxID(nonce, creator []byte) (string, error) {
 	return hex.EncodeToString(digest), nil
 }
 
-// CheckProposalTxID checks that txid is equal to the Hash computed
+// CheckTxID checks that txid is equal to the Hash computed
 // over the concatenation of nonce and creator.
-func CheckProposalTxID(txid string, nonce, creator []byte) error {
-	computedTxID, err := ComputeProposalTxID(nonce, creator)
+func CheckTxID(txid string, nonce, creator []byte) error {
+	computedTxID, err := ComputeTxID(nonce, creator)
 	if err != nil {
 		return errors.WithMessage(err, "error computing target txid")
 	}

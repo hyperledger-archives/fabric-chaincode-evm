@@ -37,13 +37,13 @@ main() {
 
     #Check if Fabric is in the gopath. Fabric needs to be in the gopath for the integration tests
     if [ ! -d "${FABRIC_DIR}" ]; then
-        echo "Downloading Fabric Branch v1.3.0"
-        git clone https://github.com/hyperledger/fabric $FABRIC_DIR --branch v1.3.0 --single-branch --depth 1
+        echo "Downloading Fabric Branch v1.4.0"
+        git clone https://github.com/hyperledger/fabric $FABRIC_DIR --branch v1.4.0 --single-branch --depth 1
     else
         FABRIC_VERSION=$(git -C ${FABRIC_DIR} describe)
-        if [[ ${FABRIC_VERSION} != "v1.3.0" ]]; then
-          echo "Please switch Fabric Repository to tag v1.3.0 before running these tests"
-          echo "You can run in the Fabric Directory: git checkout v1.3.0"
+        if [[ ${FABRIC_VERSION} != "v1.4.0" ]]; then
+          echo "Please switch Fabric Repository to tag v1.4.0 before running these tests"
+          echo "You can run in the Fabric Directory: git checkout v1.4.0"
           exit 1
         fi
     fi

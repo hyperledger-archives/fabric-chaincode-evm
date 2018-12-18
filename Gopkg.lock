@@ -86,6 +86,7 @@
     "api/types/swarm",
     "api/types/swarm/runtime",
     "api/types/versions",
+    "errdefs",
     "opts",
     "pkg/fileutils",
     "pkg/homedir",
@@ -97,7 +98,7 @@
     "pkg/stdcopy",
     "pkg/system"
   ]
-  revision = "57142e89befe90977da6dce7762f9fcc70f28da1"
+  revision = "0c5f8d2b9b23ab8d23529b3effdcf53bb058298c"
 
 [[projects]]
   name = "github.com/docker/go-connections"
@@ -110,6 +111,11 @@
   packages = ["."]
   revision = "47565b4f722fb6ceae66b95f853feed578a4a51c"
   version = "v0.3.3"
+
+[[projects]]
+  name = "github.com/docker/libnetwork"
+  packages = ["ipamutils"]
+  revision = "19279f0492417475b6bfbd0aa529f73e8f178fb5"
 
 [[projects]]
   branch = "master"
@@ -131,8 +137,8 @@
     "internal/jsonmessage",
     "internal/term"
   ]
-  revision = "8842d40dbf5ee062d80f9dc429db31a0fe0cdc73"
-  version = "v1.2.2"
+  revision = "1b33efcb40bef3494af8bc6a1f73600f37a3c9d1"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/go-kit/kit"
@@ -273,6 +279,9 @@
   packages = [
     "bccsp",
     "bccsp/factory",
+    "bccsp/idemix",
+    "bccsp/idemix/bridge",
+    "bccsp/idemix/handlers",
     "bccsp/pkcs11",
     "bccsp/signer",
     "bccsp/sw",
@@ -282,6 +291,7 @@
     "common/flogging/fabenc",
     "common/ledger",
     "common/metadata",
+    "common/metrics",
     "common/tools/configtxlator/update",
     "common/util",
     "core/chaincode/platforms",
@@ -303,10 +313,11 @@
     "protos/ledger/rwset/kvrwset",
     "protos/msp",
     "protos/peer",
+    "protos/token",
     "protos/utils"
   ]
-  revision = "ab0a67ad7102f1281736e2c309e9a0ef91b08fd9"
-  version = "v1.3.0"
+  revision = "d700b43476e803c864c48021e63a78543b60e17e"
+  version = "v1.4.0"
 
 [[projects]]
   name = "github.com/hyperledger/fabric-amcl"
@@ -498,7 +509,6 @@
   revision = "a3b6351eb1ff8e1bfa30b2f55d7e282186ed8fee"
 
 [[projects]]
-  branch = "master"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -516,7 +526,8 @@
     "matchers/support/goraph/util",
     "types"
   ]
-  revision = "9be84105672ba4433a3b61f1b4d7f9ff8b022293"
+  revision = "65fb64232476ad9046e57c26cd0bff3d3a8dc6cd"
+  version = "v1.4.3"
 
 [[projects]]
   branch = "master"
@@ -840,7 +851,9 @@
     "internal",
     "internal/backoff",
     "internal/channelz",
+    "internal/envconfig",
     "internal/grpcrand",
+    "internal/transport",
     "keepalive",
     "metadata",
     "naming",
@@ -850,11 +863,10 @@
     "resolver/passthrough",
     "stats",
     "status",
-    "tap",
-    "transport"
+    "tap"
   ]
-  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
-  version = "v1.13.0"
+  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
+  version = "v1.15.0"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -865,6 +877,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e956bd14d598d736e1dd95a7960a8d6e782b69e605f6d30f186d889ff4a6d14b"
+  inputs-digest = "0d1122e5b8c2d12de94807e162e9f1a04af5e45a040df7c5dbfd804ff59363a9"
   solver-name = "gps-cdcl"
   solver-version = 1

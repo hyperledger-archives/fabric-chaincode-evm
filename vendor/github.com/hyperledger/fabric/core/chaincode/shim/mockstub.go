@@ -211,6 +211,12 @@ func (stub *MockStub) PutState(key string, value []byte) error {
 		return err
 	}
 
+	// If the value is nil or empty, delete the key
+	if len(value) == 0 {
+		mockLogger.Debug("MockStub", stub.Name, "PutState called, but value is nil or empty. Delete ", key)
+		return stub.DelState(key)
+	}
+
 	mockLogger.Debug("MockStub", stub.Name, "Putting", key, value)
 	stub.State[key] = value
 
@@ -471,7 +477,7 @@ func (iter *MockStateRangeQueryIterator) HasNext() bool {
 		comp1 := strings.Compare(current.Value.(string), iter.StartKey)
 		comp2 := strings.Compare(current.Value.(string), iter.EndKey)
 		if comp1 >= 0 {
-			if comp2 <= 0 {
+			if comp2 < 0 {
 				mockLogger.Debug("HasNext() got next")
 				return true
 			} else {
@@ -507,7 +513,7 @@ func (iter *MockStateRangeQueryIterator) Next() (*queryresult.KV, error) {
 		comp2 := strings.Compare(iter.Current.Value.(string), iter.EndKey)
 		// compare to start and end keys. or, if this is an open-ended query for
 		// all keys, it should always return the key and value
-		if (comp1 >= 0 && comp2 <= 0) || (iter.StartKey == "" && iter.EndKey == "") {
+		if (comp1 >= 0 && comp2 < 0) || (iter.StartKey == "" && iter.EndKey == "") {
 			key := iter.Current.Value.(string)
 			value, err := iter.Stub.GetState(key)
 			iter.Current = iter.Current.Next()

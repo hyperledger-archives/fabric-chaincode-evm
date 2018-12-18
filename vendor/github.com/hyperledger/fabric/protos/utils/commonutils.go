@@ -196,7 +196,7 @@ func MakeSignatureHeader(serializedCreatorCertChain []byte, nonce []byte) *cb.Si
 // SetTxID generates a transaction id based on the provided signature header
 // and sets the TxId field in the channel header
 func SetTxID(channelHeader *cb.ChannelHeader, signatureHeader *cb.SignatureHeader) error {
-	txid, err := ComputeProposalTxID(
+	txid, err := ComputeTxID(
 		signatureHeader.Nonce,
 		signatureHeader.Creator,
 	)
@@ -291,7 +291,7 @@ func IsConfigBlock(block *cb.Block) bool {
 		return false
 	}
 
-	return cb.HeaderType(hdr.Type) == cb.HeaderType_CONFIG
+	return cb.HeaderType(hdr.Type) == cb.HeaderType_CONFIG || cb.HeaderType(hdr.Type) == cb.HeaderType_ORDERER_TRANSACTION
 }
 
 // ChannelHeader returns the *cb.ChannelHeader for a given *cb.Envelope.
@@ -325,4 +325,15 @@ func ChannelID(env *cb.Envelope) (string, error) {
 	}
 
 	return chdr.ChannelId, nil
+}
+
+// EnvelopeToConfigUpdate is used to extract a ConfigUpdateEnvelope from an envelope of
+// type CONFIG_UPDATE
+func EnvelopeToConfigUpdate(configtx *cb.Envelope) (*cb.ConfigUpdateEnvelope, error) {
+	configUpdateEnv := &cb.ConfigUpdateEnvelope{}
+	_, err := UnmarshalEnvelopeOfType(configtx, cb.HeaderType_CONFIG_UPDATE, configUpdateEnv)
+	if err != nil {
+		return nil, err
+	}
+	return configUpdateEnv, nil
 }

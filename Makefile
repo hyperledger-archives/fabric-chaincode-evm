@@ -22,7 +22,7 @@ ARCH=$(shell go env GOARCH)
 BASEIMAGE_RELEASE=0.4.13
 BASE_DOCKER_NS ?= hyperledger
 BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
-FABRIC_RELEASE = 1.3.0
+FABRIC_RELEASE = 1.4
 
 PACKAGES = ./statemanager/... ./evmcc/... ./fabproxy/
 

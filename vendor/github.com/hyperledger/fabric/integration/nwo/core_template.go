@@ -8,15 +8,6 @@ package nwo
 
 const DefaultCoreTemplate = `---
 logging:
-  level:      info
-  cauthdsl:   warning
-  gossip:     warning
-  grpc:       error
-  ledger:     info
-  msp:        warning
-  policies:   warning
-  peer:
-    gossip: warning
   format: '%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}'
 
 peer:
@@ -71,6 +62,9 @@ peer:
       pullRetryThreshold: 60s
       transientstoreMaxBlockRetention: 1000
       pushAckTimeout: 3s
+      reconcileBatchSize: 10
+      reconcileSleepInterval: 10s
+      reconciliationEnabled: true
   events:
     address: 127.0.0.1:{{ .PeerPort Peer "Events" }}
     buffersize: 100
@@ -140,7 +134,7 @@ vm:
         file: docker/tls.crt
       key:
         file: docker/tls.key
-    attachStdout: false
+    attachStdout: true
     hostConfig:
       NetworkMode: host
       LogConfig:
@@ -192,4 +186,24 @@ ledger:
       warmIndexesAfterNBlocks: 1
   history:
     enableHistoryDatabase: true
+
+operations:
+  listenAddress: 127.0.0.1:{{ .PeerPort Peer "Operations" }}
+  tls:
+    enabled: true
+    cert:
+      file: {{ .PeerLocalTLSDir Peer }}/server.crt
+    key:
+      file: {{ .PeerLocalTLSDir Peer }}/server.key
+    clientAuthRequired: false
+    clientRootCAs:
+      files:
+      - {{ .PeerLocalTLSDir Peer }}/ca.crt
+metrics:
+  provider: {{ .MetricsProvider }}
+  statsd:
+    network: udp
+    address: {{ if .StatsdEndpoint }}{{ .StatsdEndpoint }}{{ else }}127.0.0.1:8125{{ end }}
+    writeInterval: 5s
+    prefix: {{ ReplaceAll (ToLower Peer.ID) "." "_" }}
 `
