@@ -12,21 +12,40 @@ node ('hyp-x') { // trigger build on x86_64 node
      env.GOPATH = "$WORKSPACE/gopath"
      env.GOROOT = "/opt/go/go${GO_VER}.linux.amd64"
      def nodeHome = tool 'nodejs-8.11.3'
+     def jobname = sh(returnStdout: true, script: 'echo ${JOB_NAME} | grep -q "verify" && echo patchset || echo merge').trim()
      env.PATH = "$GOPATH/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:${nodeHome}/bin:$GOROOT/bin:$PATH"
      env.NODE_PATH = "/home/jenkins/npm/lib/node_modules"
 
      def failure_stage = "none"
 // delete working directory
      deleteDir()
-      stage("Fetch Patchset") { // fetch gerrit refspec on latest commit
+      stage("Fetch Patchset") {
           try {
-              dir("${ROOTDIR}"){
+             if (jobname == "patchset")  {
+                   println "$GERRIT_REFSPEC"
+                   println "$GERRIT_BRANCH"
+                   // BASE_DIR points to gopath/src/github.com/hyperledger/fabric-chaincode-evm
+                   // GIT_BASE points to git://cloud.hyperledger.org/mirror/fabric-chaincode-evm.git
+                   checkout([
+                       $class: 'GitSCM',
+                       branches: [[name: '$GERRIT_REFSPEC']],
+                       extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '$BASE_DIR'], [$class: 'CheckoutOption', timeout: 10]],
+                       userRemoteConfigs: [[credentialsId: 'hyperledger-jobbuilder', name: 'origin', refspec: '$GERRIT_REFSPEC:$GERRIT_REFSPEC', url: '$GIT_BASE']]])
+              } else {
+                   // Clone fabric-chaincode-evm on merge
+                   println "Clone $PROJECT repository"
+                   checkout([
+                       $class: 'GitSCM',
+                       branches: [[name: 'refs/heads/$GERRIT_BRANCH']],
+                       extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '$BASE_DIR']],
+                       userRemoteConfigs: [[credentialsId: 'hyperledger-jobbuilder', name: 'origin', refspec: '+refs/heads/$GERRIT_BRANCH:refs/remotes/origin/$GERRIT_BRANCH', url: '$GIT_BASE']]])
+              }
+              dir("${ROOTDIR}/$PROJECT_DIR/$PROJECT"){
               sh '''
-                 [ -e gopath/src/github.com/hyperledger/fabric-chaincode-evm ] || mkdir -p $PROJECT_DIR
-                 cd $PROJECT_DIR
-                 git clone git://cloud.hyperledger.org/mirror/fabric-chaincode-evm && cd fabric-chaincode-evm
-                 git checkout "$GERRIT_BRANCH" && git fetch origin "$GERRIT_REFSPEC" && git checkout FETCH_HEAD
+                 # Print last two commit details
+                 echo
                  git log -n2 --pretty=oneline --abbrev-commit
+                 echo
               '''
               }
           }
