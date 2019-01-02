@@ -11,13 +11,15 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/burrow/account"
+	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/binary"
+	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/execution/evm"
 	"github.com/hyperledger/burrow/logging"
-	evm_event "github.com/hyperledger/fabric-chaincode-evm/event"
+	"github.com/hyperledger/burrow/permission"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -25,6 +27,16 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"golang.org/x/crypto/sha3"
 )
+
+//Permissions for all accounts (users & contracts) to send CallTx or SendTx to a contract
+const ContractPermFlags = permission.Call | permission.Send
+
+var ContractPerms = permission.AccountPermissions{
+	Base: permission.BasePermissions{
+		Perms:  ContractPermFlags,
+		SetBit: ContractPermFlags,
+	},
+}
 
 var logger = flogging.MustGetLogger("evmcc")
 var evmLogger = logging.NewNoopLogger()
@@ -59,7 +71,7 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(args[0]), err.Error()))
 	}
 
-	calleeAddr, err := account.AddressFromBytes(c)
+	calleeAddr, err := crypto.AddressFromBytes(c)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to get callee address: %s", err.Error()))
 	}
@@ -69,7 +81,6 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to get caller address: %s", err.Error()))
 	}
-	callerAcct := account.ConcreteAccount{Address: callerAddr}.MutableAccount()
 
 	// get input bytes from args[1]
 	input, err := hex.DecodeString(string(args[1]))
@@ -79,35 +90,49 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 
 	var gas uint64 = 10000
 	state := statemanager.NewStateManager(stub)
-	vm := evm.NewVM(state, newParams(), callerAddr, nil, evmLogger)
+	evmCache := evm.NewState(state)
+	eventSink := evm.NewNoopEventSink()
+	vm := evm.NewVM(newParams(), callerAddr, nil, evmLogger)
 
-	evmgr := evm_event.NewEventManager(stub)
-	vm.SetPublisher(evmgr)
+	// evmgr := evm_event.NewEventManager(stub)
+	// vm.SetPublisher(evmgr)
 
-	if calleeAddr == account.ZeroAddress {
+	if calleeAddr == crypto.ZeroAddress {
 		logger.Debugf("Deploy contract")
 
-		seqKey := binary.RightPadWord256([]byte("sequence"))
-		s, err := state.GetStorage(callerAddr, seqKey)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("failed to get caller sequence"))
-		}
+		// Sequence number is used to create the contract address.
+		seq := evmCache.GetSequence(callerAddr)
 
-		var seq uint64
-		if s == binary.Zero256 {
-			seq = 0
-		} else {
-			seq = binary.Uint64FromWord256(s)
+		// Sequence number of 0 means this is the caller's first contract
+		// Therefore a new account needs to be created for them to keep track of their sequence.
+		if seq == 0 {
+			evmCache.CreateAccount(callerAddr)
+			if evmErr := evmCache.Error(); evmErr != nil {
+				return shim.Error(fmt.Sprintf("failed to create user account: %s ", evmErr))
+			}
 		}
 
 		// Update contract seq
+		// If sequence is not incremented every contract a person deploys with have the same contract address.
 		logger.Debugf("Contract sequence number = %d", seq)
-		state.SetStorage(callerAddr, seqKey, binary.Uint64ToWord256(seq+1))
+		evmCache.IncSequence(callerAddr)
+		if evmErr := evmCache.Error(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to update user account sequence number: %s ", evmErr))
+		}
 
-		contractAddr := account.NewContractAddress(callerAddr, seq)
-		contractAcct := account.ConcreteAccount{Address: contractAddr}.MutableAccount()
+		contractAddr := crypto.NewContractAddress(callerAddr, seq)
+		// Contract account needs to be created before setting code to it
+		evmCache.CreateAccount(contractAddr)
+		if evmErr := evmCache.Error(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to create the contract account: %s ", evmErr))
+		}
 
-		rtCode, err := vm.Call(callerAcct, contractAcct, input, nil, 0, &gas)
+		evmCache.SetPermission(contractAddr, ContractPermFlags, true)
+		if evmErr := evmCache.Error(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to set contract account permissions: %s ", evmErr))
+		}
+
+		rtCode, err := vm.Call(evmCache, eventSink, callerAddr, contractAddr, input, input, 0, &gas)
 		if err != nil {
 			return shim.Error(fmt.Sprintf("failed to deploy code: %s", err.Error()))
 		}
@@ -115,31 +140,39 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 			return shim.Error(fmt.Sprintf("nil bytecode"))
 		}
 
-		contractAcct.SetCode(rtCode)
-		if err = state.UpdateAccount(contractAcct); err != nil {
-			return shim.Error(fmt.Sprintf("failed to update contract account: %s", err.Error()))
+		evmCache.InitCode(contractAddr, rtCode)
+		if evmErr := evmCache.Error(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to update contract account: %s", evmErr))
 		}
 
+		if evmErr := evmCache.Sync(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to sync: %s", evmErr))
+		}
 		// return encoded hex bytes for human-readability
 		return shim.Success([]byte(hex.EncodeToString(contractAddr.Bytes())))
 	} else {
 		logger.Debugf("Invoke contract at %x", calleeAddr.Bytes())
 
-		calleeAcct, err := state.GetAccount(calleeAddr)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("failed to retrieve contract code: %s", err.Error()))
+		calleeCode := evmCache.GetCode(calleeAddr)
+		if evmErr := evmCache.Error(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to retrieve contract code: %s", evmErr))
 		}
 
-		output, err := vm.Call(callerAcct, account.AsMutableAccount(calleeAcct), calleeAcct.Code().Bytes(), input, 0, &gas)
+		output, err := vm.Call(evmCache, eventSink, callerAddr, calleeAddr, calleeCode, input, 0, &gas)
 		if err != nil {
 			return shim.Error(fmt.Sprintf("failed to execute contract: %s", err.Error()))
 		}
 
 		// Passing the function hash of the method that has triggered the event
 		// The function hash is the first 8 bytes of the Input argument
-		er := evmgr.Flush(string(args[1][0:8]))
-		if er != nil {
-			return shim.Error(fmt.Sprintf("error in Flush: %s", er.Error()))
+		// er := evmgr.Flush(string(args[1][0:8]))
+		// if er != nil {
+		// 	return shim.Error(fmt.Sprintf("error in Flush: %s", er.Error()))
+		// }
+
+		// Sync is required for evm to send writes to the statemanager.
+		if evmErr := evmCache.Sync(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to sync: %s", evmErr))
 		}
 
 		return shim.Success(output)
@@ -152,17 +185,22 @@ func (evmcc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []b
 		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(address), err.Error()))
 	}
 
-	calleeAddr, err := account.AddressFromBytes(c)
+	calleeAddr, err := crypto.AddressFromBytes(c)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get callee address: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("failed to get callee address: %s", err))
 	}
 
-	code, err := stub.GetState(calleeAddr.String())
+	acctBytes, err := stub.GetState(strings.ToLower(calleeAddr.String()))
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get contract account: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("failed to get contract account: %s", err))
 	}
 
-	return shim.Success([]byte(hex.EncodeToString(code)))
+	acct, err := acm.Decode(acctBytes)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("failed to decode contract account: %s", err))
+	}
+
+	return shim.Success([]byte(hex.EncodeToString(acct.Code.Bytes())))
 }
 
 func (evmcc *EvmChaincode) account(stub shim.ChaincodeStubInterface) pb.Response {
@@ -193,42 +231,42 @@ func newParams() evm.Params {
 	}
 }
 
-func getCallerAddress(stub shim.ChaincodeStubInterface) (account.Address, error) {
+func getCallerAddress(stub shim.ChaincodeStubInterface) (crypto.Address, error) {
 	creatorBytes, err := stub.GetCreator()
 	if err != nil {
-		return account.ZeroAddress, fmt.Errorf("failed to get creator: %s", err)
+		return crypto.ZeroAddress, fmt.Errorf("failed to get creator: %s", err)
 	}
 
 	si := &msp.SerializedIdentity{}
 	if err = proto.Unmarshal(creatorBytes, si); err != nil {
-		return account.ZeroAddress, fmt.Errorf("failed to unmarshal serialized identity: %s", err)
+		return crypto.ZeroAddress, fmt.Errorf("failed to unmarshal serialized identity: %s", err)
 	}
 
 	callerAddr, err := identityToAddr(si.IdBytes)
 	if err != nil {
-		return account.ZeroAddress, fmt.Errorf("fail to convert identity to address: %s", err.Error())
+		return crypto.ZeroAddress, fmt.Errorf("fail to convert identity to address: %s", err.Error())
 	}
 
 	return callerAddr, nil
 }
 
-func identityToAddr(id []byte) (account.Address, error) {
+func identityToAddr(id []byte) (crypto.Address, error) {
 	bl, _ := pem.Decode(id)
 	if bl == nil {
-		return account.ZeroAddress, fmt.Errorf("no pem data found")
+		return crypto.ZeroAddress, fmt.Errorf("no pem data found")
 	}
 
 	cert, err := x509.ParseCertificate(bl.Bytes)
 	if err != nil {
-		return account.ZeroAddress, fmt.Errorf("failed to parse certificate: %s", err)
+		return crypto.ZeroAddress, fmt.Errorf("failed to parse certificate: %s", err)
 	}
 
 	pubkeyBytes, err := x509.MarshalPKIXPublicKey(cert.PublicKey)
 	if err != nil {
-		return account.ZeroAddress, fmt.Errorf("unable to marshal public key: %s", err)
+		return crypto.ZeroAddress, fmt.Errorf("unable to marshal public key: %s", err)
 	}
 
-	return account.AddressFromWord256(sha3.Sum256(pubkeyBytes)), nil
+	return crypto.AddressFromWord256(sha3.Sum256(pubkeyBytes)), nil
 }
 
 func main() {

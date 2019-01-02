@@ -2,7 +2,7 @@
 #SPDX-License-Identifier: Apache-2.0
 
 [[constraint]]
-  version = "0.18.0"
+  version = "0.23.3"
   name = "github.com/hyperledger/burrow"
 
 [[constraint]]
@@ -10,17 +10,8 @@
   name = "github.com/hyperledger/fabric"
 
 [[constraint]]
-  branch = "master"
+  revision = "beccd9cb1450fddfe426616e151d709c99f7ccdd"
   name = "github.com/hyperledger/fabric-sdk-go"
-
-#Constraints from Burrow
-[[override]]
-  version = "=0.8.1"
-  name = "github.com/tendermint/tmlibs"
-
-[[override]]
-  version = "0.5.0"
-  name = "github.com/tendermint/go-crypto"
 
 #Constraints from Fabric
 [[constraint]]
@@ -56,8 +47,13 @@
   name = "github.com/hyperledger/fabric-amcl"
 
 [[constraint]]
-  name = "go.uber.org/zap"
   version = "1.9.0"
+  name = "go.uber.org/zap"
+
+#Fabric 1.4 requires 1.15.0 and Burrow 0.23.0 requires 1.13.0
+[[override]]
+  version = "1.15.0"
+  name = "google.golang.org/grpc"
 
 #Constraints from fabric-sdk-go
 [[override]]
@@ -71,6 +67,10 @@
 [[override]]
   revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
   name = "github.com/prometheus/procfs"
+
+[[override]]
+  revision = "292b43bbf7cb8d35ddf40f8d5100ef3837cced3f"
+  name = "golang.org/x/net"
 
 [prune]
   go-tests = true

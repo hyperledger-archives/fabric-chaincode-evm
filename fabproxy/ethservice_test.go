@@ -8,7 +8,6 @@ package fabproxy_test
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -18,9 +17,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/hyperledger/burrow/account"
-	"github.com/hyperledger/burrow/binary"
-	"github.com/hyperledger/burrow/execution/evm/events"
 	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
 	fabproxy_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fabproxy"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
@@ -403,92 +399,92 @@ var _ = Describe("Ethservice", func() {
 			}))
 		})
 
-		Context("when the transaction has associated events", func() {
-			var (
-				msg          events.EventDataLog
-				eventPayload []byte
-				eventBytes   []byte
-			)
+		// Context("when the transaction has associated events", func() {
+		// 	var (
+		// 		msg          events.EventDataLog
+		// 		eventPayload []byte
+		// 		eventBytes   []byte
+		// 	)
 
-			BeforeEach(func() {
-				var err error
-				addr, err := account.AddressFromBytes([]byte(sampleAddress))
-				Expect(err).ToNot(HaveOccurred())
+		// 	BeforeEach(func() {
+		// 		var err error
+		// 		addr, err := account.AddressFromBytes([]byte(sampleAddress))
+		// 		Expect(err).ToNot(HaveOccurred())
 
-				msg = events.EventDataLog{
-					Address: addr,
-					Topics:  []binary.Word256{binary.RightPadWord256([]byte("sample-topic-1")), binary.RightPadWord256([]byte("sample-topic2"))},
-					Data:    []byte("sample-data"),
-					Height:  0,
-				}
-				events := []events.EventDataLog{msg}
-				eventPayload, err = json.Marshal(events)
-				Expect(err).ToNot(HaveOccurred())
+		// 		msg = events.EventDataLog{
+		// 			Address: addr,
+		// 			Topics:  []binary.Word256{binary.RightPadWord256([]byte("sample-topic-1")), binary.RightPadWord256([]byte("sample-topic2"))},
+		// 			Data:    []byte("sample-data"),
+		// 			Height:  0,
+		// 		}
+		// 		events := []events.EventDataLog{msg}
+		// 		eventPayload, err = json.Marshal(events)
+		// 		Expect(err).ToNot(HaveOccurred())
 
-				chaincodeEvent := peer.ChaincodeEvent{
-					ChaincodeId: "qscc",
-					TxId:        sampleTransactionID,
-					EventName:   "Chaincode event",
-					Payload:     eventPayload,
-				}
+		// 		chaincodeEvent := peer.ChaincodeEvent{
+		// 			ChaincodeId: "qscc",
+		// 			TxId:        sampleTransactionID,
+		// 			EventName:   "Chaincode event",
+		// 			Payload:     eventPayload,
+		// 		}
 
-				eventBytes, err = proto.Marshal(&chaincodeEvent)
-				Expect(err).ToNot(HaveOccurred())
+		// 		eventBytes, err = proto.Marshal(&chaincodeEvent)
+		// 		Expect(err).ToNot(HaveOccurred())
 
-				tx, err := GetSampleTransaction([][]byte{[]byte(sampleAddress), []byte("sample arg 2")}, []byte("sample-response"), eventBytes, sampleTransactionID)
-				*sampleTransaction = *tx
-				Expect(err).ToNot(HaveOccurred())
+		// 		tx, err := GetSampleTransaction([][]byte{[]byte(sampleAddress), []byte("sample arg 2")}, []byte("sample-response"), eventBytes, sampleTransactionID)
+		// 		*sampleTransaction = *tx
+		// 		Expect(err).ToNot(HaveOccurred())
 
-				*sampleBlock = *GetSampleBlockWithTransaction(31, []byte("12345abcd"), sampleTransaction, otherTransaction)
-			})
+		// 		*sampleBlock = *GetSampleBlockWithTransaction(31, []byte("12345abcd"), sampleTransaction, otherTransaction)
+		// 	})
 
-			It("returns the transaction receipt associated to that transaction address", func() {
-				var reply fabproxy.TxReceipt
+		// 	It("returns the transaction receipt associated to that transaction address", func() {
+		// 		var reply fabproxy.TxReceipt
 
-				err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(mockLedgerClient.QueryBlockByTxIDCallCount()).To(Equal(1))
-				txID, reqOpts := mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
-				Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
-				Expect(reqOpts).To(HaveLen(0))
+		// 		err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
+		// 		Expect(err).ToNot(HaveOccurred())
+		// 		Expect(mockLedgerClient.QueryBlockByTxIDCallCount()).To(Equal(1))
+		// 		txID, reqOpts := mockLedgerClient.QueryBlockByTxIDArgsForCall(0)
+		// 		Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
+		// 		Expect(reqOpts).To(HaveLen(0))
 
-				topics := []string{}
-				for _, topic := range msg.Topics {
-					topics = append(topics, "0x"+hex.EncodeToString(topic.Bytes()))
-				}
+		// 		topics := []string{}
+		// 		for _, topic := range msg.Topics {
+		// 			topics = append(topics, "0x"+hex.EncodeToString(topic.Bytes()))
+		// 		}
 
-				expectedLog := fabproxy.Log{
-					Address:     "0x" + hex.EncodeToString([]byte(sampleAddress)),
-					Topics:      topics,
-					Data:        "0x" + hex.EncodeToString(msg.Data),
-					BlockNumber: "0x1f",
-					TxHash:      "0x" + sampleTransactionID,
-					TxIndex:     "0x0",
-					BlockHash:   "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
-					Index:       "0x0",
-				}
+		// 		expectedLog := fabproxy.Log{
+		// 			Address:     "0x" + hex.EncodeToString([]byte(sampleAddress)),
+		// 			Topics:      topics,
+		// 			Data:        "0x" + hex.EncodeToString(msg.Data),
+		// 			BlockNumber: "0x1f",
+		// 			TxHash:      "0x" + sampleTransactionID,
+		// 			TxIndex:     "0x0",
+		// 			BlockHash:   "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+		// 			Index:       "0x0",
+		// 		}
 
-				var expectedLogs []fabproxy.Log
-				expectedLogs = make([]fabproxy.Log, 0)
-				expectedLogs = append(expectedLogs, expectedLog)
+		// 		var expectedLogs []fabproxy.Log
+		// 		expectedLogs = make([]fabproxy.Log, 0)
+		// 		expectedLogs = append(expectedLogs, expectedLog)
 
-				// var expectedBloom fabproxy.Bloom
-				// expectedBloom = fabproxy.CreateBloom(expectedLogs)
+		// 		// var expectedBloom fabproxy.Bloom
+		// 		// expectedBloom = fabproxy.CreateBloom(expectedLogs)
 
-				Expect(reply).To(Equal(fabproxy.TxReceipt{
-					TransactionHash:   "0x" + sampleTransactionID,
-					TransactionIndex:  "0x0",
-					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
-					BlockNumber:       "0x1f",
-					GasUsed:           0,
-					CumulativeGasUsed: 0,
-					To:                "0x" + sampleAddress,
-					Logs:              expectedLogs,
-					Status:            "0x1",
-				}))
-			})
+		// 		Expect(reply).To(Equal(fabproxy.TxReceipt{
+		// 			TransactionHash:   "0x" + sampleTransactionID,
+		// 			TransactionIndex:  "0x0",
+		// 			BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+		// 			BlockNumber:       "0x1f",
+		// 			GasUsed:           0,
+		// 			CumulativeGasUsed: 0,
+		// 			To:                "0x" + sampleAddress,
+		// 			Logs:              expectedLogs,
+		// 			Status:            "0x1",
+		// 		}))
+		// 	})
 
-		})
+		// })
 
 		Context("when the transaction is creation of a smart contract", func() {
 			var contractAddress []byte

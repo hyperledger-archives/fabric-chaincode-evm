@@ -166,11 +166,14 @@
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
+    "jsonpb",
     "proto",
-    "protoc-gen-gogo/descriptor"
+    "protoc-gen-gogo/descriptor",
+    "sortkeys",
+    "types"
   ]
-  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
-  version = "v1.0.0"
+  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
+  version = "v1.1.1"
 
 [[projects]]
   branch = "master"
@@ -255,24 +258,36 @@
 [[projects]]
   name = "github.com/hyperledger/burrow"
   packages = [
-    "account",
-    "account/state",
+    "acm",
+    "acm/balance",
+    "acm/state",
+    "acm/validator",
     "binary",
+    "crypto",
+    "deploy/compile",
     "event",
+    "event/pubsub",
+    "event/query",
+    "execution/errors",
     "execution/evm",
     "execution/evm/abi",
     "execution/evm/asm",
     "execution/evm/asm/bc",
-    "execution/evm/events",
     "execution/evm/sha3",
+    "execution/exec",
+    "execution/names",
+    "genesis",
+    "genesis/spec",
+    "keys",
     "logging",
     "logging/structure",
     "permission",
-    "permission/types",
-    "process"
+    "process",
+    "txs",
+    "txs/payload"
   ]
-  revision = "5a21578211cfefd1c636d01b72295c041b81389a"
-  version = "v0.18.0"
+  revision = "9596a8883cf94810be7eb2ffc521433d3dade212"
+  version = "v0.23.3"
 
 [[projects]]
   name = "github.com/hyperledger/fabric"
@@ -328,7 +343,6 @@
   revision = "6b78f7a22d950103fb2669aabb969f56d42d283b"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hyperledger/fabric-sdk-go"
   packages = [
     "internal/github.com/hyperledger/fabric-ca/api",
@@ -663,6 +677,11 @@
   revision = "bea94bb476ccecfbd31b12ed493a971bdb8c904b"
 
 [[projects]]
+  name = "github.com/tendermint/btcd"
+  packages = ["btcec"]
+  revision = "e5840949ff4fff0c56f9b6a541e22b63581ea9df"
+
+[[projects]]
   branch = "master"
   name = "github.com/tendermint/ed25519"
   packages = [
@@ -673,31 +692,24 @@
   revision = "d8387025d2b9d158cf4efb07e7ebf814bcce2057"
 
 [[projects]]
-  name = "github.com/tendermint/go-crypto"
+  name = "github.com/tendermint/go-amino"
   packages = ["."]
-  revision = "c3e19f3ea26f5c3357e0bcbb799b0761ef923755"
-  version = "v0.5.0"
+  revision = "faa6e731944e2b7b6a46ad202902851e8ce85bee"
+  version = "v0.12.0"
 
 [[projects]]
-  name = "github.com/tendermint/go-wire"
+  name = "github.com/tendermint/tendermint"
   packages = [
-    ".",
-    "data"
+    "abci/types",
+    "crypto",
+    "crypto/ed25519",
+    "crypto/secp256k1",
+    "crypto/tmhash",
+    "libs/common",
+    "libs/log"
   ]
-  revision = "fa721242b042ecd4c6ed1a934ee740db4f74e45c"
-  source = "github.com/tendermint/go-amino"
-  version = "v0.7.3"
-
-[[projects]]
-  name = "github.com/tendermint/tmlibs"
-  packages = [
-    "common",
-    "log",
-    "pubsub",
-    "pubsub/query"
-  ]
-  revision = "2e24b64fc121dcdf1cabceab8dc2f7257675483c"
-  version = "0.8.1"
+  revision = "0c9c3292c918617624f6f3fbcd95eceade18bcd5"
+  version = "v0.25.0"
 
 [[projects]]
   branch = "master"
@@ -755,23 +767,18 @@
     "cryptobyte/asn1",
     "ed25519",
     "ed25519/internal/edwards25519",
-    "internal/subtle",
-    "nacl/secretbox",
     "ocsp",
-    "openpgp/armor",
-    "openpgp/errors",
+    "pbkdf2",
     "pkcs12",
     "pkcs12/internal/rc2",
-    "poly1305",
     "ripemd160",
-    "salsa20/salsa",
+    "scrypt",
     "sha3",
     "ssh/terminal"
   ]
   revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
 
 [[projects]]
-  branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -877,6 +884,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0d1122e5b8c2d12de94807e162e9f1a04af5e45a040df7c5dbfd804ff59363a9"
+  inputs-digest = "f8efeb52a954796bf6d7a709059eba27609e305bff6a2d23cc61b17280c7b85d"
   solver-name = "gps-cdcl"
   solver-version = 1

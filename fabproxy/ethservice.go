@@ -9,7 +9,6 @@ package fabproxy
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/hyperledger/burrow/execution/evm/events"
 	"go.uber.org/zap"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
@@ -229,36 +227,36 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 	}
 
 	if respPayload.Events != nil {
-		chaincodeEvent, err := getChaincodeEvents(respPayload)
-		if err != nil {
-			return errors.New(fmt.Sprintf("Failed to decode chaincode event: %s", err.Error()))
-		}
+		// chaincodeEvent, err := getChaincodeEvents(respPayload)
+		// if err != nil {
+		// 	return errors.New(fmt.Sprintf("Failed to decode chaincode event: %s", err.Error()))
+		// }
 
-		var eventMsgs []events.EventDataLog
-		err = json.Unmarshal(chaincodeEvent.Payload, &eventMsgs)
-		if err != nil {
-			return errors.New(fmt.Sprintf("Failed to unmarshal chaincode event payload: %s", err.Error()))
-		}
+		// var eventMsgs []events.EventDataLog
+		// err = json.Unmarshal(chaincodeEvent.Payload, &eventMsgs)
+		// if err != nil {
+		// 	return errors.New(fmt.Sprintf("Failed to unmarshal chaincode event payload: %s", err.Error()))
+		// }
 
 		var txLogs []Log
 		txLogs = make([]Log, 0)
-		for i, evDataLog := range eventMsgs {
-			topics := []string{}
-			for _, topic := range evDataLog.Topics {
-				topics = append(topics, "0x"+hex.EncodeToString(topic.Bytes()))
-			}
-			logObj := Log{
-				Address:     "0x" + strings.ToLower(evDataLog.Address.String()),
-				Topics:      topics,
-				Data:        "0x" + hex.EncodeToString(evDataLog.Data),
-				BlockNumber: receipt.BlockNumber,
-				TxHash:      receipt.TransactionHash,
-				TxIndex:     receipt.TransactionIndex,
-				BlockHash:   "0x" + hex.EncodeToString(blkHeader.GetDataHash()),
-				Index:       "0x" + strconv.FormatUint(uint64(i), 16),
-			}
-			txLogs = append(txLogs, logObj)
-		}
+		// for i, evDataLog := range eventMsgs {
+		// 	topics := []string{}
+		// 	for _, topic := range evDataLog.Topics {
+		// 		topics = append(topics, "0x"+hex.EncodeToString(topic.Bytes()))
+		// 	}
+		// 	logObj := Log{
+		// 		Address:     "0x" + strings.ToLower(evDataLog.Address.String()),
+		// 		Topics:      topics,
+		// 		Data:        "0x" + hex.EncodeToString(evDataLog.Data),
+		// 		BlockNumber: receipt.BlockNumber,
+		// 		TxHash:      receipt.TransactionHash,
+		// 		TxIndex:     receipt.TransactionIndex,
+		// 		BlockHash:   "0x" + hex.EncodeToString(blkHeader.GetDataHash()),
+		// 		Index:       "0x" + strconv.FormatUint(uint64(i), 16),
+		// 	}
+		// 	txLogs = append(txLogs, logObj)
+		// }
 		receipt.Logs = txLogs
 	} else {
 		receipt.Logs = nil

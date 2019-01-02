@@ -16,8 +16,11 @@ package binary
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"sort"
+
+	hex "github.com/tmthrgd/go-hex"
 )
 
 var (
@@ -32,6 +35,19 @@ var BigWord256Length = big.NewInt(Word256Length)
 var trimCutSet = string([]byte{0})
 
 type Word256 [Word256Length]byte
+
+func (w *Word256) UnmarshalText(hexBytes []byte) error {
+	bs, err := hex.DecodeString(string(hexBytes))
+	if err != nil {
+		return err
+	}
+	copy(w[:], bs)
+	return nil
+}
+
+func (w Word256) MarshalText() ([]byte, error) {
+	return []byte(hex.EncodeUpperToString(w[:])), nil
+}
 
 func (w Word256) String() string {
 	return string(w[:])
@@ -80,16 +96,45 @@ func (w Word256) UnpadRight() []byte {
 	return bytes.TrimRight(w[:], trimCutSet)
 }
 
-func Uint64ToWord256(i uint64) Word256 {
-	buf := [8]byte{}
-	PutUint64BE(buf[:], i)
-	return LeftPadWord256(buf[:])
+// Gogo proto support
+func (w *Word256) Marshal() ([]byte, error) {
+	if w == nil {
+		return nil, nil
+	}
+	return w.Bytes(), nil
 }
 
-func Int64ToWord256(i int64) Word256 {
-	buf := [8]byte{}
-	PutInt64BE(buf[:], i)
-	return LeftPadWord256(buf[:])
+func (w *Word256) Unmarshal(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
+	if len(data) != Word256Length {
+		return fmt.Errorf("error unmarshallling Word256 '%X' from bytes: %d bytes but should have %d bytes",
+			data, len(data), Word256Length)
+	}
+	copy(w[:], data)
+	return nil
+}
+
+func (w *Word256) MarshalTo(data []byte) (int, error) {
+	if w == nil {
+		return 0, nil
+	}
+	return copy(data, w[:]), nil
+}
+
+func (w Word256) Size() int {
+	return Word256Length
+}
+
+func Uint64ToWord256(i uint64) (word Word256) {
+	PutUint64BE(word[24:], i)
+	return
+}
+
+func Int64ToWord256(i int64) (word Word256) {
+	PutInt64BE(word[24:], i)
+	return
 }
 
 func RightPadWord256(bz []byte) (word Word256) {
@@ -103,14 +148,11 @@ func LeftPadWord256(bz []byte) (word Word256) {
 }
 
 func Uint64FromWord256(word Word256) uint64 {
-	buf := word.Postfix(8)
-	return GetUint64BE(buf)
+	return GetUint64BE(word.Postfix(8))
 }
 
 func Int64FromWord256(word Word256) int64 {
-
-	buf := word.Postfix(8)
-	return GetInt64BE(buf)
+	return GetInt64BE(word.Postfix(8))
 }
 
 //-------------------------------------

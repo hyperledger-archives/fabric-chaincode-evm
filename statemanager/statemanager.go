@@ -8,31 +8,20 @@ package statemanager
 
 import (
 	"encoding/hex"
+	"strings"
 
-	"github.com/hyperledger/burrow/account"
+	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/binary"
-	"github.com/hyperledger/burrow/permission"
-	"github.com/hyperledger/burrow/permission/types"
+	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
-//Permissions for contract to send CallTx or SendTx to another contract
-const ContractPermFlags = permission.Call | permission.Send
-
-var ContractPerms = types.AccountPermissions{
-	Base: types.BasePermissions{
-		Perms:  ContractPermFlags,
-		SetBit: ContractPermFlags,
-	},
-	Roles: []string{},
-}
-
 type StateManager interface {
-	GetAccount(address account.Address) (account.Account, error)
-	GetStorage(address account.Address, key binary.Word256) (binary.Word256, error)
-	UpdateAccount(updatedAccount account.Account) error
-	RemoveAccount(address account.Address) error
-	SetStorage(address account.Address, key, value binary.Word256) error
+	GetAccount(address crypto.Address) (*acm.Account, error)
+	GetStorage(address crypto.Address, key binary.Word256) (binary.Word256, error)
+	UpdateAccount(updatedAccount *acm.Account) error
+	RemoveAccount(address crypto.Address) error
+	SetStorage(address crypto.Address, key, value binary.Word256) error
 }
 
 type stateManager struct {
@@ -49,28 +38,21 @@ func NewStateManager(stub shim.ChaincodeStubInterface) StateManager {
 	}
 }
 
-func (s *stateManager) GetAccount(address account.Address) (account.Account, error) {
-	code, err := s.stub.GetState(address.String())
+func (s *stateManager) GetAccount(address crypto.Address) (*acm.Account, error) {
+	acctBytes, err := s.stub.GetState(strings.ToLower(address.String()))
 	if err != nil {
-		return account.ConcreteAccount{}.Account(), err
+		return nil, err
 	}
 
-	if len(code) == 0 {
-		return account.ConcreteAccount{}.Account(), nil
+	if len(acctBytes) == 0 {
+		return nil, nil
 	}
 
-	acct := account.ConcreteAccount{
-		Address: address,
-		Code:    code,
-	}.MutableAccount()
-
-	//Setting permission on account to allow contract invocations and queries
-	acct.SetPermissions(ContractPerms)
-	return acct, nil
+	return acm.Decode(acctBytes)
 }
 
-func (s *stateManager) GetStorage(address account.Address, key binary.Word256) (binary.Word256, error) {
-	compKey := address.String() + hex.EncodeToString(key.Bytes())
+func (s *stateManager) GetStorage(address crypto.Address, key binary.Word256) (binary.Word256, error) {
+	compKey := strings.ToLower(address.String()) + hex.EncodeToString(key.Bytes())
 
 	if val, ok := s.cache[compKey]; ok {
 		return val, nil
@@ -84,19 +66,28 @@ func (s *stateManager) GetStorage(address account.Address, key binary.Word256) (
 	return binary.LeftPadWord256(val), nil
 }
 
-func (s *stateManager) UpdateAccount(updatedAccount account.Account) error {
-	return s.stub.PutState(updatedAccount.Address().String(), updatedAccount.Code().Bytes())
+func (s *stateManager) UpdateAccount(updatedAccount *acm.Account) error {
+	encodedAcct, err := updatedAccount.Encode()
+	if err != nil {
+		return err
+	}
+	return s.stub.PutState(hex.EncodeToString(updatedAccount.Address.Bytes()), encodedAcct)
 }
 
-func (s *stateManager) RemoveAccount(address account.Address) error {
-	return s.stub.DelState(address.String())
+func (s *stateManager) RemoveAccount(address crypto.Address) error {
+	return s.stub.DelState(strings.ToLower(address.String()))
 }
 
-func (s *stateManager) SetStorage(address account.Address, key, value binary.Word256) error {
+func (s *stateManager) SetStorage(address crypto.Address, key, value binary.Word256) error {
+	compKey := strings.ToLower(address.String()) + hex.EncodeToString(key.Bytes())
+
 	var err error
+	if value == binary.Zero256 {
+		return s.stub.DelState(compKey)
+	}
 
-	if err = s.stub.PutState(address.String()+hex.EncodeToString(key.Bytes()), value.Bytes()); err == nil {
-		s.cache[address.String()+hex.EncodeToString(key.Bytes())] = value
+	if err = s.stub.PutState(compKey, value.Bytes()); err == nil {
+		s.cache[compKey] = value
 	}
 
 	return err

@@ -10,8 +10,9 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/hyperledger/burrow/account"
+	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/binary"
+	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 
@@ -24,7 +25,7 @@ var _ = Describe("Statemanager", func() {
 	var (
 		sm            statemanager.StateManager
 		mockStub      *evmcc.MockStub
-		addr          account.Address
+		addr          crypto.Address
 		fakeGetLedger map[string][]byte
 		fakePutLedger map[string][]byte
 	)
@@ -34,7 +35,7 @@ var _ = Describe("Statemanager", func() {
 		sm = statemanager.NewStateManager(mockStub)
 
 		var err error
-		addr, err = account.AddressFromBytes([]byte("0000000000000address"))
+		addr, err = crypto.AddressFromBytes([]byte("0000000000000address"))
 		Expect(err).ToNot(HaveOccurred())
 		fakeGetLedger = make(map[string][]byte)
 		fakePutLedger = make(map[string][]byte)
@@ -58,14 +59,14 @@ var _ = Describe("Statemanager", func() {
 
 	Describe("GetAccount", func() {
 		It("returns the account associated with the address", func() {
-			fakeGetLedger[addr.String()] = []byte("account code")
-
-			expectedAcct := account.ConcreteAccount{
+			expectedAcct := &acm.Account{
 				Address: addr,
 				Code:    []byte("account code"),
-			}.MutableAccount()
+			}
 
-			expectedAcct.SetPermissions(statemanager.ContractPerms)
+			encodedAcct, err := expectedAcct.Encode()
+			Expect(err).ToNot(HaveOccurred())
+			fakeGetLedger[addr.String()] = encodedAcct
 
 			acct, err := sm.GetAccount(addr)
 			Expect(err).ToNot(HaveOccurred())
@@ -74,11 +75,11 @@ var _ = Describe("Statemanager", func() {
 		})
 
 		Context("when no account exists", func() {
-			It("returns an empty account", func() {
+			It("returns nil", func() {
 				acct, err := sm.GetAccount(addr)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(acct).To(Equal(account.ConcreteAccount{}.Account()))
+				Expect(acct).To(BeNil())
 			})
 		})
 
@@ -87,11 +88,11 @@ var _ = Describe("Statemanager", func() {
 				mockStub.GetStateReturns(nil, errors.New("boom!"))
 			})
 
-			It("returns an empty account and an error", func() {
+			It("returns a nil account and an error", func() {
 				acct, err := sm.GetAccount(addr)
 				Expect(err).To(HaveOccurred())
 
-				Expect(acct).To(Equal(account.ConcreteAccount{}.Account()))
+				Expect(acct).To(BeNil())
 			})
 		})
 	})
@@ -158,12 +159,14 @@ var _ = Describe("Statemanager", func() {
 		Context("when the account didn't exist", func() {
 			It("creates the account", func() {
 
-				expectedAcct := account.ConcreteAccount{
+				expectedAcct := &acm.Account{
 					Address: addr,
 					Code:    initialCode,
-				}.Account()
+				}
+				encodedAcct, err := expectedAcct.Encode()
+				Expect(err).ToNot(HaveOccurred())
 
-				err := sm.UpdateAccount(expectedAcct)
+				err = sm.UpdateAccount(expectedAcct)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(mockStub.PutStateCallCount()).To(Equal(1))
@@ -171,7 +174,7 @@ var _ = Describe("Statemanager", func() {
 				key, code := mockStub.PutStateArgsForCall(0)
 
 				Expect(key).To(Equal(addr.String()))
-				Expect(code).To(Equal(initialCode))
+				Expect(code).To(Equal(encodedAcct))
 			})
 		})
 
@@ -179,19 +182,21 @@ var _ = Describe("Statemanager", func() {
 			It("updates the account", func() {
 				fakeGetLedger[addr.String()] = initialCode
 
-				updatedCode := []byte("updated account code")
-				updatedAccount := account.ConcreteAccount{
+				updatedAccount := &acm.Account{
 					Address: addr,
-					Code:    updatedCode,
-				}.Account()
+					Code:    []byte("updated account code"),
+				}
 
-				err := sm.UpdateAccount(updatedAccount)
+				encodedAcct, err := updatedAccount.Encode()
+				Expect(err).ToNot(HaveOccurred())
+
+				err = sm.UpdateAccount(updatedAccount)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(mockStub.PutStateCallCount()).To(Equal(1))
 				putAddr, putVal := mockStub.PutStateArgsForCall(0)
 				Expect(putAddr).To(Equal(addr.String()))
-				Expect(putVal).To(Equal(updatedCode))
+				Expect(putVal).To(Equal(encodedAcct))
 			})
 
 		})
@@ -202,10 +207,10 @@ var _ = Describe("Statemanager", func() {
 			})
 
 			It("returns an error", func() {
-				expectedAcct := account.ConcreteAccount{
+				expectedAcct := &acm.Account{
 					Address: addr,
 					Code:    initialCode,
-				}.Account()
+				}
 
 				err := sm.UpdateAccount(expectedAcct)
 				Expect(err).To(HaveOccurred())
@@ -304,6 +309,21 @@ var _ = Describe("Statemanager", func() {
 				val, err := mockStub.GetState(compKey)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(val).To(BeEmpty())
+			})
+		})
+
+		Context("when value is the zero value", func() {
+			It("deletes the key", func() {
+				err := sm.SetStorage(addr, key, initialVal)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(mockStub.PutStateCallCount()).To(Equal(1))
+
+				err = sm.SetStorage(addr, key, binary.Zero256)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(mockStub.DelStateCallCount()).To(Equal(1))
+				deleteKey := mockStub.DelStateArgsForCall(0)
+				Expect(deleteKey).To(Equal(compKey))
+
 			})
 		})
 	})

@@ -16,30 +16,40 @@ package event
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
-	"strings"
+	"math/rand"
 
+	"github.com/hyperledger/burrow/event/pubsub"
+	"github.com/hyperledger/burrow/event/query"
 	"github.com/hyperledger/burrow/logging"
 	"github.com/hyperledger/burrow/logging/structure"
 	"github.com/hyperledger/burrow/process"
-	"github.com/tendermint/tmlibs/common"
-	"github.com/tendermint/tmlibs/pubsub"
+	"github.com/tendermint/tendermint/libs/common"
+	hex "github.com/tmthrgd/go-hex"
 )
 
 const DefaultEventBufferCapacity = 2 << 10
 
+// TODO: manage the creation, closing, and draining of channels behind the interface rather than only closing.
+// stop one subscriber from blocking everything!
 type Subscribable interface {
-	// Subscribe to all events matching query, which is a valid tmlibs Query
-	Subscribe(ctx context.Context, subscriber string, query Queryable, out chan<- interface{}) error
-	// Unsubscribe subscriber from a specific query string
-	Unsubscribe(ctx context.Context, subscriber string, query Queryable) error
+	// Subscribe to all events matching query, which is a valid tmlibs Query. Blocking the out channel blocks the entire
+	// pubsub.
+	Subscribe(ctx context.Context, subscriber string, queryable query.Queryable, bufferSize int) (out <-chan interface{}, err error)
+	// Unsubscribe subscriber from a specific query string. Note the subscribe channel must be drained.
+	Unsubscribe(ctx context.Context, subscriber string, queryable query.Queryable) error
 	UnsubscribeAll(ctx context.Context, subscriber string) error
 }
 
 type Publisher interface {
-	Publish(ctx context.Context, message interface{}, tags map[string]interface{}) error
+	Publish(ctx context.Context, message interface{}, tag query.Tagged) error
+}
+
+var _ Publisher = PublisherFunc(nil)
+
+type PublisherFunc func(ctx context.Context, message interface{}, tags query.Tagged) error
+
+func (pf PublisherFunc) Publish(ctx context.Context, message interface{}, tags query.Tagged) error {
+	return pf(ctx, message, tags)
 }
 
 type Emitter interface {
@@ -71,21 +81,21 @@ func (em *emitter) Shutdown(ctx context.Context) error {
 }
 
 // Publisher
-func (em *emitter) Publish(ctx context.Context, message interface{}, tags map[string]interface{}) error {
+func (em *emitter) Publish(ctx context.Context, message interface{}, tags query.Tagged) error {
 	return em.pubsubServer.PublishWithTags(ctx, message, tags)
 }
 
 // Subscribable
-func (em *emitter) Subscribe(ctx context.Context, subscriber string, query Queryable, out chan<- interface{}) error {
-	pubsubQuery, err := query.Query()
+func (em *emitter) Subscribe(ctx context.Context, subscriber string, queryable query.Queryable, bufferSize int) (<-chan interface{}, error) {
+	qry, err := queryable.Query()
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return em.pubsubServer.Subscribe(ctx, subscriber, pubsubQuery, out)
+	return em.pubsubServer.Subscribe(ctx, subscriber, qry, bufferSize)
 }
 
-func (em *emitter) Unsubscribe(ctx context.Context, subscriber string, query Queryable) error {
-	pubsubQuery, err := query.Query()
+func (em *emitter) Unsubscribe(ctx context.Context, subscriber string, queryable query.Queryable) error {
+	pubsubQuery, err := queryable.Query()
 	if err != nil {
 		return nil
 	}
@@ -104,20 +114,15 @@ func NewNoOpPublisher() Publisher {
 type noOpPublisher struct {
 }
 
-func (nop *noOpPublisher) Publish(ctx context.Context, message interface{}, tags map[string]interface{}) error {
+func (nop *noOpPublisher) Publish(ctx context.Context, message interface{}, tags query.Tagged) error {
 	return nil
 }
 
 // **************************************************************************************
 // Helper function
 
-func GenerateSubscriptionID() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", fmt.Errorf("could not generate random bytes for a subscription"+
-			" id: %v", err)
-	}
-	rStr := hex.EncodeToString(b)
-	return strings.ToUpper(rStr), nil
+func GenSubID() string {
+	bs := make([]byte, 32)
+	rand.Read(bs)
+	return hex.EncodeUpperToString(bs)
 }

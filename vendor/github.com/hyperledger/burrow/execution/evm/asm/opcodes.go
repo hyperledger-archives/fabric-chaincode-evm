@@ -188,7 +188,9 @@ const (
 
 	// 0x70 range - other
 	STATICCALL   = 0xfa
+	CREATE2      = 0xfb
 	REVERT       = 0xfd
+	INVALID      = 0xfe
 	SELFDESTRUCT = 0xff
 )
 
@@ -346,7 +348,9 @@ var opCodeNames = map[OpCode]string{
 	DELEGATECALL: "DELEGATECALL",
 	STATICCALL:   "STATICCALL",
 	// 0x70 range - other
+	CREATE2:      "CREATE2",
 	REVERT:       "REVERT",
+	INVALID:      "INVALID",
 	SELFDESTRUCT: "SELFDESTRUCT",
 }
 
@@ -364,7 +368,7 @@ func (o OpCode) String() string {
 func (o OpCode) Name() string {
 	str := opCodeNames[o]
 	if len(str) == 0 {
-		return fmt.Sprintf("Missing opcode 0x%x", int(o))
+		return fmt.Sprintf("Non-opcode 0x%x", int(o))
 	}
 
 	return str

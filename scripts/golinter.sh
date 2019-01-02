@@ -5,7 +5,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 declare -a arr=(
-"./event"
 "./evmcc"
 "./fabproxy"
 "./integration"
