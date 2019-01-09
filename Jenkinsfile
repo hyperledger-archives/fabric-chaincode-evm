@@ -120,7 +120,7 @@ node ('hyp-x') { // trigger build on x86_64 node
           }
         }
            } finally {
-              if (env.JOB_NAME == "fabric-chaincode-evm-merge-master-x86_64") {
+              if (env.JOB_NAME == "fabric-chaincode-evm-merge-x86_64") {
                 if (currentBuild.result == 'FAILURE') { // Other values: SUCCESS, UNSTABLE
                   rocketSend channel: 'fabric-evm', emoji: ':sob:', message: "Build Notification - STATUS: *${currentBuild.result}* - BRANCH: *${env.GERRIT_BRANCH}* - PROJECT: *${env.PROJECT}* - BUILD_URL - (<${env.BUILD_URL}|Open>)"
                 }
