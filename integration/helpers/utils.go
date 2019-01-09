@@ -28,14 +28,14 @@ type JsonRPCError struct {
 type JsonRPCResponse struct {
 	JsonRPC string       `json:"jsonrpc"`
 	ID      int          `json:"id"`
-	Result  string       `json:"result", omitempty`
+	Result  string       `json:"result,omitempty"`
 	Error   JsonRPCError `json:"error,omitempty"`
 }
 
 type JsonRPCArrayResponse struct {
 	JsonRPC string       `json:"jsonrpc"`
 	ID      int          `json:"id"`
-	Result  []string     `json:"result", omitempty`
+	Result  []string     `json:"result,omitempty"`
 	Error   JsonRPCError `json:"error,omitempty"`
 }
 
@@ -51,7 +51,7 @@ type TxReceipt struct {
 	TransactionIndex string `json:"transactionIndex"`
 	BlockNumber      string `json:"blockNumber"`
 	BlockHash        string `json:"blockHash"`
-	ContractAddress  string `json:"contractAddress, omitempty"`
+	ContractAddress  string `json:"contractAddress,omitempty"`
 }
 
 type MessageParams struct {

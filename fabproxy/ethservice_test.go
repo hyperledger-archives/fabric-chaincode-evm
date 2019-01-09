@@ -1076,14 +1076,14 @@ func GetSampleBlock(blockNumber uint64) *common.Block {
 			PreviousHash: phash,
 			DataHash:     dhash},
 		Data:     &common.BlockData{Data: [][]byte{txn1, txn2}},
-		Metadata: &common.BlockMetadata{Metadata: [][]byte{[]byte{0}, []byte{0}}},
+		Metadata: &common.BlockMetadata{Metadata: [][]byte{{0}, {0}}},
 	}
 }
 
 func GetSampleBlockWithTransaction(blockNumber uint64, blkHash []byte, txns ...*peer.ProcessedTransaction) *common.Block {
 
 	blockData := [][]byte{}
-	blockMetadata := [][]byte{[]byte{}, []byte{}, []byte{}, []byte{}}
+	blockMetadata := [][]byte{{}, {}, {}, {}}
 	transactionsFilter := []byte{}
 
 	for _, tx := range txns {

@@ -5,13 +5,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 declare -a arr=(
-"./statemanager"
+"./event"
 "./evmcc"
+"./fabproxy"
+"./integration"
+"./statemanager"
 )
 
 # place the Go build cache directory into the default build tree if it exists
-if [ -d "${GOPATH}/src/github.com/hyperledger/fabric/.build" ]; then
-    export GOCACHE="${GOPATH}/src/github.com/hyperledger/fabric/.build/go-cache"
+if [ -d "${GOPATH}/src/github.com/hyperledger/fabric-chaincode-evm/.build" ]; then
+    export GOCACHE="${GOPATH}/src/github.com/hyperledger/fabric-chaincode-evm/.build/go-cache"
 fi
 
 for i in "${arr[@]}"
@@ -28,7 +31,7 @@ do
     fi
 
     echo "Checking with goimports"
-    OUTPUT="$(goimports -srcdir $GOPATH/src/github.com/hyperledger/fabric -l $i | grep -v testdata/ || true )"
+    OUTPUT="$(goimports -l $i | grep -v testdata/ || true )"
     if [[ $OUTPUT ]]; then
         echo "The following files contain goimports errors"
         echo $OUTPUT
