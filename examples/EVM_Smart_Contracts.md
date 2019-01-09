@@ -12,7 +12,7 @@ consensus. All transactions will still follow the execute, order, validate steps
 in the Fabric transaction flow. Be sure to install the chaincode on enough peers in
 different orgs and set an endorsement policy that ensures a degree of
 decentralization. In order to interact with the smart contracts that have been
-deployed there is a `fabproxy` which implements a limited set of APIs from the
+deployed there is a `fab3` which implements a limited set of APIs from the
 Ethereum JSON RPC API and therefore can be used as a web3 provider.
 
 ## Installing the EVM Chaincode
@@ -142,12 +142,12 @@ is in your `$GOPATH` and that all your certs will be in default location of the 
 
 The proxy depends on a set of Environment variables to work.
 ```bash
-  # Environment Variables for Fabproxy:
-  export FABPROXY_CONFIG=${GOPATH}/src/github.com/hyperledger/fabric-chaincode-evm/examples/first-network-sdk-config.yaml # Path to a compatible Fabric SDK Go config file
-  export FABPROXY_USER=User1 # User identity being used for the proxy (Matches the users names in the crypto-config directory specified in the config)
-  export FABPROXY_ORG=Org1  # Organization of the specified user
-  export FABPROXY_CHANNEL=mychannel # Channel to be used for the transactions
-  export FABPROXY_CCID=evmcc # ID of the EVM Chaincode deployed in your fabric network
+  # Environment Variables for Fab3:
+  export FAB3_CONFIG=${GOPATH}/src/github.com/hyperledger/fabric-chaincode-evm/examples/first-network-sdk-config.yaml # Path to a compatible Fabric SDK Go config file
+  export FAB3_USER=User1 # User identity being used for the proxy (Matches the users names in the crypto-config directory specified in the config)
+  export FAB3_ORG=Org1  # Organization of the specified user
+  export FAB3_CHANNEL=mychannel # Channel to be used for the transactions
+  export FAB3_CCID=evmcc # ID of the EVM Chaincode deployed in your fabric network
   export PORT=5000 # Port the proxy will listen on. If not provided default is 5000.
 ```
 Set the required variables before running the proxy.
@@ -156,9 +156,9 @@ Set the required variables before running the proxy.
 The proxy can be built like other go projects. Make sure you are at the root of this repo and the repo is in your gopath.
 
 ```bash
-  go build -o fab3 ./fabproxy/cmd
+  go build -o fab3 ./fab3/cmd
 ```
-You should see a binary `fabproxy`. If you have set the required environment variables you can run the proxy by
+You should see a binary `fab3`. If you have set the required environment variables you can run the proxy by
 
 ```bash
   ./fab3

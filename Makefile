@@ -26,7 +26,7 @@ FABRIC_RELEASE=1.4
 PREV_VERSION=6111630c6cf12d3ca31559e93e33e9dad1e6f402
 BASE_VERSION=0.1.0
 
-PACKAGES = ./statemanager/... ./evmcc/... ./fabproxy/ ./eventmanager/...
+PACKAGES = ./statemanager/... ./evmcc/... ./fab3/ ./eventmanager/...
 
 EXECUTABLES ?= go git curl docker
 K := $(foreach exec,$(EXECUTABLES),\
@@ -93,7 +93,7 @@ integration-test: docker-images gotool.ginkgo
 .PHONY: bin/fab3 # let 'go build' handle caching and whether to rebuild
 bin/fab3:
 	mkdir -p bin/
-	go build -o bin/fab3 github.com/hyperledger/fabric-chaincode-evm/fabproxy/cmd
+	go build -o bin/fab3 github.com/hyperledger/fabric-chaincode-evm/fab3/cmd
 
 .PHONY: bin/evmcc # let 'go build' handle caching and whether to rebuild
 bin/evmcc:
@@ -103,5 +103,5 @@ bin/evmcc:
 
 .PHONY:
 update-mocks:
-	go generate ./fabproxy/
+	go generate ./fab3/
 	counterfeiter -o mocks/evmcc/mockstub.go --fake-name MockStub vendor/github.com/hyperledger/fabric/core/chaincode/shim/interfaces.go ChaincodeStubInterface

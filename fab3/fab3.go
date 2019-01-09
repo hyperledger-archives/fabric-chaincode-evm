@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabproxy
+package fab3
 
 import (
 	"context"
@@ -16,15 +16,15 @@ import (
 	"github.com/gorilla/rpc/v2"
 )
 
-type FabProxy struct {
+type Fab3 struct {
 	rpcServer  *rpc.Server
 	httpServer *http.Server
 }
 
-func NewFabProxy(service EthService) *FabProxy {
+func NewFab3(service EthService) *Fab3 {
 	rpcServer := rpc.NewServer()
 
-	proxy := &FabProxy{
+	proxy := &Fab3{
 		rpcServer: rpcServer,
 	}
 
@@ -39,7 +39,7 @@ func NewFabProxy(service EthService) *FabProxy {
 	return proxy
 }
 
-func (p *FabProxy) Start(port int) error {
+func (p *Fab3) Start(port int) error {
 	r := mux.NewRouter()
 	r.Handle("/", p.rpcServer)
 
@@ -51,6 +51,6 @@ func (p *FabProxy) Start(port int) error {
 	return p.httpServer.ListenAndServe()
 }
 
-func (p *FabProxy) Shutdown() error {
+func (p *Fab3) Shutdown() error {
 	return p.httpServer.Shutdown(context.Background())
 }

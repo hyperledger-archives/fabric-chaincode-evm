@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabproxy_test
+package fab3_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestFabproxy(t *testing.T) {
+func TestFab3(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Fabproxy Main Suite")
+	RunSpecs(t, "Fab3 Main Suite")
 }

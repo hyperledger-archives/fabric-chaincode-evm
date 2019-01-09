@@ -8,7 +8,7 @@ declare -a arr=(
 "./event"
 "./eventmanager"
 "./evmcc"
-"./fabproxy"
+"./fab3"
 "./integration"
 "./statemanager"
 )

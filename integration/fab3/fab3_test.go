@@ -44,7 +44,7 @@ func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, pa
 	return client.Do(req)
 }
 
-var _ = Describe("Fabproxy", func() {
+var _ = Describe("Fab3", func() {
 	var (
 		testDir         string
 		dockerClient    *docker.Client
@@ -113,7 +113,7 @@ var _ = Describe("Fabproxy", func() {
 
 		By("starting up the proxy")
 		proxyPort := network.ReservePort()
-		proxyRunner := helpers.FabProxyRunner(components.Paths["fabproxy"], proxyConfigPath, "Org1", "User1", channelName, ccid, proxyPort)
+		proxyRunner := helpers.Fab3Runner(components.Paths["fab3"], proxyConfigPath, "Org1", "User1", channelName, ccid, proxyPort)
 		proxy = ifrit.Invoke(proxyRunner)
 		Eventually(proxy.Ready(), LongEventualTimeout).Should(BeClosed())
 		proxyAddress = fmt.Sprintf("http://127.0.0.1:%d", proxyPort)

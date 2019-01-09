@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabproxy_test
+package fab3_test
 
 import (
 	"encoding/json"
@@ -15,20 +15,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
-	fabproxy_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fabproxy"
+	"github.com/hyperledger/fabric-chaincode-evm/fab3"
+	fab3_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fab3"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Fabproxy", func() {
+var _ = Describe("Fab3", func() {
 
 	var (
-		proxy          *fabproxy.FabProxy
+		proxy          *fab3.Fab3
 		proxyAddr      string
-		mockEthService *fabproxy_mocks.MockEthService
+		mockEthService *fab3_mocks.MockEthService
 		req            *http.Request
 		proxyDoneChan  chan struct{}
 		client         *http.Client
@@ -37,15 +37,15 @@ var _ = Describe("Fabproxy", func() {
 
 	BeforeEach(func() {
 		port = config.GinkgoConfig.ParallelNode + 5000
-		mockEthService = &fabproxy_mocks.MockEthService{}
+		mockEthService = &fab3_mocks.MockEthService{}
 		client = &http.Client{}
 
 		proxyDoneChan = make(chan struct{}, 1)
 		var err error
-		proxy = fabproxy.NewFabProxy(mockEthService)
+		proxy = fab3.NewFab3(mockEthService)
 		Expect(err).ToNot(HaveOccurred())
 
-		go func(proxy *fabproxy.FabProxy, proxyDoneChan chan struct{}) {
+		go func(proxy *fab3.Fab3, proxyDoneChan chan struct{}) {
 			proxy.Start(port)
 
 			// Close proxy done chan to signify proxy has exited
@@ -171,7 +171,7 @@ var _ = Describe("Fabproxy", func() {
 	})
 })
 
-var _ = Describe("fabproxy fails to start", func() {
+var _ = Describe("fab3 fails to start", func() {
 	var (
 		ln  net.Listener
 		err error
@@ -187,8 +187,8 @@ var _ = Describe("fabproxy fails to start", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		mockEthService := &fabproxy_mocks.MockEthService{}
-		proxy := fabproxy.NewFabProxy(mockEthService)
+		mockEthService := &fab3_mocks.MockEthService{}
+		proxy := fab3.NewFab3(mockEthService)
 
 		It("exits instead of starting", func() {
 			err := proxy.Start(port)

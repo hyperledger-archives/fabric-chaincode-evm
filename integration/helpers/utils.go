@@ -84,9 +84,9 @@ func Build() *nwo.Components {
 	components := &nwo.Components{}
 	components.Build()
 
-	proxyBinPath, err := gexec.Build("github.com/hyperledger/fabric-chaincode-evm/fabproxy/cmd")
+	proxyBinPath, err := gexec.Build("github.com/hyperledger/fabric-chaincode-evm/fab3/cmd")
 	Expect(err).ToNot(HaveOccurred())
-	components.Paths["fabproxy"] = proxyBinPath
+	components.Paths["fab3"] = proxyBinPath
 
 	return components
 }

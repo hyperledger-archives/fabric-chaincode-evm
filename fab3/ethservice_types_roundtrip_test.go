@@ -4,13 +4,13 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabproxy_test
+package fab3_test
 
 import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
+	"github.com/hyperledger/fabric-chaincode-evm/fab3"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -35,20 +35,20 @@ var _ = Describe("ethereum json rpc struct fields", func() {
 			fieldNames := []string{"transactionHash", "transactionIndex",
 				"blockHash", "blockNumber", "contractAddress", "gasUsed",
 				"cumulativeGasUsed", "to", "status", "logs"}
-			assertTypeMarshalsJSONFields(fieldNames, fabproxy.TxReceipt{})
+			assertTypeMarshalsJSONFields(fieldNames, fab3.TxReceipt{})
 		})
 		It("for Log subobjects in TxReceipt with the proper cases", func() {
 			fieldNames := []string{"address", "topics", "data", "blockNumber",
 				"transactionHash", "transactionIndex", "blockHash", "logIndex"}
-			assertTypeMarshalsJSONFields(fieldNames, fabproxy.Log{})
+			assertTypeMarshalsJSONFields(fieldNames, fab3.Log{})
 		})
 		It("for Transaction with the proper cases", func() {
 			fieldNames := []string{"blockHash", "blockNumber", "to", "input", "transactionIndex", "hash"}
-			assertTypeMarshalsJSONFields(fieldNames, fabproxy.Transaction{})
+			assertTypeMarshalsJSONFields(fieldNames, fab3.Transaction{})
 		})
 		It("for Block with the proper cases", func() {
 			fieldNames := []string{"number", "hash", "parentHash", "transactions"}
-			assertTypeMarshalsJSONFields(fieldNames, fabproxy.Block{})
+			assertTypeMarshalsJSONFields(fieldNames, fab3.Block{})
 		})
 	})
 })

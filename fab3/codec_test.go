@@ -4,14 +4,14 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabproxy_test
+package fab3_test
 
 import (
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/rpc/v2"
-	"github.com/hyperledger/fabric-chaincode-evm/fabproxy"
+	"github.com/hyperledger/fabric-chaincode-evm/fab3"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,7 +28,7 @@ var _ = Describe("Codec", func() {
 		var codecRequest rpc.CodecRequest
 
 		BeforeEach(func() {
-			codec = fabproxy.NewRPCCodec()
+			codec = fab3.NewRPCCodec()
 			body = strings.NewReader(`{"jsonrpc":"2.0","method":"someService_someMethod"}`)
 		})
 

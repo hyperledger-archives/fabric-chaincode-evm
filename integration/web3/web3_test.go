@@ -107,15 +107,15 @@ var _ = Describe("Web3 Integration", func() {
 	})
 
 	It("web3 can deploy and interact with smart contracts", func() {
-		By("starting up a fabproxy for user 1")
+		By("starting up a fab3 for user 1")
 		user1ProxyPort := network.ReservePort()
-		user1ProxyRunner := helpers.FabProxyRunner(components.Paths["fabproxy"], proxyConfigPath, "Org1", "User1", channelName, ccid, user1ProxyPort)
+		user1ProxyRunner := helpers.Fab3Runner(components.Paths["fab3"], proxyConfigPath, "Org1", "User1", channelName, ccid, user1ProxyPort)
 		user1Proxy = ifrit.Invoke(user1ProxyRunner)
 		Eventually(user1Proxy.Ready(), LongEventualTimeout).Should(BeClosed())
 
-		By("starting up a fabproxy for user 2")
+		By("starting up a fab3 for user 2")
 		user2ProxyPort := network.ReservePort()
-		user2ProxyRunner := helpers.FabProxyRunner(components.Paths["fabproxy"], proxyConfigPath, "Org2", "User2", channelName, ccid, user2ProxyPort)
+		user2ProxyRunner := helpers.Fab3Runner(components.Paths["fab3"], proxyConfigPath, "Org2", "User2", channelName, ccid, user2ProxyPort)
 		user2Proxy = ifrit.Invoke(user2ProxyRunner)
 		Eventually(user2Proxy.Ready(), LongEventualTimeout).Should(BeClosed())
 
