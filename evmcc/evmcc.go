@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/burrow/execution/evm"
 	"github.com/hyperledger/burrow/logging"
 	"github.com/hyperledger/burrow/permission"
+	"github.com/hyperledger/fabric-chaincode-evm/eventmanager"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -68,34 +69,31 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 
 	c, err := hex.DecodeString(string(args[0]))
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(args[0]), err.Error()))
+		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(args[0]), err))
 	}
 
 	calleeAddr, err := crypto.AddressFromBytes(c)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get callee address: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("failed to get callee address: %s", err))
 	}
 
 	// get caller account from creator public key
 	callerAddr, err := getCallerAddress(stub)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get caller address: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("failed to get caller address: %s", err))
 	}
 
 	// get input bytes from args[1]
 	input, err := hex.DecodeString(string(args[1]))
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to decode input bytes: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("failed to decode input bytes: %s", err))
 	}
 
 	var gas uint64 = 10000
 	state := statemanager.NewStateManager(stub)
 	evmCache := evm.NewState(state)
-	eventSink := evm.NewNoopEventSink()
+	eventSink := &eventmanager.EventManager{Stub: stub}
 	vm := evm.NewVM(newParams(), callerAddr, nil, evmLogger)
-
-	// evmgr := evm_event.NewEventManager(stub)
-	// vm.SetPublisher(evmgr)
 
 	if calleeAddr == crypto.ZeroAddress {
 		logger.Debugf("Deploy contract")
@@ -132,9 +130,9 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 			return shim.Error(fmt.Sprintf("failed to set contract account permissions: %s ", evmErr))
 		}
 
-		rtCode, err := vm.Call(evmCache, eventSink, callerAddr, contractAddr, input, input, 0, &gas)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("failed to deploy code: %s", err.Error()))
+		rtCode, evmErr := vm.Call(evmCache, eventSink, callerAddr, contractAddr, input, input, 0, &gas)
+		if evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to deploy code: %s", evmErr))
 		}
 		if rtCode == nil {
 			return shim.Error(fmt.Sprintf("nil bytecode"))
@@ -143,6 +141,12 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 		evmCache.InitCode(contractAddr, rtCode)
 		if evmErr := evmCache.Error(); evmErr != nil {
 			return shim.Error(fmt.Sprintf("failed to update contract account: %s", evmErr))
+		}
+
+		// Passing the first 8 bytes contract address just created
+		err := eventSink.Flush(string(contractAddr.Bytes()[0:8]))
+		if err != nil {
+			return shim.Error(fmt.Sprintf("error in Flush: %s", err))
 		}
 
 		if evmErr := evmCache.Sync(); evmErr != nil {
@@ -158,17 +162,17 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 			return shim.Error(fmt.Sprintf("failed to retrieve contract code: %s", evmErr))
 		}
 
-		output, err := vm.Call(evmCache, eventSink, callerAddr, calleeAddr, calleeCode, input, 0, &gas)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("failed to execute contract: %s", err.Error()))
+		output, evmErr := vm.Call(evmCache, eventSink, callerAddr, calleeAddr, calleeCode, input, 0, &gas)
+		if evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to execute contract: %s", evmErr))
 		}
 
 		// Passing the function hash of the method that has triggered the event
 		// The function hash is the first 8 bytes of the Input argument
-		// er := evmgr.Flush(string(args[1][0:8]))
-		// if er != nil {
-		// 	return shim.Error(fmt.Sprintf("error in Flush: %s", er.Error()))
-		// }
+		err := eventSink.Flush(string(args[1][0:8]))
+		if err != nil {
+			return shim.Error(fmt.Sprintf("error in Flush: %s", err))
+		}
 
 		// Sync is required for evm to send writes to the statemanager.
 		if evmErr := evmCache.Sync(); evmErr != nil {
@@ -182,7 +186,7 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 func (evmcc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []byte) pb.Response {
 	c, err := hex.DecodeString(string(address))
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(address), err.Error()))
+		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(address), err))
 	}
 
 	calleeAddr, err := crypto.AddressFromBytes(c)
@@ -206,17 +210,17 @@ func (evmcc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []b
 func (evmcc *EvmChaincode) account(stub shim.ChaincodeStubInterface) pb.Response {
 	creatorBytes, err := stub.GetCreator()
 	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get creator: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("failed to get creator: %s", err))
 	}
 
 	si := &msp.SerializedIdentity{}
 	if err = proto.Unmarshal(creatorBytes, si); err != nil {
-		return shim.Error(fmt.Sprintf("failed to unmarshal serialized identity: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("failed to unmarshal serialized identity: %s", err))
 	}
 
 	callerAddr, err := identityToAddr(si.IdBytes)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("fail to convert identity to address: %s", err.Error()))
+		return shim.Error(fmt.Sprintf("fail to convert identity to address: %s", err))
 	}
 
 	return shim.Success([]byte(callerAddr.String()))
@@ -244,7 +248,7 @@ func getCallerAddress(stub shim.ChaincodeStubInterface) (crypto.Address, error) 
 
 	callerAddr, err := identityToAddr(si.IdBytes)
 	if err != nil {
-		return crypto.ZeroAddress, fmt.Errorf("fail to convert identity to address: %s", err.Error())
+		return crypto.ZeroAddress, fmt.Errorf("fail to convert identity to address: %s", err)
 	}
 
 	return callerAddr, nil
@@ -271,6 +275,6 @@ func identityToAddr(id []byte) (crypto.Address, error) {
 
 func main() {
 	if err := shim.Start(new(EvmChaincode)); err != nil {
-		logger.Infof("Error starting EVM chaincode: %s", err.Error())
+		logger.Infof("Error starting EVM chaincode: %s", err)
 	}
 }

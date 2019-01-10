@@ -9,7 +9,7 @@ package fabproxy
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -18,6 +18,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
 
+	"github.com/hyperledger/fabric-chaincode-evm/event"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -142,7 +143,7 @@ func (s *ethService) GetCode(r *http.Request, arg *string, reply *string) error 
 	response, err := s.query(s.ccid, "getCode", [][]byte{[]byte(strippedAddr)})
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to query the ledger: %s", err.Error()))
+		return fmt.Errorf("Failed to query the ledger: %s", err)
 	}
 
 	*reply = string(response.Payload)
@@ -154,7 +155,7 @@ func (s *ethService) Call(r *http.Request, args *EthArgs, reply *string) error {
 	response, err := s.query(s.ccid, strip0x(args.To), [][]byte{[]byte(strip0x(args.Data))})
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to query the ledger: %s", err.Error()))
+		return fmt.Errorf("Failed to query the ledger: %s", err)
 	}
 
 	// Clients expect the prefix to present in responses
@@ -175,7 +176,7 @@ func (s *ethService) SendTransaction(r *http.Request, args *EthArgs, reply *stri
 	})
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to execute transaction: %s", err.Error()))
+		return fmt.Errorf("Failed to execute transaction: %s", err)
 	}
 	*reply = string(response.TransactionID)
 	return nil
@@ -186,7 +187,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 
 	block, err := s.ledgerClient.QueryBlockByTxID(fab.TransactionID(strippedTxID))
 	if err != nil {
-		return fmt.Errorf("Failed to query the ledger: %s", err.Error())
+		return fmt.Errorf("Failed to query the ledger: %s", err)
 	}
 
 	blkHeader := block.GetHeader()
@@ -203,7 +204,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 
 	index, txPayload, err := findTransaction(strippedTxID, block.GetData().GetData())
 	if err != nil {
-		return fmt.Errorf("Failed parsing the transactions in the block: %s", err.Error())
+		return fmt.Errorf("Failed parsing the transactions in the block: %s", err)
 	}
 
 	receipt.TransactionIndex = index
@@ -216,7 +217,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 	if to != "" {
 		callee, err := hex.DecodeString(to)
 		if err != nil {
-			return fmt.Errorf("Failed to decode to address: %s", err.Error())
+			return fmt.Errorf("Failed to decode to address: %s", err)
 		}
 
 		if bytes.Equal(callee, ZeroAddress) {
@@ -227,36 +228,36 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 	}
 
 	if respPayload.Events != nil {
-		// chaincodeEvent, err := getChaincodeEvents(respPayload)
-		// if err != nil {
-		// 	return errors.New(fmt.Sprintf("Failed to decode chaincode event: %s", err.Error()))
-		// }
+		chaincodeEvent, err := getChaincodeEvents(respPayload)
+		if err != nil {
+			return fmt.Errorf("Failed to decode chaincode event: %s", err)
+		}
 
-		// var eventMsgs []events.EventDataLog
-		// err = json.Unmarshal(chaincodeEvent.Payload, &eventMsgs)
-		// if err != nil {
-		// 	return errors.New(fmt.Sprintf("Failed to unmarshal chaincode event payload: %s", err.Error()))
-		// }
+		var eventMsgs []event.Event
+		err = json.Unmarshal(chaincodeEvent.Payload, &eventMsgs)
+		if err != nil {
+			return fmt.Errorf("Failed to unmarshal chaincode event payload: %s", err)
+		}
 
 		var txLogs []Log
 		txLogs = make([]Log, 0)
-		// for i, evDataLog := range eventMsgs {
-		// 	topics := []string{}
-		// 	for _, topic := range evDataLog.Topics {
-		// 		topics = append(topics, "0x"+hex.EncodeToString(topic.Bytes()))
-		// 	}
-		// 	logObj := Log{
-		// 		Address:     "0x" + strings.ToLower(evDataLog.Address.String()),
-		// 		Topics:      topics,
-		// 		Data:        "0x" + hex.EncodeToString(evDataLog.Data),
-		// 		BlockNumber: receipt.BlockNumber,
-		// 		TxHash:      receipt.TransactionHash,
-		// 		TxIndex:     receipt.TransactionIndex,
-		// 		BlockHash:   "0x" + hex.EncodeToString(blkHeader.GetDataHash()),
-		// 		Index:       "0x" + strconv.FormatUint(uint64(i), 16),
-		// 	}
-		// 	txLogs = append(txLogs, logObj)
-		// }
+		for i, logEvent := range eventMsgs {
+			topics := []string{}
+			for _, topic := range logEvent.Topics {
+				topics = append(topics, "0x"+topic)
+			}
+			logObj := Log{
+				Address:     "0x" + logEvent.Address,
+				Topics:      topics,
+				Data:        "0x" + logEvent.Data,
+				BlockNumber: receipt.BlockNumber,
+				TxHash:      receipt.TransactionHash,
+				TxIndex:     receipt.TransactionIndex,
+				BlockHash:   "0x" + hex.EncodeToString(blkHeader.GetDataHash()),
+				Index:       "0x" + strconv.FormatUint(uint64(i), 16),
+			}
+			txLogs = append(txLogs, logObj)
+		}
 		receipt.Logs = txLogs
 	} else {
 		receipt.Logs = nil
@@ -269,7 +270,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 func (s *ethService) Accounts(r *http.Request, arg *string, reply *[]string) error {
 	response, err := s.query(s.ccid, "account", [][]byte{})
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to query the ledger: %s", err.Error()))
+		return fmt.Errorf("Failed to query the ledger: %s", err)
 	}
 
 	*reply = []string{"0x" + strings.ToLower(string(response.Payload))}
@@ -426,7 +427,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 
 	block, err := s.ledgerClient.QueryBlockByTxID(fab.TransactionID(strippedTxId))
 	if err != nil {
-		return fmt.Errorf("Failed to query the ledger: %s", err.Error())
+		return fmt.Errorf("Failed to query the ledger: %s", err)
 	}
 	blkHeader := block.GetHeader()
 	txn.BlockHash = "0x" + hex.EncodeToString(blkHeader.GetDataHash())
@@ -434,7 +435,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 
 	index, txPayload, err := findTransaction(strippedTxId, block.GetData().GetData())
 	if err != nil {
-		return fmt.Errorf("Failed to parse through transactions in the block: %s", err.Error())
+		return fmt.Errorf("Failed to parse through transactions in the block: %s", err)
 	}
 
 	txn.TransactionIndex = index
@@ -549,13 +550,13 @@ func getTransactionInformation(payload *common.Payload) (string, string, *peer.C
 
 	ccPropPayload, respPayload, err := getPayloads(txActions.GetActions()[0])
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err.Error())
+		return "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err)
 	}
 
 	invokeSpec := &peer.ChaincodeInvocationSpec{}
 	err = proto.Unmarshal(ccPropPayload.GetInput(), invokeSpec)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err.Error())
+		return "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err)
 	}
 
 	// callee, input data is standard case, also handle getcode & account cases

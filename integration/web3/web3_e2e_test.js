@@ -213,4 +213,5 @@ var user1Address = process.argv[2]
 var user2Address = process.argv[3]
 
 TestVotingContract(user1Address, user2Address)
+TestInstructorContractEvents(user1Address)
 console.log("Finished Web3 Tests")

@@ -9,6 +9,7 @@ package main_test
 import (
 	"crypto/x509"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/crypto"
+	"github.com/hyperledger/fabric-chaincode-evm/event"
 	evm "github.com/hyperledger/fabric-chaincode-evm/evmcc"
 	evmcc_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -539,128 +541,191 @@ H8GZeN2ifTyJzzGo
 			})
 		})
 
-		//Context("when a smart contract has events", func() {
-		//	var (
-		//		userCert = `-----BEGIN CERTIFICATE-----
-		//MIICGTCCAcCgAwIBAgIRAOdmptMzz5y0A9GOgFLxRNcwCgYIKoZIzj0EAwIwczEL
-		//MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-		//cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
-		//Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTgwMjEyMDY0MDMyWhcNMjgwMjEwMDY0MDMy
-		//WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
-		//U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWVXNlcjFAb3JnMS5leGFtcGxlLmNvbTBZ
-		//MBMGByqGSM49AgEGCCqGSM49AwEHA0IABEwsU2N6Kqrtl73S7+7/nD/LTfDFVWO4
-		//q3MTtbckd6MH2zTUj9idLoaQ5VNGJVTRRPs+O6bxlvl0Mitu1rcXFoyjTTBLMA4G
-		//A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIKtXuAgSGNzS
-		//0Yz91W08FSieahwkOU7pWJvh86pkNuxSMAoGCCqGSM49BAMCA0cAMEQCIDOGUUvv
-		//SgCqSQONblgBtkKuKgN36VgX+jLhZbaqMNAtAiBXiAHbgYdu3UHBVJwdTYxuFTWJ
-		//Vc4foA7mruwjI8sEng==
-		//-----END CERTIFICATE-----`
+		Context("when a smart contract has events", func() {
+			var (
+				userCert = `-----BEGIN CERTIFICATE-----
+MIICGTCCAcCgAwIBAgIRAOdmptMzz5y0A9GOgFLxRNcwCgYIKoZIzj0EAwIwczEL
+MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTgwMjEyMDY0MDMyWhcNMjgwMjEwMDY0MDMy
+WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
+U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWVXNlcjFAb3JnMS5leGFtcGxlLmNvbTBZ
+MBMGByqGSM49AgEGCCqGSM49AwEHA0IABEwsU2N6Kqrtl73S7+7/nD/LTfDFVWO4
+q3MTtbckd6MH2zTUj9idLoaQ5VNGJVTRRPs+O6bxlvl0Mitu1rcXFoyjTTBLMA4G
+A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIKtXuAgSGNzS
+0Yz91W08FSieahwkOU7pWJvh86pkNuxSMAoGCCqGSM49BAMCA0cAMEQCIDOGUUvv
+SgCqSQONblgBtkKuKgN36VgX+jLhZbaqMNAtAiBXiAHbgYdu3UHBVJwdTYxuFTWJ
+Vc4foA7mruwjI8sEng==
+-----END CERTIFICATE-----`
 
-		//		creator = marshalCreator("TestOrg", []byte(userCert))
+				creator = marshalCreator("TestOrg", []byte(userCert))
 
-		//		/*pragma solidity ^0.4.0;
-		//		  contract Instructor {
-		//		    bytes32 fName;
-		//		    uint age;
-		//		    uint salary;
-		//		    event Setter(bytes32 indexed name, uint age, uint salary);
-		//		    function setInstructor(bytes32 _fName, uint _age, uint _salary) public {
-		//		      fName = _fName;
-		//		      age = _age;
-		//		      salary = _salary;
-		//		      emit Setter(_fName, _age, _salary);
-		//		    }
-		//		    function getInstructor() public constant returns (bytes32, uint, uint) {
-		//		      return (fName, age, salary);
-		//		    }
-		//		  }*/
+				/*
+					pragma solidity ^0.5.0;
+					contract Instructor {
+					  bytes32 fName;
+					  uint age;
+					  uint salary;
+					  event Setter(bytes32 indexed name, uint age, uint salary);
 
-		//		deployCode      = []byte("608060405234801561001057600080fd5b50610122806100206000396000f30060806040526004361060485763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166331fb1dff8114604d5780633c1b81a514606a575b600080fd5b348015605857600080fd5b506068600435602435604435609a565b005b348015607557600080fd5b50607c60e8565b60408051938452602084019290925282820152519081900360600190f35b6000839055600182905560028190556040805183815260208101839052815185927fe920a6ca2d94687457e136223552305dbabca6f28cf9c65d18efc2193a2369b0928290030190a2505050565b6000546001546002549091925600a165627a7a723058201f3b3871bfe7762e6fb776ed8b5d5533e07178b576c630cf89a7e63a7b54b57b0029")
-		//		contractAddress crypto.Address
-		//		SET             = "31fb1dff" //"setInstructor(bytes32,uint256,uint256)"
-		//		GET             = "3c1b81a5" //"getInstructor()"
-		//		msg             events.EventDataLog
-		//		messagePayloads []events.EventDataLog
-		//	)
+					  constructor (bytes32 _fName, uint _age, uint _salary) public{
+					     fName = _fName;
+					    age = _age;
+					    salary = _salary;
+					    emit Setter(_fName,age, _salary);
+					  }
 
-		//	BeforeEach(func() {
-		//		// Set contract creator
-		//		stub.GetCreatorReturns(creator, nil)
+					  function setInstructor(bytes32 _fName, uint _age, uint _salary) public {
+					    fName = _fName;
+					    age = _age;
+					    salary = _salary;
+					    emit Setter(_fName,age, _salary);
+					  }
+					  function getInstructor() public view returns (bytes32, uint, uint) {
+					    return (fName, age, salary);
+					  }
+					}
+				*/
 
-		//		// zero address, and deploy code is contract creation
-		//		stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), deployCode})
-		//		res := evmcc.Invoke(stub)
-		//		Expect(res.Status).To(Equal(int32(shim.OK)))
-		//		Expect(stub.PutStateCallCount()).To(Equal(2))
+				deployCode      = "608060405234801561001057600080fd5b506040516060806102318339810180604052606081101561003057600080fd5b81019080805190602001909291908051906020019092919080519060200190929190505050826000819055508160018190555080600281905550827fe920a6ca2d94687457e136223552305dbabca6f28cf9c65d18efc2193a2369b060015483604051808381526020018281526020019250505060405180910390a2505050610173806100be6000396000f3fe608060405260043610610046576000357c01000000000000000000000000000000000000000000000000000000009004806331fb1dff1461004b5780633c1b81a51461009a575b600080fd5b34801561005757600080fd5b506100986004803603606081101561006e57600080fd5b810190808035906020019092919080359060200190929190803590602001909291905050506100d3565b005b3480156100a657600080fd5b506100af61012f565b60405180848152602001838152602001828152602001935050505060405180910390f35b826000819055508160018190555080600281905550827fe920a6ca2d94687457e136223552305dbabca6f28cf9c65d18efc2193a2369b060015483604051808381526020018281526020019250505060405180910390a2505050565b6000806000805460015460025492509250925090919256fea165627a7a7230582088a8a452846106497d409e8648e2531064fb1c0702cbd2fe4a67ed90f0aa3e490029"
+				contractAddress crypto.Address
+				SET             = "31fb1dff" //"setInstructor(bytes32,uint256,uint256)"
+				GET             = "3c1b81a5" //"getInstructor()"
+				msg             event.Event
+				messagePayloads []event.Event
+			)
 
-		//		var err error
-		//		contractAddress, err = crypto.AddressFromHexString(string(res.Payload))
-		//		Expect(err).ToNot(HaveOccurred())
+			Context("when a contract has events in the constructor", func() {
+				It("sets a chaincode event", func() {
+					// Set contract creator
+					stub.GetCreatorReturns(creator, nil)
 
-		//		topics := []binary.Word256{}
+					// First arg is the hex encoded name "Pam"
+					// Second arg is the hex encoded value 30
+					// Third arg is the hex encoded value 20000
+					stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), []byte(deployCode + "50616d0000000000000000000000000000000000000000000000000000000000" + "000000000000000000000000000000000000000000000000000000000000001e" + "0000000000000000000000000000000000000000000000000000000000004e20")})
 
-		//		//First topic refers to the Event: sha3('Setter(bytes32, uint256, uint256)')
-		//		topic, err := hex.DecodeString("e920a6ca2d94687457e136223552305dbabca6f28cf9c65d18efc2193a2369b0")
-		//		Expect(err).ToNot(HaveOccurred())
-		//		topics = append(topics, binary.RightPadWord256(topic))
+					var topics []string
+					//First topic refers to the Event: sha3('Setter(bytes32, uint256, uint256)')
+					topic := "e920a6ca2d94687457e136223552305dbabca6f28cf9c65d18efc2193a2369b0"
+					topics = append(topics, topic)
 
-		//		// Second topic is the value of the first indexed param of the event. In this case it is the name in bytes. The value is "Sam" in hex
-		//		topic, err = hex.DecodeString("53616d0000000000000000000000000000000000000000000000000000000000")
-		//		Expect(err).ToNot(HaveOccurred())
-		//		topics = append(topics, binary.RightPadWord256(topic))
+					// Second topic is the value of the first indexed param of the event. In this case it is the name in bytes. The value is "Pam" in hex
+					topic = "50616d0000000000000000000000000000000000000000000000000000000000"
+					topics = append(topics, topic)
 
-		//		//Data contains the non indexed elements of the event concatenated together. Remaining values are age and salary which are hex encoded
-		//		// 0x0000000000000000000000000000000000000000000000000000000000000019 is 25 (age)
-		//		// 0x0000000000000000000000000000000000000000000000000000000000007530 is 30000 (salary)
-		//		data, err := hex.DecodeString("00000000000000000000000000000000000000000000000000000000000000190000000000000000000000000000000000000000000000000000000000007530")
+					//Data contains the non indexed elements of the event concatenated together. Remaining values are age and salary which are hex encoded
+					// 0x000000000000000000000000000000000000000000000000000000000000001e is 30 (age)
+					// 0x0000000000000000000000000000000000000000000000000000000000004e20 is 20000 (salary)
+					data := "000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000004e20"
 
-		//		Expect(err).ToNot(HaveOccurred())
+					res := evmcc.Invoke(stub)
+					Expect(res.Status).To(Equal(int32(shim.OK)))
 
-		//		msg = events.EventDataLog{
-		//			Address: contractAddress,
-		//			Topics:  topics,
-		//			Data:    data,
-		//			Height:  0,
-		//		}
+					var err error
+					contractAddress, err = crypto.AddressFromHexString(string(res.Payload))
+					Expect(err).ToNot(HaveOccurred())
+					Expect(fakeLedger).To(HaveKey(strings.ToLower(contractAddress.String())))
 
-		//		messagePayloads = []events.EventDataLog{msg}
-		//	})
+					msg = event.Event{
+						Address: strings.ToLower(contractAddress.String()),
+						Topics:  topics,
+						Data:    data,
+					}
+					messagePayloads = []event.Event{msg}
+					msg.Address = strings.ToLower(contractAddress.String())
+					expectedPayload, err := json.Marshal(messagePayloads)
+					Expect(err).ToNot(HaveOccurred())
 
-		//	Context("if the method called emits event(s)", func() {
-		//		It("sets the chaincode event", func() {
-		//			// The 3 values following SET are the arguments to SET. All 3 are hex encoded
-		//			// First arg is the hex encoded name "Sam"
-		//			// Second arg is the hex encoded value 25
-		//			// Third arg is the hex encoded value 30
-		//			stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(SET + "53616d0000000000000000000000000000000000000000000000000000000000" + "0000000000000000000000000000000000000000000000000000000000000019" + "0000000000000000000000000000000000000000000000000000000000007530")})
+					Expect(stub.SetEventCallCount()).To(Equal(1))
+					setEventName, setEventPayload := stub.SetEventArgsForCall(0)
+					Expect(setEventName).To(Equal(string(contractAddress[0:8])))
+					Expect(setEventPayload).To(Equal(expectedPayload))
 
-		//			res := evmcc.Invoke(stub)
-		//			Expect(res.Status).To(Equal(int32(shim.OK)))
+					var unmarshaledPayloads []event.Event
+					err = json.Unmarshal(setEventPayload, &unmarshaledPayloads)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(unmarshaledPayloads).To(Equal(messagePayloads))
+				})
+			})
 
-		//			expectedPayload, ok := json.Marshal(messagePayloads)
-		//			Expect(ok).ToNot(HaveOccurred())
+			Context("when a smart contract has events in its functions ", func() {
+				BeforeEach(func() {
+					// Set contract creator
+					stub.GetCreatorReturns(creator, nil)
 
-		//			Expect(stub.SetEventCallCount()).To(Equal(1))
-		//			setEventName, setEventPayload := stub.SetEventArgsForCall(0)
-		//			Expect(setEventName).To(Equal(SET))
-		//			Expect(setEventPayload).To(Equal([]byte(expectedPayload)))
+					// zero address, and deploy code is contract creation
+					stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), []byte(deployCode + "53616d0000000000000000000000000000000000000000000000000000000000" + "000000000000000000000000000000000000000000000000000000000000001e" + "0000000000000000000000000000000000000000000000000000000000004e20")})
 
-		//			var unmarshaledPayloads []events.EventDataLog
-		//			err := json.Unmarshal(setEventPayload, &unmarshaledPayloads)
-		//			Expect(err).ToNot(HaveOccurred())
-		//			Expect(unmarshaledPayloads).To(Equal(messagePayloads))
-		//		})
-		//	})
+					res := evmcc.Invoke(stub)
+					Expect(res.Status).To(Equal(int32(shim.OK)))
+					var err error
+					contractAddress, err = crypto.AddressFromHexString(string(res.Payload))
+					Expect(err).ToNot(HaveOccurred())
+					Expect(fakeLedger).To(HaveKey(strings.ToLower(contractAddress.String())))
 
-		//	Context("if the method called does not emit any events", func() {
-		//		It("doesn't set any chaincode event", func() {
-		//			stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(GET)})
-		//			res := evmcc.Invoke(stub)
-		//			Expect(res.Status).To(Equal(int32(shim.OK)))
-		//			Expect(stub.SetEventCallCount()).To(Equal(0))
-		//		})
-		//	})
-		//})
+					topics := []string{}
+
+					//First topic refers to the Event: sha3('Setter(bytes32, uint256, uint256)')
+					topic := "e920a6ca2d94687457e136223552305dbabca6f28cf9c65d18efc2193a2369b0"
+					topics = append(topics, topic)
+
+					// Second topic is the value of the first indexed param of the event. In this case it is the name in bytes. The value is "Sam" in hex
+					topic = "53616d0000000000000000000000000000000000000000000000000000000000"
+					topics = append(topics, topic)
+
+					//Data contains the non indexed elements of the event concatenated together. Remaining values are age and salary which are hex encoded
+					// 0x0000000000000000000000000000000000000000000000000000000000000019 is 25 (age)
+					// 0x0000000000000000000000000000000000000000000000000000000000007530 is 30000 (salary)
+					data := "00000000000000000000000000000000000000000000000000000000000000190000000000000000000000000000000000000000000000000000000000007530"
+
+					msg = event.Event{
+						Address: strings.ToLower(contractAddress.String()),
+						Topics:  topics,
+						Data:    data,
+					}
+
+					messagePayloads = []event.Event{msg}
+				})
+
+				Context("if the method called emits event(s)", func() {
+					It("sets the chaincode event", func() {
+						// The 3 values following SET are the arguments to SET. All 3 are hex encoded
+						// First arg is the hex encoded name "Sam"
+						// Second arg is the hex encoded value 25
+						// Third arg is the hex encoded value 30000
+						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(SET + "53616d0000000000000000000000000000000000000000000000000000000000" + "0000000000000000000000000000000000000000000000000000000000000019" + "0000000000000000000000000000000000000000000000000000000000007530")})
+
+						initialEventCallCount := stub.SetEventCallCount()
+						res := evmcc.Invoke(stub)
+						Expect(res.Status).To(Equal(int32(shim.OK)))
+
+						expectedPayload, ok := json.Marshal(messagePayloads)
+						Expect(ok).ToNot(HaveOccurred())
+
+						Expect(stub.SetEventCallCount()).To(Equal(initialEventCallCount + 1))
+						setEventName, setEventPayload := stub.SetEventArgsForCall(initialEventCallCount)
+						Expect(setEventName).To(Equal(SET))
+						Expect(setEventPayload).To(Equal([]byte(expectedPayload)))
+
+						var unmarshaledPayloads []event.Event
+						err := json.Unmarshal(setEventPayload, &unmarshaledPayloads)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(unmarshaledPayloads).To(Equal(messagePayloads))
+					})
+				})
+
+				Context("if the method called does not emit any events", func() {
+					It("doesn't set any chaincode event", func() {
+						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(GET)})
+						initialEventCallCount := stub.SetEventCallCount()
+						res := evmcc.Invoke(stub)
+						Expect(res.Status).To(Equal(int32(shim.OK)))
+						Expect(stub.SetEventCallCount()).To(Equal(initialEventCallCount))
+					})
+				})
+			})
+		})
 	})
 })
 
