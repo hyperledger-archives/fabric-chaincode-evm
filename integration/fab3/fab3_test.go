@@ -11,23 +11,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"syscall"
-	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
 	"github.com/hyperledger/fabric-chaincode-evm/integration/helpers"
-	"github.com/hyperledger/fabric/integration/nwo"
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
 )
-
-const LongEventualTimeout = time.Minute
-const LongPollingInterval = 500 * time.Millisecond
-const DefaultEventuallyTimeout = time.Second
-const DefaultEventuallyPollingInterval = 10 * time.Millisecond
 
 func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, params interface{}) (*http.Response, error) {
 	request := helpers.JsonRPCRequest{
@@ -49,92 +41,29 @@ func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, pa
 
 var _ = Describe("Fab3", func() {
 	var (
-		testDir         string
-		dockerClient    *docker.Client
-		network         *nwo.Network
-		chaincode       nwo.Chaincode
-		process         ifrit.Process
-		channelName     string
-		proxyConfigPath string
-		ccid            string
-
-		proxy        ifrit.Process
-		proxyAddress string
-
+		proxy         ifrit.Process
+		proxyAddress  string
 		client        *http.Client
 		SimpleStorage helpers.Contract
 	)
 
 	BeforeEach(func() {
-		var err error
-		testDir, err = ioutil.TempDir("", "fab3-e2e")
-		Expect(err).NotTo(HaveOccurred())
-
-		dockerClient, err = docker.NewClientFromEnv()
-		Expect(err).NotTo(HaveOccurred())
-
 		SimpleStorage = helpers.SimpleStorageContract()
-
 		client = &http.Client{}
 
-		ccid = "evmcc"
-		chaincode = nwo.Chaincode{
-			Name:    ccid,
-			Version: "0.0",
-			Path:    "github.com/hyperledger/fabric-chaincode-evm/evmcc",
-			Ctor:    `{"Args":[]}`,
-			Policy:  `AND ('Org1MSP.member','Org2MSP.member')`,
-		}
-		network = nwo.New(nwo.BasicSolo(), testDir, dockerClient, 30000, components)
-		network.GenerateConfigTree()
-		network.Bootstrap()
-
-		networkRunner := network.NetworkGroupRunner()
-		process = ifrit.Invoke(networkRunner)
-		Eventually(process.Ready(), DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
-		channelName = "testchannel"
-
-		proxyConfigPath, err = helpers.CreateProxyConfig(testDir, channelName, network.CryptoPath(),
-			network.PeerPort(network.Peer("Org1", "peer0"), nwo.ListenPort),
-			network.PeerPort(network.Peer("Org1", "peer1"), nwo.ListenPort),
-			network.PeerPort(network.Peer("Org2", "peer0"), nwo.ListenPort),
-			network.PeerPort(network.Peer("Org2", "peer1"), nwo.ListenPort),
-			network.OrdererPort(network.Orderer("orderer"), nwo.ListenPort),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		//Set up the network
-		By("getting the orderer by name")
-		orderer := network.Orderer("orderer")
-
-		By("setting up the channel")
-		network.CreateAndJoinChannel(orderer, "testchannel")
-		network.UpdateChannelAnchors(orderer, "testchannel")
-
-		By("deploying the chaincode")
-		nwo.DeployChaincode(network, "testchannel", orderer, chaincode)
-
-		By("starting up the proxy")
-		proxyPort := network.ReservePort()
-		proxyRunner := helpers.Fab3Runner(components.Paths["fab3"], proxyConfigPath, "Org1", "User1", channelName, ccid, proxyPort)
+		//Start up Proxy
+		proxyPort := uint16(6000 + config.GinkgoConfig.ParallelNode)
+		proxyRunner := helpers.Fab3Runner(components.Paths["fab3"], components.Paths["Fab3Config"], "Org1", "User1", channelName, ccid, proxyPort)
 		proxy = ifrit.Invoke(proxyRunner)
 		Eventually(proxy.Ready(), LongEventualTimeout, LongPollingInterval).Should(BeClosed())
 		proxyAddress = fmt.Sprintf("http://127.0.0.1:%d", proxyPort)
 	})
 
 	AfterEach(func() {
-		if process != nil {
-			process.Signal(syscall.SIGTERM)
-			Eventually(process.Wait(), LongEventualTimeout, LongPollingInterval).Should(Receive())
-		}
-		if network != nil {
-			network.Cleanup()
-		}
 		if proxy != nil {
 			proxy.Signal(syscall.SIGTERM)
 			Eventually(proxy.Wait(), LongEventualTimeout, LongPollingInterval).Should(Receive())
 		}
-		os.RemoveAll(testDir)
 	})
 
 	It("implements the ethereum json rpc api", func() {

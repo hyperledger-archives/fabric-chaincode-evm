@@ -13,6 +13,10 @@
   revision = "beccd9cb1450fddfe426616e151d709c99f7ccdd"
   name = "github.com/hyperledger/fabric-sdk-go"
 
+[[constraint]]
+  version = "0.0.3"
+  name = "github.com/spf13/cobra"
+
 #Constraints from Fabric
 [[constraint]]
   revision = "a3b6351eb1ff8e1bfa30b2f55d7e282186ed8fee"

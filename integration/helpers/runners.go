@@ -21,7 +21,7 @@ func Fab3Runner(fab3BinPath, proxyConfig, org, user, channel, ccid string, port 
 	cmd.Env = append(cmd.Env, fmt.Sprintf("FAB3_USER=%s", user))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("FAB3_CHANNEL=%s", channel))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("FAB3_CCID=%s", ccid))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("PORT=%d", port))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("FAB3_PORT=%d", port))
 
 	config := ginkgomon.Config{
 		Name:              fmt.Sprintf("fab3-%s-%s", org, user),
