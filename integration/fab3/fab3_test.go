@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"syscall"
 
@@ -18,7 +19,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/ginkgomon"
 )
 
 func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, params interface{}) (*http.Response, error) {
@@ -42,6 +45,7 @@ func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, pa
 var _ = Describe("Fab3", func() {
 	var (
 		proxy         ifrit.Process
+		proxyRunner   *ginkgomon.Runner
 		proxyAddress  string
 		client        *http.Client
 		SimpleStorage helpers.Contract
@@ -53,7 +57,7 @@ var _ = Describe("Fab3", func() {
 
 		//Start up Proxy
 		proxyPort := uint16(6000 + config.GinkgoConfig.ParallelNode)
-		proxyRunner := helpers.Fab3Runner(components.Paths["fab3"], components.Paths["Fab3Config"], "Org1", "User1", channelName, ccid, proxyPort)
+		proxyRunner = helpers.Fab3Runner(components.Paths["fab3"], components.Paths["Fab3Config"], "Org1", "User1", channelName, ccid, proxyPort)
 		proxy = ifrit.Invoke(proxyRunner)
 		Eventually(proxy.Ready(), LongEventualTimeout, LongPollingInterval).Should(BeClosed())
 		proxyAddress = fmt.Sprintf("http://127.0.0.1:%d", proxyPort)
@@ -198,6 +202,20 @@ var _ = Describe("Fab3", func() {
 
 		Expect(respBody.Error).To(BeZero())
 		Expect(respBody.Result).To(Equal("0x" + val))
+	})
+
+	It("shuts down gracefully when it receives an Interrupt signal", func() {
+		proxy.Signal(os.Interrupt)
+
+		Eventually(proxy.Wait()).Should(Receive())
+		Eventually(proxyRunner.Err()).Should(gbytes.Say("Fab3 has exited"))
+	})
+
+	It("shuts down gracefully when it receives an SIGTERM signal", func() {
+		proxy.Signal(syscall.SIGTERM)
+
+		Eventually(proxy.Wait()).Should(Receive())
+		Eventually(proxyRunner.Err()).Should(gbytes.Say("Fab3 has exited"))
 	})
 })
 

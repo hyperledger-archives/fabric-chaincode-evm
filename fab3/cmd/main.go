@@ -9,6 +9,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"go.uber.org/zap"
 
@@ -103,6 +105,7 @@ func checkFlags() error {
 }
 
 // Runs Fab3
+// Will exit gracefully for errors and signal interrupts
 func runFab3(cmd *cobra.Command, args []string) error {
 	sdk, err := fabsdk.New(config.FromFile(cfg))
 	if err != nil {
@@ -128,7 +131,27 @@ func runFab3(cmd *cobra.Command, args []string) error {
 
 	logger.Infof("Starting Fab3 on port %d", port)
 	proxy := fab3.NewFab3(ethService)
-	return proxy.Start(port)
+
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- proxy.Start(port)
+	}()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err = <-errChan:
+	case <-signalChan:
+		err = proxy.Shutdown()
+	}
+
+	if err != nil {
+		logger.Infof("Fab3 has exited with an error: %s", err)
+		return err
+	}
+	logger.Info("Fab3 has exited")
+	return nil
 }
 
 func main() {
