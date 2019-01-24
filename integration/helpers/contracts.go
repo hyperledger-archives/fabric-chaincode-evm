@@ -76,3 +76,41 @@ func InvokeContract() Contract {
 		FunctionHashes:   functionHashes,
 	}
 }
+
+// SimpleStorageWithLog is the simple storage contract with an solidity event to
+// emit an evm log which will be stored as a fabric Event.
+//
+// docker run --rm -i ethereum/solc:0.4.21 --combined-json hashes,bin,bin-runtime - <SimpleStorageWithLog.sol
+func SimpleStorageWithLog() Contract {
+	/*
+	   pragma solidity >=0.4.21 <0.6.0;
+
+	   contract SimpleStorageWithLog {
+	       uint storedData;
+
+	       // 'after' is a solidity keyword, so can't use names before and after
+	       //
+	       // index both to create more topics in the resulting ethereum event
+	       event Changed(uint indexed changedFrom, uint indexed changedTo);
+
+	       function set(uint x) public {
+	           // emit before we change the storedData
+	           emit Changed(storedData, x);
+	           storedData = x;
+	       }
+
+	       function get() public view returns (uint) {
+	           return storedData;
+	       }
+	   }
+	*/
+	functionHashes := make(map[string]string)
+	functionHashes["get"] = "6d4ce63c"
+	functionHashes["set"] = "60fe47b1"
+
+	return Contract{
+		CompiledBytecode: "6060604052341561000f57600080fd5b6101038061001e6000396000f3006060604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c14606e575b600080fd5b3415605857600080fd5b606c60048080359060200190919050506094565b005b3415607857600080fd5b607e60ce565b6040518082815260200191505060405180910390f35b806000547fd81ec364c58bcc9b49b6c953fc8e1f1c158ee89255bae73029133234a2936aad60405160405180910390a38060008190555050565b600080549050905600a165627a7a72305820c25e87c4204a7116bc2c63e7a37614025a0e0fac325fe4469a50743572d05ff90029",
+		RuntimeBytecode:  "6060604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c14606e575b600080fd5b3415605857600080fd5b606c60048080359060200190919050506094565b005b3415607857600080fd5b607e60ce565b6040518082815260200191505060405180910390f35b806000547fd81ec364c58bcc9b49b6c953fc8e1f1c158ee89255bae73029133234a2936aad60405160405180910390a38060008190555050565b600080549050905600a165627a7a72305820c25e87c4204a7116bc2c63e7a37614025a0e0fac325fe4469a50743572d05ff90029",
+		FunctionHashes:   functionHashes,
+	}
+}

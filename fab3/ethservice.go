@@ -32,18 +32,22 @@ import (
 var ZeroAddress = make([]byte, 20)
 
 //go:generate counterfeiter -o ../mocks/fab3/mockchannelclient.go --fake-name MockChannelClient ./ ChannelClient
+
 type ChannelClient interface {
 	Query(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 	Execute(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 }
 
 //go:generate counterfeiter -o ../mocks/fab3/mockledgerclient.go --fake-name MockLedgerClient ./ LedgerClient
+
 type LedgerClient interface {
 	QueryInfo(options ...ledger.RequestOption) (*fab.BlockchainInfoResponse, error)
 	QueryBlock(blockNumber uint64, options ...ledger.RequestOption) (*common.Block, error)
 	QueryBlockByTxID(txid fab.TransactionID, options ...ledger.RequestOption) (*common.Block, error)
 	QueryTransaction(txid fab.TransactionID, options ...ledger.RequestOption) (*peer.ProcessedTransaction, error)
 }
+
+//go:generate counterfeiter -o ../mocks/fab3/mockethservice.go --fake-name MockEthService ./ EthService
 
 // EthService is the rpc server implementation. Each function is an
 // implementation of one ethereum json-rpc
@@ -52,7 +56,11 @@ type LedgerClient interface {
 // Arguments and return values are formatted as HEX value encoding
 // https://github.com/ethereum/wiki/wiki/JSON-RPC#hex-value-encoding
 //
-//go:generate counterfeiter -o ../mocks/fab3/mockethservice.go --fake-name MockEthService ./ EthService
+// gorilla RPC is the receiver of these functions, they must all take three
+// pointers, and return a single error
+//
+// see godoc for RegisterService(receiver interface{}, name string) error
+//
 type EthService interface {
 	GetCode(r *http.Request, arg *string, reply *string) error
 	Call(r *http.Request, args *types.EthArgs, reply *string) error
@@ -64,6 +72,7 @@ type EthService interface {
 	GetBlockByNumber(r *http.Request, p *[]interface{}, reply *types.Block) error
 	BlockNumber(r *http.Request, _ *interface{}, reply *string) error
 	GetTransactionByHash(r *http.Request, txID *string, reply *types.Transaction) error
+	GetLogs(*http.Request, *types.GetLogsArgs, *[]types.Log) error
 }
 
 type ethService struct {
@@ -263,18 +272,9 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 		if transactionData == nil {
 			continue
 		}
-		env := &common.Envelope{}
-		if err := proto.Unmarshal(transactionData, env); err != nil {
-			return err
-		}
 
-		payload := &common.Payload{}
-		if err := proto.Unmarshal(env.GetPayload(), payload); err != nil {
-			return err
-		}
-
-		chdr := &common.ChannelHeader{}
-		if err := proto.Unmarshal(payload.GetHeader().GetChannelHeader(), chdr); err != nil {
+		payload, chdr, err := getChannelHeaderandPayloadFromTransactionData(transactionData)
+		if err != nil {
 			return err
 		}
 
@@ -378,8 +378,97 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 	return nil
 }
 
-func (s *ethService) query(ccid, function string, queryArgs [][]byte) (channel.Response, error) {
+//GetLogs currently returns all logs in range FromBlock to ToBlock
+func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]types.Log) error {
+	logger := s.logger.With("method", "GetLogs")
+	logger.Debug("parameters", args)
 
+	// set defaults *after* checking for input conflicts and validating
+	if args.FromBlock == "" {
+		args.FromBlock = "latest"
+	}
+	if args.ToBlock == "" {
+		args.ToBlock = "latest"
+	}
+
+	var from, to uint64
+	from, err := s.parseBlockNum(strip0x(args.FromBlock))
+	if err != nil {
+		return errors.Wrap(err, "failed to parse the block number")
+	}
+	// check if both from and to are the same to avoid doing two
+	// queries to the fabric network.
+	if args.FromBlock == args.ToBlock {
+		to = from
+	} else {
+		to, err = s.parseBlockNum(strip0x(args.ToBlock))
+		if err != nil {
+			return errors.Wrap(err, "failed to parse the block number")
+		}
+	}
+
+	if from > to {
+		return fmt.Errorf("fromBlock number greater than toBlock number")
+	}
+
+	var txLogs []types.Log
+
+	logger.Debugw("handling blocks", "from", from, "to", to)
+	for blockNumber := from; blockNumber <= to; blockNumber++ {
+		logger.Debugw("handling single block", "block-number", blockNumber)
+		block, err := s.ledgerClient.QueryBlock(blockNumber)
+		if err != nil {
+			return errors.Wrap(err, "failed to query the ledger")
+		}
+		blockHeader := block.GetHeader()
+		blockHash := "0x" + hex.EncodeToString(blockHeader.GetDataHash())
+		blockData := block.GetData().GetData()
+		transactionsFilter := block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER]
+		logger.Debug("handling ", len(blockData), " transactions in block")
+		for transactionIndex, transactionData := range blockData {
+			// check validity of transaction
+			if (transactionsFilter[transactionIndex] == 1) || (transactionData == nil) {
+				continue
+			}
+
+			// start processing the transaction
+			payload, chdr, err := getChannelHeaderandPayloadFromTransactionData(transactionData)
+			if err != nil {
+				return errors.Wrap(err, "failed to unmarshal the transaction")
+			}
+
+			// only process transactions
+			if chdr.Type != int32(common.HeaderType_ENDORSER_TRANSACTION) {
+				logger.Debug("skipping non-ENDORSER_TRANSACTION")
+				continue
+			}
+
+			transactionHash := "0x" + chdr.TxId
+			logger.Debug("transaction ", transactionIndex, " has hash ", transactionHash)
+
+			var respPayload *peer.ChaincodeAction
+			_, _, respPayload, err = getTransactionInformation(payload)
+			if err != nil {
+				return errors.Wrap(err, "failed to unmarshal the transaction details")
+			}
+
+			blkNumber := "0x" + strconv.FormatUint(blockNumber, 16)
+			transactionIndexStr := "0x" + strconv.FormatUint(uint64(transactionIndex), 16)
+			logs, err := fabricEventToEVMLogs(respPayload.Events, blkNumber, transactionHash, transactionIndexStr, blockHash)
+			if err != nil {
+				return errors.Wrap(err, "failed to get EVM Logs out of fabric event")
+			}
+			txLogs = append(txLogs, logs...)
+		}
+	}
+
+	logger.Debug("returning logs", txLogs)
+	*logs = txLogs
+
+	return nil
+}
+
+func (s *ethService) query(ccid, function string, queryArgs [][]byte) (channel.Response, error) {
 	return s.channelClient.Query(channel.Request{
 		ChaincodeID: ccid,
 		Fcn:         function,
@@ -409,9 +498,8 @@ func (s *ethService) parseBlockNum(input string) (uint64, error) {
 	case "earliest":
 		return 0, nil
 	case "pending":
-		return 0, fmt.Errorf("unimplemented: fabric does not have the concept of in-progress blocks being visible.")
+		return 0, fmt.Errorf("unsupported: fabric does not have the concept of in-progress blocks being visible")
 	default:
-
 		return strconv.ParseUint(input, 16, 64)
 	}
 }
@@ -503,18 +591,9 @@ func findTransaction(txID string, blockData [][]byte) (string, *common.Payload, 
 		if transactionData == nil { // can a data be empty? Is this an error?
 			continue
 		}
-		env := &common.Envelope{}
-		if err := proto.Unmarshal(transactionData, env); err != nil {
-			return "", &common.Payload{}, err
-		}
 
-		payload := &common.Payload{}
-		if err := proto.Unmarshal(env.GetPayload(), payload); err != nil {
-			return "", &common.Payload{}, err
-		}
-
-		chdr := &common.ChannelHeader{}
-		if err := proto.Unmarshal(payload.GetHeader().GetChannelHeader(), chdr); err != nil {
+		payload, chdr, err := getChannelHeaderandPayloadFromTransactionData(transactionData)
+		if err != nil {
 			return "", &common.Payload{}, err
 		}
 
@@ -571,4 +650,21 @@ func fabricEventToEVMLogs(events []byte, blocknumber, txhash, txindex, blockhash
 		txLogs[i] = log
 	}
 	return txLogs, nil
+}
+
+func getChannelHeaderandPayloadFromTransactionData(transactionData []byte) (*common.Payload, *common.ChannelHeader, error) {
+	env := &common.Envelope{}
+	if err := proto.Unmarshal(transactionData, env); err != nil {
+		return nil, nil, err
+	}
+
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(env.GetPayload(), payload); err != nil {
+		return nil, nil, err
+	}
+	chdr := &common.ChannelHeader{}
+	if err := proto.Unmarshal(payload.GetHeader().GetChannelHeader(), chdr); err != nil {
+		return nil, nil, err
+	}
+	return payload, chdr, nil
 }

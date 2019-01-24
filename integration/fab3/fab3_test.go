@@ -15,6 +15,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
 	"github.com/hyperledger/fabric-chaincode-evm/integration/helpers"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
@@ -35,6 +36,7 @@ func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, pa
 	Expect(err).ToNot(HaveOccurred())
 
 	body := strings.NewReader(string(reqBody))
+	fmt.Fprintln(GinkgoWriter, string(reqBody))
 	req, err := http.NewRequest("POST", proxyAddress, body)
 	Expect(err).ToNot(HaveOccurred())
 	req.Header.Set("Content-Type", "application/json")
@@ -224,6 +226,117 @@ var _ = Describe("Fab3", func() {
 		Expect(respBody.Error).To(BeZero())
 		Expect(respBody.Result).To(Equal(receipt.BlockNumber))
 		checkHexEncoded(respBody.Result)
+
+		By("querying for logs of a transaction with no logs, we get no logs")
+		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 20, []interface{}{})
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		err = json.Unmarshal(rBody, &respArrayBody)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(respArrayBody.Result).To(HaveLen(0))
+
+		By("querying for logs of the genesis block, we get no logs")
+		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress,
+			28, types.GetLogsArgs{FromBlock: "earliest", ToBlock: "0x0"})
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		fmt.Fprintln(GinkgoWriter, string(rBody))
+		Expect(err).ToNot(HaveOccurred())
+		err = json.Unmarshal(rBody, &respArrayBody)
+		Expect(err).ToNot(HaveOccurred(), "problem unmarshalling", string(rBody))
+		Expect(respArrayBody.Result).To(HaveLen(0))
+	})
+
+	It("implements the ethereum json rpc api with logs", func() {
+		By("Deploying the Simple Storage With Logs Contract")
+		params := helpers.MessageParams{
+			To:   "0000000000000000000000000000000000000000",
+			Data: helpers.SimpleStorageWithLog().CompiledBytecode,
+		}
+
+		resp, err := sendRPCRequest(client, "eth_sendTransaction", proxyAddress, 6, params)
+		Expect(err).ToNot(HaveOccurred())
+
+		rBody, err := ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		var respBody helpers.JsonRPCResponse
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(respBody.Error).To(BeZero())
+		txHash := respBody.Result
+
+		// It takes a couple seconds for the transaction to be found
+		var rpcResp helpers.JsonRPCTxReceipt
+		Eventually(func() helpers.JsonRPCError {
+			resp, err = sendRPCRequest(client, "eth_getTransactionReceipt", proxyAddress, 16, []string{txHash})
+			Expect(err).ToNot(HaveOccurred())
+
+			rBody, err = ioutil.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			rpcResp = helpers.JsonRPCTxReceipt{}
+			err = json.Unmarshal(rBody, &rpcResp)
+			Expect(err).ToNot(HaveOccurred())
+			return rpcResp.Error
+		}, LongEventualTimeout, LongPollingInterval).Should(BeZero())
+		receipt := rpcResp.Result
+		contractAddr := receipt.ContractAddress
+		By("interacting with the contract")
+		val := "3737373737373737373737373737373737373737373737373737373737373737"
+		params = helpers.MessageParams{
+			To:   contractAddr,
+			Data: helpers.SimpleStorageWithLog().FunctionHashes["set"] + val,
+		}
+		resp, err = sendRPCRequest(client, "eth_sendTransaction", proxyAddress, 18, params)
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(respBody.Error).To(BeZero())
+		txHash = respBody.Result
+
+		// It takes a couple seconds for the transaction to be found
+		Eventually(func() helpers.JsonRPCError {
+			resp, err = sendRPCRequest(client, "eth_getTransactionReceipt", proxyAddress, 16, []string{txHash})
+			Expect(err).ToNot(HaveOccurred())
+
+			rBody, err = ioutil.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			rpcResp = helpers.JsonRPCTxReceipt{}
+			err = json.Unmarshal(rBody, &rpcResp)
+			Expect(err).ToNot(HaveOccurred())
+			return rpcResp.Error
+		}, LongEventualTimeout, LongPollingInterval).Should(BeZero())
+
+		By("querying for logs of a contract with logs, we get a log")
+		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 23, []interface{}{})
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		var respArrayBody helpers.JsonRPCLogArrayResponse
+		err = json.Unmarshal(rBody, &respArrayBody)
+		Expect(err).ToNot(HaveOccurred())
+		logs := respArrayBody.Result
+		Expect(logs).To(HaveLen(1), "this contract only emits one log entry")
+		log := logs[0]
+		Expect(log.Address).To(Equal(contractAddr), "logs come from the contract")
+		Expect(log.Topics).To(HaveLen(3))
+		Expect(log.Index).To(Equal("0x0"))
+		topics := log.Topics
+		// topics, are hash of function, 0 from initial setting, & the value we set earlier
+		Expect(topics[0]).To(Equal("0xd81ec364c58bcc9b49b6c953fc8e1f1c158ee89255bae73029133234a2936aad"))
+		Expect(topics[1]).To(Equal("0x0000000000000000000000000000000000000000000000000000000000000000"))
+		Expect(topics[2]).To(Equal("0x" + val))
+		txReceipt := rpcResp.Result
+		Expect(log.BlockNumber).To(Equal(txReceipt.BlockNumber))
+		Expect(log.BlockHash).To(Equal(txReceipt.BlockHash))
+		Expect(log.TxIndex).To(Equal(txReceipt.TransactionIndex))
+		Expect(log.TxHash).To(Equal(txReceipt.TransactionHash))
 	})
 
 	It("shuts down gracefully when it receives an Interrupt signal", func() {
