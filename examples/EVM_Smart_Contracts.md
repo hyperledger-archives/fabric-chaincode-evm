@@ -238,7 +238,7 @@ You will need the compiled evm bytecode and the ABI of the contract to proceed.
   > SimpleStorage = web3.eth.contract(simpleStorageABI)
 
   > deployedContract = SimpleStorage.new([], {data: simpleStorageBytecode})
-  > myContract = SimpleStorage.at(web3.eth.getTransactionReceipt(deployedContract.transactionHash).ContractAddress)
+  > myContract = SimpleStorage.at(web3.eth.getTransactionReceipt(deployedContract.transactionHash).contractAddress)
 ```
 
 #### Interacting with a Previously Deployed Contract
