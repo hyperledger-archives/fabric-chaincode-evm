@@ -202,6 +202,18 @@ var _ = Describe("Fab3", func() {
 
 		Expect(respBody.Error).To(BeZero())
 		Expect(respBody.Result).To(Equal("0x" + val))
+
+		By("querying the latest block number")
+		resp, err = sendRPCRequest(client, "eth_blockNumber", proxyAddress, 20, []interface{}{})
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(respBody.Error).To(BeZero())
+		Expect(respBody.Result).To(Equal(receipt.BlockNumber))
+		checkHexEncoded(respBody.Result)
 	})
 
 	It("shuts down gracefully when it receives an Interrupt signal", func() {

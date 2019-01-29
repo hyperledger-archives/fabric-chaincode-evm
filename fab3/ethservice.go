@@ -59,6 +59,7 @@ type EthService interface {
 	EstimateGas(r *http.Request, args *EthArgs, reply *string) error
 	GetBalance(r *http.Request, p *[]string, reply *string) error
 	GetBlockByNumber(r *http.Request, p *[]interface{}, reply *Block) error
+	BlockNumber(r *http.Request, _ *interface{}, reply *string) error
 	GetTransactionByHash(r *http.Request, txID *string, reply *Transaction) error
 }
 
@@ -403,6 +404,16 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 	return nil
 }
 
+func (s *ethService) BlockNumber(r *http.Request, _ *interface{}, reply *string) error {
+	blockNumber, err := s.parseBlockNum("latest")
+	if err != nil {
+		return fmt.Errorf("failed to get latest block number: %s", err)
+	}
+	*reply = "0x" + strconv.FormatUint(uint64(blockNumber), 16)
+
+	return nil
+}
+
 // GetTransactionByHash takes a TransactionID as a string and returns the
 // details of the transaction.
 //
@@ -479,7 +490,7 @@ func (s *ethService) parseBlockNum(input string) (uint64, error) {
 		blockchainInfo, err := s.ledgerClient.QueryInfo()
 		if err != nil {
 			s.logger.Debug(err)
-			return 0, fmt.Errorf("Failed to query the ledger: %v", err)
+			return 0, fmt.Errorf("failed to query the ledger: %v", err)
 		}
 
 		// height is the block being worked on now, we want the previous block
@@ -488,7 +499,7 @@ func (s *ethService) parseBlockNum(input string) (uint64, error) {
 	case "earliest":
 		return 0, nil
 	case "pending":
-		return 0, fmt.Errorf("Unimplemented: fabric does not have the concept of in-progress blocks being visible.")
+		return 0, fmt.Errorf("unimplemented: fabric does not have the concept of in-progress blocks being visible.")
 	default:
 
 		return strconv.ParseUint(input, 16, 64)

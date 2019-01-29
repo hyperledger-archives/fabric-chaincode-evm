@@ -949,6 +949,27 @@ var _ = Describe("Ethservice", func() {
 		})
 	})
 
+	Describe("BlockNumber", func() {
+		var reply string
+
+		It("returns the latest block number", func() {
+			uintBlockNumber, err := strconv.ParseUint("abc0", 16, 64)
+			Expect(err).ToNot(HaveOccurred())
+			mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: uintBlockNumber + 1}}, nil)
+
+			err = ethservice.BlockNumber(&http.Request{}, nil, &reply)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(reply).To(Equal("0xabc0"), "block number")
+		})
+
+		It("returns a no blockchain info error when the ledger info results in an error", func() {
+			mockLedgerClient.QueryInfoReturns(nil, fmt.Errorf("no block info"))
+
+			err := ethservice.BlockNumber(&http.Request{}, nil, &reply)
+			Expect(err).To(MatchError(ContainSubstring("no block info")))
+		})
+	})
+
 	Describe("GetTransactionByHash", func() {
 		var reply fab3.Transaction
 

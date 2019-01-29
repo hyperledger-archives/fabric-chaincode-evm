@@ -22,6 +22,19 @@ type MockEthService struct {
 	accountsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	BlockNumberStub        func(*http.Request, *interface{}, *string) error
+	blockNumberMutex       sync.RWMutex
+	blockNumberArgsForCall []struct {
+		arg1 *http.Request
+		arg2 *interface{}
+		arg3 *string
+	}
+	blockNumberReturns struct {
+		result1 error
+	}
+	blockNumberReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CallStub        func(*http.Request, *fab3.EthArgs, *string) error
 	callMutex       sync.RWMutex
 	callArgsForCall []struct {
@@ -188,6 +201,68 @@ func (fake *MockEthService) AccountsReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.accountsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) BlockNumber(arg1 *http.Request, arg2 *interface{}, arg3 *string) error {
+	fake.blockNumberMutex.Lock()
+	ret, specificReturn := fake.blockNumberReturnsOnCall[len(fake.blockNumberArgsForCall)]
+	fake.blockNumberArgsForCall = append(fake.blockNumberArgsForCall, struct {
+		arg1 *http.Request
+		arg2 *interface{}
+		arg3 *string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("BlockNumber", []interface{}{arg1, arg2, arg3})
+	fake.blockNumberMutex.Unlock()
+	if fake.BlockNumberStub != nil {
+		return fake.BlockNumberStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.blockNumberReturns
+	return fakeReturns.result1
+}
+
+func (fake *MockEthService) BlockNumberCallCount() int {
+	fake.blockNumberMutex.RLock()
+	defer fake.blockNumberMutex.RUnlock()
+	return len(fake.blockNumberArgsForCall)
+}
+
+func (fake *MockEthService) BlockNumberCalls(stub func(*http.Request, *interface{}, *string) error) {
+	fake.blockNumberMutex.Lock()
+	defer fake.blockNumberMutex.Unlock()
+	fake.BlockNumberStub = stub
+}
+
+func (fake *MockEthService) BlockNumberArgsForCall(i int) (*http.Request, *interface{}, *string) {
+	fake.blockNumberMutex.RLock()
+	defer fake.blockNumberMutex.RUnlock()
+	argsForCall := fake.blockNumberArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *MockEthService) BlockNumberReturns(result1 error) {
+	fake.blockNumberMutex.Lock()
+	defer fake.blockNumberMutex.Unlock()
+	fake.BlockNumberStub = nil
+	fake.blockNumberReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) BlockNumberReturnsOnCall(i int, result1 error) {
+	fake.blockNumberMutex.Lock()
+	defer fake.blockNumberMutex.Unlock()
+	fake.BlockNumberStub = nil
+	if fake.blockNumberReturnsOnCall == nil {
+		fake.blockNumberReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.blockNumberReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -693,6 +768,8 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.accountsMutex.RLock()
 	defer fake.accountsMutex.RUnlock()
+	fake.blockNumberMutex.RLock()
+	defer fake.blockNumberMutex.RUnlock()
 	fake.callMutex.RLock()
 	defer fake.callMutex.RUnlock()
 	fake.estimateGasMutex.RLock()
