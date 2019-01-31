@@ -23,7 +23,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const LongEventualTimeout = 2 * time.Minute
+const LongEventualTimeout = 30 * time.Second
+const LongPollingInterval = 500 * time.Millisecond
+const Web3EventuallyTimeout = 5 * time.Minute
+const Web3EventuallyPollingInterval = 1 * time.Second
 
 var _ = Describe("Web3 Integration", func() {
 	var (
@@ -90,18 +93,18 @@ var _ = Describe("Web3 Integration", func() {
 	AfterEach(func() {
 		if process != nil {
 			process.Signal(syscall.SIGTERM)
-			Eventually(process.Wait(), LongEventualTimeout).Should(Receive())
+			Eventually(process.Wait(), LongEventualTimeout, LongPollingInterval).Should(Receive())
 		}
 		if network != nil {
 			network.Cleanup()
 		}
 		if user1Proxy != nil {
 			user1Proxy.Signal(syscall.SIGTERM)
-			Eventually(user1Proxy.Wait(), LongEventualTimeout).Should(Receive())
+			Eventually(user1Proxy.Wait(), LongEventualTimeout, LongPollingInterval).Should(Receive())
 		}
 		if user2Proxy != nil {
 			user2Proxy.Signal(syscall.SIGTERM)
-			Eventually(user2Proxy.Wait(), LongEventualTimeout).Should(Receive())
+			Eventually(user2Proxy.Wait(), LongEventualTimeout, LongPollingInterval).Should(Receive())
 		}
 		os.RemoveAll(testDir)
 	})
@@ -111,13 +114,13 @@ var _ = Describe("Web3 Integration", func() {
 		user1ProxyPort := network.ReservePort()
 		user1ProxyRunner := helpers.Fab3Runner(components.Paths["fab3"], proxyConfigPath, "Org1", "User1", channelName, ccid, user1ProxyPort)
 		user1Proxy = ifrit.Invoke(user1ProxyRunner)
-		Eventually(user1Proxy.Ready(), LongEventualTimeout).Should(BeClosed())
+		Eventually(user1Proxy.Ready(), LongEventualTimeout, LongPollingInterval).Should(BeClosed())
 
 		By("starting up a fab3 for user 2")
 		user2ProxyPort := network.ReservePort()
 		user2ProxyRunner := helpers.Fab3Runner(components.Paths["fab3"], proxyConfigPath, "Org2", "User2", channelName, ccid, user2ProxyPort)
 		user2Proxy = ifrit.Invoke(user2ProxyRunner)
-		Eventually(user2Proxy.Ready(), LongEventualTimeout).Should(BeClosed())
+		Eventually(user2Proxy.Ready(), LongEventualTimeout, LongPollingInterval).Should(BeClosed())
 
 		By("running the web3 tests")
 		web3TestRunner := helpers.Web3TestRunner(
@@ -128,7 +131,9 @@ var _ = Describe("Web3 Integration", func() {
 		web3Process := ifrit.Invoke(web3TestRunner)
 		Eventually(web3Process.Ready()).Should(BeClosed())
 
-		Eventually(web3Process.Wait(), LongEventualTimeout).Should(Receive())
+		// This runs the entire web3 test in one shot, and since go receives no input during the test run until
+		// the test finally ends, the timeout should be especially long, and we should poll rather infrequently
+		Eventually(web3Process.Wait(), Web3EventuallyTimeout, Web3EventuallyPollingInterval).Should(Receive())
 		Expect(web3TestRunner.ExitCode()).Should(Equal(0))
 
 		Expect(web3TestRunner.Buffer()).To(gbytes.Say("Successfully able to deploy Voting Smart Contract and interact with it"))

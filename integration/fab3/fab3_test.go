@@ -25,6 +25,9 @@ import (
 )
 
 const LongEventualTimeout = time.Minute
+const LongPollingInterval = 500 * time.Millisecond
+const DefaultEventuallyTimeout = time.Second
+const DefaultEventuallyPollingInterval = 10 * time.Millisecond
 
 func sendRPCRequest(client *http.Client, method, proxyAddress string, id int, params interface{}) (*http.Response, error) {
 	request := helpers.JsonRPCRequest{
@@ -88,7 +91,7 @@ var _ = Describe("Fab3", func() {
 
 		networkRunner := network.NetworkGroupRunner()
 		process = ifrit.Invoke(networkRunner)
-		Eventually(process.Ready()).Should(BeClosed())
+		Eventually(process.Ready(), DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 		channelName = "testchannel"
 
 		proxyConfigPath, err = helpers.CreateProxyConfig(testDir, channelName, network.CryptoPath(),
@@ -115,21 +118,21 @@ var _ = Describe("Fab3", func() {
 		proxyPort := network.ReservePort()
 		proxyRunner := helpers.Fab3Runner(components.Paths["fab3"], proxyConfigPath, "Org1", "User1", channelName, ccid, proxyPort)
 		proxy = ifrit.Invoke(proxyRunner)
-		Eventually(proxy.Ready(), LongEventualTimeout).Should(BeClosed())
+		Eventually(proxy.Ready(), LongEventualTimeout, LongPollingInterval).Should(BeClosed())
 		proxyAddress = fmt.Sprintf("http://127.0.0.1:%d", proxyPort)
 	})
 
 	AfterEach(func() {
 		if process != nil {
 			process.Signal(syscall.SIGTERM)
-			Eventually(process.Wait(), LongEventualTimeout).Should(Receive())
+			Eventually(process.Wait(), LongEventualTimeout, LongPollingInterval).Should(Receive())
 		}
 		if network != nil {
 			network.Cleanup()
 		}
 		if proxy != nil {
 			proxy.Signal(syscall.SIGTERM)
-			Eventually(proxy.Wait(), LongEventualTimeout).Should(Receive())
+			Eventually(proxy.Wait(), LongEventualTimeout, LongPollingInterval).Should(Receive())
 		}
 		os.RemoveAll(testDir)
 	})
@@ -195,7 +198,7 @@ var _ = Describe("Fab3", func() {
 			err = json.Unmarshal(rBody, &rpcResp)
 			Expect(err).ToNot(HaveOccurred())
 			return rpcResp.Error
-		}, LongEventualTimeout).Should(BeZero())
+		}, LongEventualTimeout, LongPollingInterval).Should(BeZero())
 
 		receipt := rpcResp.Result
 
@@ -244,7 +247,7 @@ var _ = Describe("Fab3", func() {
 			err = json.Unmarshal(rBody, &rpcResp)
 			Expect(err).ToNot(HaveOccurred())
 			return rpcResp.Error
-		}, LongEventualTimeout).Should(BeZero())
+		}, LongEventualTimeout, LongPollingInterval).Should(BeZero())
 		receipt = rpcResp.Result
 		Expect(receipt.TransactionHash).To(Equal("0x" + txHash))
 		checkHexEncoded(receipt.BlockNumber)
