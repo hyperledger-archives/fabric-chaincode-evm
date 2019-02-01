@@ -587,6 +587,7 @@
   packages = [
     ".",
     "config",
+    "extensions/table",
     "internal/codelocation",
     "internal/containernode",
     "internal/failer",
@@ -1075,6 +1076,7 @@
     "github.com/hyperledger/fabric/protos/peer",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
+    "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",

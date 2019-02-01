@@ -1105,14 +1105,14 @@ var _ = Describe("Ethservice", func() {
 		Context("errors appropriately", func() {
 			It("fails when the ledger is down", func() {
 				mockLedgerClient.QueryInfoReturns(nil, fmt.Errorf("it's broke"))
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ToNot(Succeed())
 				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 1}}, nil)
 				mockLedgerClient.QueryBlockReturns(nil, fmt.Errorf("yup still broke"))
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ToNot(Succeed())
 			})
 			It("does not allow FromBlock to be greater than ToBlock", func() {
 				logsArgs = &types.GetLogsArgs{FromBlock: "0x1", ToBlock: "0x0"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ToNot(Succeed())
 			})
 			It("does not accept pending as a block parameter", func() {
 				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 1}}, nil)
@@ -1120,17 +1120,35 @@ var _ = Describe("Ethservice", func() {
 				mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
 
 				logsArgs = &types.GetLogsArgs{FromBlock: "pending"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ToNot(Succeed())
 				logsArgs = &types.GetLogsArgs{ToBlock: "pending"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ToNot(Succeed())
 			})
 		})
-		Context("succeeds on valid input", func() {
+		Context("when valid arguments are given; with Block Number 2 available as the latest block", func() {
+			BeforeEach(func() {
+				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 2}}, nil)
+				sampleBlock1 := GetSampleBlock(1)
+				sampleBlock2 := GetSampleBlock(2)
+				qbs := func(b uint64, _ ...ledger.RequestOption) (*common.Block, error) {
+					logger.Debug("mockblock", b)
+					if b == 1 {
+						return sampleBlock1, nil
+					} else if b == 2 {
+						return sampleBlock2, nil
+					} else {
+						return nil, fmt.Errorf("no block")
+					}
+				}
+				mockLedgerClient.QueryBlockStub = qbs
+				logsArgs = &types.GetLogsArgs{FromBlock: "1", ToBlock: "2"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(4))
+
+				logsArgs = &types.GetLogsArgs{}
+				reply = &[]types.Log{}
+			})
 			It("accepts an empty input struct by defaulting", func() {
-				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 1}}, nil)
-				sampleBlock := GetSampleBlock(1)
-				mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
-				By("running the test with an empty struct as argument")
 				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
 				Expect(len(*reply)).Should(Equal(2))
 				reply1 := reply
@@ -1142,23 +1160,47 @@ var _ = Describe("Ethservice", func() {
 				By("comparing the results of the two invocations")
 				Expect(*reply1).To(Equal(*reply2))
 			})
+
+			It("returns the latest block when explicitly asking for latest", func() {
+				logsArgs = &types.GetLogsArgs{FromBlock: "latest", ToBlock: "latest"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(2))
+			})
+
 			It("returns logs when both FromBlock and ToBlock are specified", func() {
-				sampleBlock1 := GetSampleBlock(1)
-				sampleBlock2 := GetSampleBlock(2)
-				qbs := func(b uint64, _ ...ledger.RequestOption) (*common.Block, error) {
-					if b == 1 {
-						return sampleBlock1, nil
-					} else if b == 2 {
-						return sampleBlock2, nil
-					} else {
-						return nil, fmt.Errorf("no block")
-					}
-				}
-				mockLedgerClient.QueryBlockStub = qbs
-				logsArgs = &types.GetLogsArgs{FromBlock: "0x1", ToBlock: "0x2"}
+				logsArgs = &types.GetLogsArgs{FromBlock: "1", ToBlock: "2"}
 				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
 				Expect(len(*reply)).Should(Equal(4))
 			})
+
+			It("returns no matches when given an address filter that does not match anything", func() {
+				logsArgs = &types.GetLogsArgs{Address: types.AddressFilter{""}}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(0), "Nothing should match")
+			})
+			It("returns logs associated when given a single address as a filter", func() {
+				addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
+				Expect(err).ToNot(HaveOccurred())
+				af, err := types.NewAddressFilter("0x" + addr.String())
+				Expect(err).ToNot(HaveOccurred())
+				logsArgs = &types.GetLogsArgs{Address: af}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(1), "Only one of events should match")
+			})
+			It("returns the events associated when given an array of multiple addresses as a filter", func() {
+				addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
+				Expect(err).ToNot(HaveOccurred())
+				af, err := types.NewAddressFilter("0x" + addr.String())
+				Expect(err).ToNot(HaveOccurred())
+				addr, err = crypto.AddressFromBytes([]byte("82373458164820947892"))
+				Expect(err).ToNot(HaveOccurred())
+				af2, err := types.NewAddressFilter("0x" + addr.String())
+				Expect(err).ToNot(HaveOccurred())
+				logsArgs = &types.GetLogsArgs{Address: append(af, af2...)}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(2))
+			})
+
 		})
 	})
 })
@@ -1177,7 +1219,7 @@ func GetSampleBlock(blockNumber uint64) *common.Block {
 	Expect(err).ToNot(HaveOccurred())
 
 	chaincodeEvent := peer.ChaincodeEvent{
-		ChaincodeId: "qscc",
+		ChaincodeId: "evmcc",
 		TxId:        "1234",
 		EventName:   "Chaincode event",
 		Payload:     eventPayload,
@@ -1186,12 +1228,34 @@ func GetSampleBlock(blockNumber uint64) *common.Block {
 	eventBytes, err := proto.Marshal(&chaincodeEvent)
 	Expect(err).ToNot(HaveOccurred())
 
+	addr, err = crypto.AddressFromBytes([]byte("82373458164820947892"))
+	Expect(err).ToNot(HaveOccurred())
+
+	msg = event.Event{
+		Address: strings.ToLower(addr.String()),
+		Topics:  []string{"sample-topic-1", "sample-topic2"},
+		Data:    "sample-data",
+	}
+	events = []event.Event{msg}
+	eventPayload, err = json.Marshal(events)
+	Expect(err).ToNot(HaveOccurred())
+
+	chaincodeEvent = peer.ChaincodeEvent{
+		ChaincodeId: "evmcc",
+		TxId:        "1234",
+		EventName:   "Chaincode event",
+		Payload:     eventPayload,
+	}
+
+	eventBytes2, err := proto.Marshal(&chaincodeEvent)
+	Expect(err).ToNot(HaveOccurred())
+
 	tx, err := GetSampleTransaction([][]byte{[]byte("12345678"), []byte("sample arg 1")}, []byte("sample-response1"), eventBytes, "5678")
 	Expect(err).ToNot(HaveOccurred())
 	txn1, err := proto.Marshal(tx.TransactionEnvelope)
 	Expect(err).ToNot(HaveOccurred())
 
-	tx, err = GetSampleTransaction([][]byte{[]byte("98765432"), []byte("sample arg 2")}, []byte("sample-response2"), eventBytes, "1234")
+	tx, err = GetSampleTransaction([][]byte{[]byte("98765432"), []byte("sample arg 2")}, []byte("sample-response2"), eventBytes2, "1234")
 	txn2, err := proto.Marshal(tx.TransactionEnvelope)
 	Expect(err).ToNot(HaveOccurred())
 

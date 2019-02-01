@@ -133,6 +133,7 @@ func (s *ethService) SendTransaction(r *http.Request, args *types.EthArgs, reply
 }
 
 func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply *types.TxReceipt) error {
+	logger := s.logger.With("method", "GetTransactionReceipt")
 	strippedTxID := strip0x(*txID)
 
 	block, err := s.ledgerClient.QueryBlockByTxID(fab.TransactionID(strippedTxID))
@@ -177,7 +178,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 		}
 	}
 
-	txLogs, err := fabricEventToEVMLogs(respPayload.Events, receipt.BlockNumber, receipt.TransactionHash, receipt.TransactionIndex, receipt.BlockHash)
+	txLogs, err := fabricEventToEVMLogs(logger, respPayload.Events, receipt.BlockNumber, receipt.TransactionHash, receipt.TransactionIndex, receipt.BlockHash, types.AddressFilter{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get EVM Logs out of fabric event")
 	}
@@ -392,7 +393,7 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 	}
 
 	var from, to uint64
-	from, err := s.parseBlockNum(strip0x(args.FromBlock))
+	from, err := s.parseBlockNum(args.FromBlock)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse the block number")
 	}
@@ -401,19 +402,18 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 	if args.FromBlock == args.ToBlock {
 		to = from
 	} else {
-		to, err = s.parseBlockNum(strip0x(args.ToBlock))
+		to, err = s.parseBlockNum(args.ToBlock)
 		if err != nil {
 			return errors.Wrap(err, "failed to parse the block number")
 		}
 	}
-
 	if from > to {
 		return fmt.Errorf("fromBlock number greater than toBlock number")
 	}
 
 	var txLogs []types.Log
 
-	logger.Debugw("handling blocks", "from", from, "to", to)
+	logger.Debugw("checking blocks for logs", "from", from, "to", to)
 	for blockNumber := from; blockNumber <= to; blockNumber++ {
 		logger.Debugw("handling single block", "block-number", blockNumber)
 		block, err := s.ledgerClient.QueryBlock(blockNumber)
@@ -454,7 +454,7 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 
 			blkNumber := "0x" + strconv.FormatUint(blockNumber, 16)
 			transactionIndexStr := "0x" + strconv.FormatUint(uint64(transactionIndex), 16)
-			logs, err := fabricEventToEVMLogs(respPayload.Events, blkNumber, transactionHash, transactionIndexStr, blockHash)
+			logs, err := fabricEventToEVMLogs(logger, respPayload.Events, blkNumber, transactionHash, transactionIndexStr, blockHash, args.Address)
 			if err != nil {
 				return errors.Wrap(err, "failed to get EVM Logs out of fabric event")
 			}
@@ -609,7 +609,7 @@ func findTransaction(txID string, blockData [][]byte) (string, *common.Payload, 
 	return "", &common.Payload{}, nil
 }
 
-func fabricEventToEVMLogs(events []byte, blocknumber, txhash, txindex, blockhash string) ([]types.Log, error) {
+func fabricEventToEVMLogs(logger *zap.SugaredLogger, events []byte, blocknumber, txhash, txindex, blockhash string, af types.AddressFilter) ([]types.Log, error) {
 	if len(events) == 0 {
 		return nil, nil
 	}
@@ -627,8 +627,22 @@ func fabricEventToEVMLogs(events []byte, blocknumber, txhash, txindex, blockhash
 	}
 
 	var txLogs []types.Log
-	txLogs = make([]types.Log, len(eventMsgs))
 	for i, logEvent := range eventMsgs {
+		if len(af) != 0 {
+			foundMatch := false
+			// if no address, empty range, skipped, present but empty address field results in no match
+			for _, address := range af {
+				logger.Debugw("trying address match", "matcherAddress", address, "eventAddress", logEvent.Address)
+				if logEvent.Address == address {
+					foundMatch = true
+					break
+				}
+			}
+			if !foundMatch {
+				continue // no match, move to next logEvent
+			}
+		}
+
 		var topics []string
 		for _, topic := range logEvent.Topics {
 			topics = append(topics, "0x"+topic)
@@ -647,7 +661,7 @@ func fabricEventToEVMLogs(events []byte, blocknumber, txhash, txindex, blockhash
 			log.Data = "0x" + logEvent.Data
 		}
 
-		txLogs[i] = log
+		txLogs = append(txLogs, log)
 	}
 	return txLogs, nil
 }
