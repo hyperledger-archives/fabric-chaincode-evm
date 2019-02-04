@@ -40,7 +40,7 @@ var _ = Describe("ethereum json rpc struct fields", func() {
 		It("for Log subobjects in TxReceipt with the proper cases", func() {
 			fieldNames := []string{"address", "topics", "data", "blockNumber",
 				"transactionHash", "transactionIndex", "blockHash", "logIndex"}
-			assertTypeMarshalsJSONFields(fieldNames, fab3.Log{})
+			assertTypeMarshalsJSONFields(fieldNames, fab3.Log{Data: "somedata"})
 		})
 		It("for Transaction with the proper cases", func() {
 			fieldNames := []string{"blockHash", "blockNumber", "to", "input", "transactionIndex", "hash"}

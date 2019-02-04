@@ -407,7 +407,7 @@ var _ = Describe("Ethservice", func() {
 
 		Context("when the transaction has associated events", func() {
 			var (
-				msg          event.Event
+				msg, msg2    event.Event
 				eventPayload []byte
 				eventBytes   []byte
 			)
@@ -422,7 +422,13 @@ var _ = Describe("Ethservice", func() {
 					Topics:  []string{"sample-topic-1", "sample-topic2"},
 					Data:    "sample-data",
 				}
-				events := []event.Event{msg}
+				// A log with no data
+				msg2 = event.Event{
+					Address: strings.ToLower(addr.String()),
+					Topics:  []string{"sample-topic-1", "sample-topic2"},
+				}
+
+				events := []event.Event{msg, msg2}
 				eventPayload, err = json.Marshal(events)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -468,10 +474,20 @@ var _ = Describe("Ethservice", func() {
 					BlockHash:   "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
 					Index:       "0x0",
 				}
+				expectedLog2 := fab3.Log{
+					Address:     "0x" + hex.EncodeToString([]byte(sampleAddress)),
+					Topics:      topics,
+					BlockNumber: "0x1f",
+					TxHash:      "0x" + sampleTransactionID,
+					TxIndex:     "0x0",
+					BlockHash:   "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					Index:       "0x1",
+				}
 
 				var expectedLogs []fab3.Log
 				expectedLogs = make([]fab3.Log, 0)
 				expectedLogs = append(expectedLogs, expectedLog)
+				expectedLogs = append(expectedLogs, expectedLog2)
 				Expect(reply).To(Equal(fab3.TxReceipt{
 					TransactionHash:   "0x" + sampleTransactionID,
 					TransactionIndex:  "0x0",
