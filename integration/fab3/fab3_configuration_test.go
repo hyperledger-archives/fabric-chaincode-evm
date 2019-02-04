@@ -81,7 +81,6 @@ var _ = Describe("Fab3 Configuration", func() {
 			"--ccid", "evmcc",
 			"--port", strconv.FormatUint(uint64(proxyPort), 10),
 		)
-
 		proxyCmd.Env = append(proxyCmd.Env, "FAB3_CONFIG=non-existent-config-path")
 		proxyCmd.Env = append(proxyCmd.Env, "FAB3_ORG=non-existent-org")
 		proxyCmd.Env = append(proxyCmd.Env, "FAB3_USER=non-existent-user")
@@ -107,6 +106,7 @@ var _ = Describe("Fab3 Configuration", func() {
 			"--ccid", "evmcc",
 			"--port", strconv.FormatUint(uint64(proxyPort), 10),
 		)
+		proxyCmd.Env = []string{""}
 
 		output := gbytes.NewBuffer()
 		proxyCmd.Stdout = output
@@ -128,6 +128,7 @@ var _ = Describe("Fab3 Configuration", func() {
 			"--ccid", "evmcc",
 			"--port", strconv.FormatUint(uint64(proxyPort), 10),
 		)
+		proxyCmd.Env = []string{""}
 
 		output := gbytes.NewBuffer()
 		proxyCmd.Stdout = output
@@ -149,6 +150,7 @@ var _ = Describe("Fab3 Configuration", func() {
 			"--ccid", "evmcc",
 			"--port", strconv.FormatUint(uint64(proxyPort), 10),
 		)
+		proxyCmd.Env = []string{""}
 
 		output := gbytes.NewBuffer()
 		proxyCmd.Stdout = output
@@ -170,6 +172,7 @@ var _ = Describe("Fab3 Configuration", func() {
 			"--ccid", "evmcc",
 			"--port", strconv.FormatUint(uint64(proxyPort), 10),
 		)
+		proxyCmd.Env = []string{""}
 
 		output := gbytes.NewBuffer()
 		proxyCmd.Stdout = output
@@ -190,6 +193,7 @@ var _ = Describe("Fab3 Configuration", func() {
 			"--user", "User1",
 			"--channel", "testchannel",
 		)
+		proxyCmd.Env = []string{""}
 
 		output := gbytes.NewBuffer()
 		proxyCmd.Stdout = output
