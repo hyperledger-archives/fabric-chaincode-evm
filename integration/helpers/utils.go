@@ -37,6 +37,13 @@ type JsonRPCResponse struct {
 	Error   JsonRPCError `json:"error,omitempty"`
 }
 
+type JsonRPCBoolResponse struct {
+	JsonRPC string       `json:"jsonrpc"`
+	ID      int          `json:"id"`
+	Result  bool         `json:"result,omitempty"`
+	Error   JsonRPCError `json:"error,omitempty"`
+}
+
 type JsonRPCArrayResponse struct {
 	JsonRPC string       `json:"jsonrpc"`
 	ID      int          `json:"id"`

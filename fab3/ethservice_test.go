@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1318,6 +1319,31 @@ var _ = Describe("Ethservice", func() {
 				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
 				Expect(len(*reply)).To(Equal(0), "none of the events to match")
 			})
+		})
+	})
+
+	Describe("NewFilter & UninstallFilter", func() {
+		It("fails to find filters to uninstall when none are installed", func() {
+			var id string
+			id = "0x" + strconv.FormatUint(rand.Uint64(), 16)
+			var valid bool
+			Expect(ethservice.UninstallFilter(&http.Request{}, &id, &valid)).ToNot(HaveOccurred())
+			Expect(valid).To(BeFalse())
+		})
+		It("has a consistent Filter ID between invocations of NewFilter and UninstallFilter", func() {
+			var reply string
+			var x types.GetLogsArgs
+			By("Installing a filter")
+			Expect(ethservice.NewFilter(&http.Request{}, &x, &reply)).ToNot(HaveOccurred())
+			_, err := strconv.ParseUint(reply, 0, 16)
+			Expect(err).ToNot(HaveOccurred())
+			var valid bool
+			By("using the returned ID to uninstall a filter")
+			Expect(ethservice.UninstallFilter(&http.Request{}, &reply, &valid)).ToNot(HaveOccurred())
+			Expect(valid).To(BeTrue(), "this is the filterID we were given by NewFilter")
+			valid = false // reset to default value
+			Expect(ethservice.UninstallFilter(&http.Request{}, &reply, &valid)).ToNot(HaveOccurred())
+			Expect(valid).To(BeFalse(), "the filter has just now been removed")
 		})
 	})
 

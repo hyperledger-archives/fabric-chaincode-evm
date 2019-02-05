@@ -377,6 +377,37 @@ var _ = Describe("Fab3", func() {
 		Expect(log.TxHash).To(Equal(txReceipt.TransactionHash))
 	})
 
+	It("implements the ethereum json rpc api for async-logs", func() {
+		resp, err := sendRPCRequest(client, "eth_newFilter", proxyAddress, 37, []interface{}{})
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err := ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		var respBody helpers.JsonRPCResponse
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+		filterID := respBody.Result
+
+		resp, err = sendRPCRequest(client, "eth_uninstallFilter", proxyAddress, 38, filterID)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		fmt.Fprintln(GinkgoWriter, string(rBody))
+		var uninstallBody helpers.JsonRPCBoolResponse
+		err = json.Unmarshal(rBody, &uninstallBody)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(uninstallBody.Result).To(BeTrue())
+
+		resp, err = sendRPCRequest(client, "eth_uninstallFilter", proxyAddress, 39, filterID)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		fmt.Fprintln(GinkgoWriter, string(rBody))
+		err = json.Unmarshal(rBody, &uninstallBody)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(uninstallBody.Result).To(BeFalse(), "filter just now removed")
+	})
+
 	It("shuts down gracefully when it receives an Interrupt signal", func() {
 		proxy.Signal(os.Interrupt)
 
