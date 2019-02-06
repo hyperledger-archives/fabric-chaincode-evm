@@ -178,7 +178,8 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 		}
 	}
 
-	txLogs, err := fabricEventToEVMLogs(logger, respPayload.Events, receipt.BlockNumber, receipt.TransactionHash, receipt.TransactionIndex, receipt.BlockHash, types.AddressFilter{})
+	txLogs, err := fabricEventToEVMLogs(logger, respPayload.Events, receipt.BlockNumber, receipt.TransactionHash,
+		receipt.TransactionIndex, receipt.BlockHash, types.AddressFilter{}, types.TopicsFilter{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get EVM Logs out of fabric event")
 	}
@@ -415,7 +416,8 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 
 	logger.Debugw("checking blocks for logs", "from", from, "to", to)
 	for blockNumber := from; blockNumber <= to; blockNumber++ {
-		logger.Debugw("handling single block", "block-number", blockNumber)
+		logger = logger.With("block-number", blockNumber)
+		logger.Debug("handling single block")
 		block, err := s.ledgerClient.QueryBlock(blockNumber)
 		if err != nil {
 			return errors.Wrap(err, "failed to query the ledger")
@@ -426,6 +428,7 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 		transactionsFilter := block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER]
 		logger.Debug("handling ", len(blockData), " transactions in block")
 		for transactionIndex, transactionData := range blockData {
+			logger = logger.With("transaction-index", transactionIndex)
 			// check validity of transaction
 			if (transactionsFilter[transactionIndex] == 1) || (transactionData == nil) {
 				continue
@@ -454,7 +457,8 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 
 			blkNumber := "0x" + strconv.FormatUint(blockNumber, 16)
 			transactionIndexStr := "0x" + strconv.FormatUint(uint64(transactionIndex), 16)
-			logs, err := fabricEventToEVMLogs(logger, respPayload.Events, blkNumber, transactionHash, transactionIndexStr, blockHash, args.Address)
+			logs, err := fabricEventToEVMLogs(logger, respPayload.Events, blkNumber, transactionHash,
+				transactionIndexStr, blockHash, args.Address, args.Topics)
 			if err != nil {
 				return errors.Wrap(err, "failed to get EVM Logs out of fabric event")
 			}
@@ -609,7 +613,8 @@ func findTransaction(txID string, blockData [][]byte) (string, *common.Payload, 
 	return "", &common.Payload{}, nil
 }
 
-func fabricEventToEVMLogs(logger *zap.SugaredLogger, events []byte, blocknumber, txhash, txindex, blockhash string, af types.AddressFilter) ([]types.Log, error) {
+func fabricEventToEVMLogs(logger *zap.SugaredLogger, events []byte, blocknumber, txhash, txindex, blockhash string,
+	af types.AddressFilter, tf types.TopicsFilter) ([]types.Log, error) {
 	if len(events) == 0 {
 		return nil, nil
 	}
@@ -627,6 +632,7 @@ func fabricEventToEVMLogs(logger *zap.SugaredLogger, events []byte, blocknumber,
 	}
 
 	var txLogs []types.Log
+LOG_EVENT:
 	for i, logEvent := range eventMsgs {
 		if len(af) != 0 {
 			foundMatch := false
@@ -639,9 +645,38 @@ func fabricEventToEVMLogs(logger *zap.SugaredLogger, events []byte, blocknumber,
 				}
 			}
 			if !foundMatch {
-				continue // no match, move to next logEvent
+				continue LOG_EVENT // no match, move to next logEvent
 			}
 		}
+
+		// If we have more matchers than things to match against, we cannot match.
+		if len(tf) > len(logEvent.Topics) {
+			continue LOG_EVENT
+		}
+
+		logger.Debug("checking for topics")
+		// check match for each topic,
+		for i, topicFilter := range tf {
+			// if filter is empty it matches automatically.
+			if len(topicFilter) == 0 {
+				continue
+			}
+
+			eventTopic := logEvent.Topics[i]
+			foundMatch := false
+			for _, topic := range topicFilter {
+				logger.Debugw("matching Topic ", "matcherTopic", topic, "eventTopic", eventTopic)
+				if topic == eventTopic || topic == "" {
+					foundMatch = true
+					break
+				}
+			}
+			if !foundMatch {
+				// if we didn't find a match, no use in checking any of the other topics
+				continue LOG_EVENT
+			}
+		}
+		logger.Debug("finished checking for topics")
 
 		var topics []string
 		for _, topic := range logEvent.Topics {

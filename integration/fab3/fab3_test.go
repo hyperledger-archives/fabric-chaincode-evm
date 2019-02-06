@@ -313,7 +313,12 @@ var _ = Describe("Fab3", func() {
 		}, LongEventualTimeout, LongPollingInterval).Should(BeZero())
 
 		By("querying for logs of a contract with logs, we get a log")
-		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 23, []interface{}{})
+		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 23,
+			types.GetLogsArgs{ToBlock: "latest", // FromBlock as a default argument
+				Address: types.AddressFilter{contractAddr},
+				Topics: types.TopicsFilter{
+					types.TopicFilter{}, // a null topic filter, and a no 0x prefix topic
+					types.TopicFilter{"0000000000000000000000000000000000000000000000000000000000000000"}}})
 		Expect(err).ToNot(HaveOccurred())
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())

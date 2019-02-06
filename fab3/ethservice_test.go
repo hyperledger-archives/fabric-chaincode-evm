@@ -1111,7 +1111,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ToNot(Succeed())
 			})
 			It("does not allow FromBlock to be greater than ToBlock", func() {
-				logsArgs = &types.GetLogsArgs{FromBlock: "0x1", ToBlock: "0x0"}
+				logsArgs = &types.GetLogsArgs{FromBlock: "1", ToBlock: "0"}
 				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ToNot(Succeed())
 			})
 			It("does not accept pending as a block parameter", func() {
@@ -1142,51 +1142,56 @@ var _ = Describe("Ethservice", func() {
 				}
 				mockLedgerClient.QueryBlockStub = qbs
 				logsArgs = &types.GetLogsArgs{FromBlock: "1", ToBlock: "2"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(4))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(4))
 
 				logsArgs = &types.GetLogsArgs{}
 				reply = &[]types.Log{}
 			})
+
 			It("accepts an empty input struct by defaulting", func() {
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(2))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2))
 				reply1 := reply
 				By("running the same test with explicit args")
 				logsArgs = &types.GetLogsArgs{FromBlock: "latest", ToBlock: "latest"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(2))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2))
 				reply2 := reply
 				By("comparing the results of the two invocations")
 				Expect(*reply1).To(Equal(*reply2))
 			})
 
+			// Block references as input
 			It("returns the latest block when explicitly asking for latest", func() {
 				logsArgs = &types.GetLogsArgs{FromBlock: "latest", ToBlock: "latest"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(2))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2))
 			})
 
 			It("returns logs when both FromBlock and ToBlock are specified", func() {
 				logsArgs = &types.GetLogsArgs{FromBlock: "1", ToBlock: "2"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(4))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(4))
 			})
 
+			// Addresses as input
 			It("returns no matches when given an address filter that does not match anything", func() {
 				logsArgs = &types.GetLogsArgs{Address: types.AddressFilter{""}}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(0), "Nothing should match")
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(0), "Nothing to match")
 			})
+
 			It("returns logs associated when given a single address as a filter", func() {
 				addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
 				Expect(err).ToNot(HaveOccurred())
 				af, err := types.NewAddressFilter("0x" + addr.String())
 				Expect(err).ToNot(HaveOccurred())
 				logsArgs = &types.GetLogsArgs{Address: af}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(1), "Only one of events should match")
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(1), "Only one of events to match")
 			})
+
 			It("returns the events associated when given an array of multiple addresses as a filter", func() {
 				addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
 				Expect(err).ToNot(HaveOccurred())
@@ -1197,13 +1202,104 @@ var _ = Describe("Ethservice", func() {
 				af2, err := types.NewAddressFilter("0x" + addr.String())
 				Expect(err).ToNot(HaveOccurred())
 				logsArgs = &types.GetLogsArgs{Address: append(af, af2...)}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
-				Expect(len(*reply)).Should(Equal(2))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2))
 			})
 
+			// topics as input
+			It("returns all events when given a number of empty topics less than the number of topics in the event", func() {
+				logsArgs = &types.GetLogsArgs{Topics: types.TopicsFilter{nil}}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2), "all in block to match")
+			})
+
+			It("returns all events when given a number of empty topics equal to number of topics in the event", func() {
+				logsArgs = &types.GetLogsArgs{Topics: types.TopicsFilter{nil, nil}}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2), "all in block to match")
+			})
+
+			It("returns no events when given a number of topics more than the number of topics in the event", func() {
+				logsArgs = &types.GetLogsArgs{Topics: types.TopicsFilter{nil, nil, nil}}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(0), "none in block to match")
+			})
+
+			It("returns the events associated when given a single topic to match", func() {
+				tf, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-1"))
+				Expect(err).ToNot(HaveOccurred())
+				logsArgs = &types.GetLogsArgs{Topics: types.NewTopicsFilter(tf)}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(1), "Only one of events to match")
+			})
+
+			It("returns the events associated when given nil as the first topic, and a matcher for the second topic", func() {
+				tf, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-2"))
+				Expect(err).ToNot(HaveOccurred())
+				logsArgs = &types.GetLogsArgs{Topics: types.TopicsFilter{nil, tf}}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(1), "only one in block to match")
+			})
+
+			It("returns the events associated when given an array of and'd topics", func() {
+				tf1, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-1"))
+				Expect(err).ToNot(HaveOccurred())
+				tf2, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-2"))
+				Expect(err).ToNot(HaveOccurred())
+				logsArgs = &types.GetLogsArgs{Topics: types.NewTopicsFilter(tf1, tf2)}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(1), "Only one of events to match")
+			})
+
+			It("returns the events associated when given an array of multiple or'd topics", func() {
+				tf1, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-1"))
+				Expect(err).ToNot(HaveOccurred())
+				tf2, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-3"))
+				Expect(err).ToNot(HaveOccurred())
+				tf := append(tf1, tf2...)
+				logsArgs = &types.GetLogsArgs{Topics: types.NewTopicsFilter(tf)}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2), "all events in block to match")
+			})
+
+			// combination of multiple fields as input
+			It("returns logs associated when given a single address and single topic as a filter", func() {
+				addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
+				Expect(err).ToNot(HaveOccurred())
+				af, err := types.NewAddressFilter("0x" + addr.String())
+				Expect(err).ToNot(HaveOccurred())
+
+				tf, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-1"))
+				Expect(err).ToNot(HaveOccurred())
+
+				logsArgs = &types.GetLogsArgs{Address: af, Topics: types.TopicsFilter{tf}}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(1), "Only one of events to match")
+			})
+
+			It("returns no logs associated when given a single address and single topic, with none that match the same object as a filter", func() {
+				addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
+				Expect(err).ToNot(HaveOccurred())
+				af, err := types.NewAddressFilter("0x" + addr.String())
+				Expect(err).ToNot(HaveOccurred())
+
+				tf, err := types.NewTopicFilter("0x" + formatTopic("sample-topic-3"))
+				Expect(err).ToNot(HaveOccurred())
+
+				logsArgs = &types.GetLogsArgs{Address: af, Topics: types.TopicsFilter{tf}}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(0), "none of the events to match")
+			})
 		})
 	})
 })
+
+func formatTopic(s string) string {
+	if len(s) > 64 {
+		s = s[:64]
+	}
+	return fmt.Sprintf("%64v", s)
+}
 
 func GetSampleBlock(blockNumber uint64) *common.Block {
 	addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
@@ -1211,7 +1307,7 @@ func GetSampleBlock(blockNumber uint64) *common.Block {
 
 	msg := event.Event{
 		Address: strings.ToLower(addr.String()),
-		Topics:  []string{"sample-topic-1", "sample-topic2"},
+		Topics:  []string{formatTopic("sample-topic-1"), formatTopic("sample-topic-2")},
 		Data:    "sample-data",
 	}
 	events := []event.Event{msg}
@@ -1233,7 +1329,7 @@ func GetSampleBlock(blockNumber uint64) *common.Block {
 
 	msg = event.Event{
 		Address: strings.ToLower(addr.String()),
-		Topics:  []string{"sample-topic-1", "sample-topic2"},
+		Topics:  []string{formatTopic("sample-topic-3"), formatTopic("sample-topic-4")},
 		Data:    "sample-data",
 	}
 	events = []event.Event{msg}
