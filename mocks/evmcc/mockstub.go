@@ -510,12 +510,6 @@ func (fake *MockStub) CreateCompositeKeyCallCount() int {
 	return len(fake.createCompositeKeyArgsForCall)
 }
 
-func (fake *MockStub) CreateCompositeKeyCalls(stub func(string, []string) (string, error)) {
-	fake.createCompositeKeyMutex.Lock()
-	defer fake.createCompositeKeyMutex.Unlock()
-	fake.CreateCompositeKeyStub = stub
-}
-
 func (fake *MockStub) CreateCompositeKeyArgsForCall(i int) (string, []string) {
 	fake.createCompositeKeyMutex.RLock()
 	defer fake.createCompositeKeyMutex.RUnlock()
@@ -524,8 +518,6 @@ func (fake *MockStub) CreateCompositeKeyArgsForCall(i int) (string, []string) {
 }
 
 func (fake *MockStub) CreateCompositeKeyReturns(result1 string, result2 error) {
-	fake.createCompositeKeyMutex.Lock()
-	defer fake.createCompositeKeyMutex.Unlock()
 	fake.CreateCompositeKeyStub = nil
 	fake.createCompositeKeyReturns = struct {
 		result1 string
@@ -534,8 +526,6 @@ func (fake *MockStub) CreateCompositeKeyReturns(result1 string, result2 error) {
 }
 
 func (fake *MockStub) CreateCompositeKeyReturnsOnCall(i int, result1 string, result2 error) {
-	fake.createCompositeKeyMutex.Lock()
-	defer fake.createCompositeKeyMutex.Unlock()
 	fake.CreateCompositeKeyStub = nil
 	if fake.createCompositeKeyReturnsOnCall == nil {
 		fake.createCompositeKeyReturnsOnCall = make(map[int]struct {
@@ -574,12 +564,6 @@ func (fake *MockStub) DelPrivateDataCallCount() int {
 	return len(fake.delPrivateDataArgsForCall)
 }
 
-func (fake *MockStub) DelPrivateDataCalls(stub func(string, string) error) {
-	fake.delPrivateDataMutex.Lock()
-	defer fake.delPrivateDataMutex.Unlock()
-	fake.DelPrivateDataStub = stub
-}
-
 func (fake *MockStub) DelPrivateDataArgsForCall(i int) (string, string) {
 	fake.delPrivateDataMutex.RLock()
 	defer fake.delPrivateDataMutex.RUnlock()
@@ -588,8 +572,6 @@ func (fake *MockStub) DelPrivateDataArgsForCall(i int) (string, string) {
 }
 
 func (fake *MockStub) DelPrivateDataReturns(result1 error) {
-	fake.delPrivateDataMutex.Lock()
-	defer fake.delPrivateDataMutex.Unlock()
 	fake.DelPrivateDataStub = nil
 	fake.delPrivateDataReturns = struct {
 		result1 error
@@ -597,8 +579,6 @@ func (fake *MockStub) DelPrivateDataReturns(result1 error) {
 }
 
 func (fake *MockStub) DelPrivateDataReturnsOnCall(i int, result1 error) {
-	fake.delPrivateDataMutex.Lock()
-	defer fake.delPrivateDataMutex.Unlock()
 	fake.DelPrivateDataStub = nil
 	if fake.delPrivateDataReturnsOnCall == nil {
 		fake.delPrivateDataReturnsOnCall = make(map[int]struct {
@@ -634,12 +614,6 @@ func (fake *MockStub) DelStateCallCount() int {
 	return len(fake.delStateArgsForCall)
 }
 
-func (fake *MockStub) DelStateCalls(stub func(string) error) {
-	fake.delStateMutex.Lock()
-	defer fake.delStateMutex.Unlock()
-	fake.DelStateStub = stub
-}
-
 func (fake *MockStub) DelStateArgsForCall(i int) string {
 	fake.delStateMutex.RLock()
 	defer fake.delStateMutex.RUnlock()
@@ -648,8 +622,6 @@ func (fake *MockStub) DelStateArgsForCall(i int) string {
 }
 
 func (fake *MockStub) DelStateReturns(result1 error) {
-	fake.delStateMutex.Lock()
-	defer fake.delStateMutex.Unlock()
 	fake.DelStateStub = nil
 	fake.delStateReturns = struct {
 		result1 error
@@ -657,8 +629,6 @@ func (fake *MockStub) DelStateReturns(result1 error) {
 }
 
 func (fake *MockStub) DelStateReturnsOnCall(i int, result1 error) {
-	fake.delStateMutex.Lock()
-	defer fake.delStateMutex.Unlock()
 	fake.DelStateStub = nil
 	if fake.delStateReturnsOnCall == nil {
 		fake.delStateReturnsOnCall = make(map[int]struct {
@@ -693,15 +663,7 @@ func (fake *MockStub) GetArgsCallCount() int {
 	return len(fake.getArgsArgsForCall)
 }
 
-func (fake *MockStub) GetArgsCalls(stub func() [][]byte) {
-	fake.getArgsMutex.Lock()
-	defer fake.getArgsMutex.Unlock()
-	fake.GetArgsStub = stub
-}
-
 func (fake *MockStub) GetArgsReturns(result1 [][]byte) {
-	fake.getArgsMutex.Lock()
-	defer fake.getArgsMutex.Unlock()
 	fake.GetArgsStub = nil
 	fake.getArgsReturns = struct {
 		result1 [][]byte
@@ -709,8 +671,6 @@ func (fake *MockStub) GetArgsReturns(result1 [][]byte) {
 }
 
 func (fake *MockStub) GetArgsReturnsOnCall(i int, result1 [][]byte) {
-	fake.getArgsMutex.Lock()
-	defer fake.getArgsMutex.Unlock()
 	fake.GetArgsStub = nil
 	if fake.getArgsReturnsOnCall == nil {
 		fake.getArgsReturnsOnCall = make(map[int]struct {
@@ -745,15 +705,7 @@ func (fake *MockStub) GetArgsSliceCallCount() int {
 	return len(fake.getArgsSliceArgsForCall)
 }
 
-func (fake *MockStub) GetArgsSliceCalls(stub func() ([]byte, error)) {
-	fake.getArgsSliceMutex.Lock()
-	defer fake.getArgsSliceMutex.Unlock()
-	fake.GetArgsSliceStub = stub
-}
-
 func (fake *MockStub) GetArgsSliceReturns(result1 []byte, result2 error) {
-	fake.getArgsSliceMutex.Lock()
-	defer fake.getArgsSliceMutex.Unlock()
 	fake.GetArgsSliceStub = nil
 	fake.getArgsSliceReturns = struct {
 		result1 []byte
@@ -762,8 +714,6 @@ func (fake *MockStub) GetArgsSliceReturns(result1 []byte, result2 error) {
 }
 
 func (fake *MockStub) GetArgsSliceReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getArgsSliceMutex.Lock()
-	defer fake.getArgsSliceMutex.Unlock()
 	fake.GetArgsSliceStub = nil
 	if fake.getArgsSliceReturnsOnCall == nil {
 		fake.getArgsSliceReturnsOnCall = make(map[int]struct {
@@ -800,15 +750,7 @@ func (fake *MockStub) GetBindingCallCount() int {
 	return len(fake.getBindingArgsForCall)
 }
 
-func (fake *MockStub) GetBindingCalls(stub func() ([]byte, error)) {
-	fake.getBindingMutex.Lock()
-	defer fake.getBindingMutex.Unlock()
-	fake.GetBindingStub = stub
-}
-
 func (fake *MockStub) GetBindingReturns(result1 []byte, result2 error) {
-	fake.getBindingMutex.Lock()
-	defer fake.getBindingMutex.Unlock()
 	fake.GetBindingStub = nil
 	fake.getBindingReturns = struct {
 		result1 []byte
@@ -817,8 +759,6 @@ func (fake *MockStub) GetBindingReturns(result1 []byte, result2 error) {
 }
 
 func (fake *MockStub) GetBindingReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getBindingMutex.Lock()
-	defer fake.getBindingMutex.Unlock()
 	fake.GetBindingStub = nil
 	if fake.getBindingReturnsOnCall == nil {
 		fake.getBindingReturnsOnCall = make(map[int]struct {
@@ -855,15 +795,7 @@ func (fake *MockStub) GetChannelIDCallCount() int {
 	return len(fake.getChannelIDArgsForCall)
 }
 
-func (fake *MockStub) GetChannelIDCalls(stub func() string) {
-	fake.getChannelIDMutex.Lock()
-	defer fake.getChannelIDMutex.Unlock()
-	fake.GetChannelIDStub = stub
-}
-
 func (fake *MockStub) GetChannelIDReturns(result1 string) {
-	fake.getChannelIDMutex.Lock()
-	defer fake.getChannelIDMutex.Unlock()
 	fake.GetChannelIDStub = nil
 	fake.getChannelIDReturns = struct {
 		result1 string
@@ -871,8 +803,6 @@ func (fake *MockStub) GetChannelIDReturns(result1 string) {
 }
 
 func (fake *MockStub) GetChannelIDReturnsOnCall(i int, result1 string) {
-	fake.getChannelIDMutex.Lock()
-	defer fake.getChannelIDMutex.Unlock()
 	fake.GetChannelIDStub = nil
 	if fake.getChannelIDReturnsOnCall == nil {
 		fake.getChannelIDReturnsOnCall = make(map[int]struct {
@@ -907,15 +837,7 @@ func (fake *MockStub) GetCreatorCallCount() int {
 	return len(fake.getCreatorArgsForCall)
 }
 
-func (fake *MockStub) GetCreatorCalls(stub func() ([]byte, error)) {
-	fake.getCreatorMutex.Lock()
-	defer fake.getCreatorMutex.Unlock()
-	fake.GetCreatorStub = stub
-}
-
 func (fake *MockStub) GetCreatorReturns(result1 []byte, result2 error) {
-	fake.getCreatorMutex.Lock()
-	defer fake.getCreatorMutex.Unlock()
 	fake.GetCreatorStub = nil
 	fake.getCreatorReturns = struct {
 		result1 []byte
@@ -924,8 +846,6 @@ func (fake *MockStub) GetCreatorReturns(result1 []byte, result2 error) {
 }
 
 func (fake *MockStub) GetCreatorReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getCreatorMutex.Lock()
-	defer fake.getCreatorMutex.Unlock()
 	fake.GetCreatorStub = nil
 	if fake.getCreatorReturnsOnCall == nil {
 		fake.getCreatorReturnsOnCall = make(map[int]struct {
@@ -962,15 +882,7 @@ func (fake *MockStub) GetDecorationsCallCount() int {
 	return len(fake.getDecorationsArgsForCall)
 }
 
-func (fake *MockStub) GetDecorationsCalls(stub func() map[string][]byte) {
-	fake.getDecorationsMutex.Lock()
-	defer fake.getDecorationsMutex.Unlock()
-	fake.GetDecorationsStub = stub
-}
-
 func (fake *MockStub) GetDecorationsReturns(result1 map[string][]byte) {
-	fake.getDecorationsMutex.Lock()
-	defer fake.getDecorationsMutex.Unlock()
 	fake.GetDecorationsStub = nil
 	fake.getDecorationsReturns = struct {
 		result1 map[string][]byte
@@ -978,8 +890,6 @@ func (fake *MockStub) GetDecorationsReturns(result1 map[string][]byte) {
 }
 
 func (fake *MockStub) GetDecorationsReturnsOnCall(i int, result1 map[string][]byte) {
-	fake.getDecorationsMutex.Lock()
-	defer fake.getDecorationsMutex.Unlock()
 	fake.GetDecorationsStub = nil
 	if fake.getDecorationsReturnsOnCall == nil {
 		fake.getDecorationsReturnsOnCall = make(map[int]struct {
@@ -1014,15 +924,7 @@ func (fake *MockStub) GetFunctionAndParametersCallCount() int {
 	return len(fake.getFunctionAndParametersArgsForCall)
 }
 
-func (fake *MockStub) GetFunctionAndParametersCalls(stub func() (string, []string)) {
-	fake.getFunctionAndParametersMutex.Lock()
-	defer fake.getFunctionAndParametersMutex.Unlock()
-	fake.GetFunctionAndParametersStub = stub
-}
-
 func (fake *MockStub) GetFunctionAndParametersReturns(result1 string, result2 []string) {
-	fake.getFunctionAndParametersMutex.Lock()
-	defer fake.getFunctionAndParametersMutex.Unlock()
 	fake.GetFunctionAndParametersStub = nil
 	fake.getFunctionAndParametersReturns = struct {
 		result1 string
@@ -1031,8 +933,6 @@ func (fake *MockStub) GetFunctionAndParametersReturns(result1 string, result2 []
 }
 
 func (fake *MockStub) GetFunctionAndParametersReturnsOnCall(i int, result1 string, result2 []string) {
-	fake.getFunctionAndParametersMutex.Lock()
-	defer fake.getFunctionAndParametersMutex.Unlock()
 	fake.GetFunctionAndParametersStub = nil
 	if fake.getFunctionAndParametersReturnsOnCall == nil {
 		fake.getFunctionAndParametersReturnsOnCall = make(map[int]struct {
@@ -1070,12 +970,6 @@ func (fake *MockStub) GetHistoryForKeyCallCount() int {
 	return len(fake.getHistoryForKeyArgsForCall)
 }
 
-func (fake *MockStub) GetHistoryForKeyCalls(stub func(string) (shim.HistoryQueryIteratorInterface, error)) {
-	fake.getHistoryForKeyMutex.Lock()
-	defer fake.getHistoryForKeyMutex.Unlock()
-	fake.GetHistoryForKeyStub = stub
-}
-
 func (fake *MockStub) GetHistoryForKeyArgsForCall(i int) string {
 	fake.getHistoryForKeyMutex.RLock()
 	defer fake.getHistoryForKeyMutex.RUnlock()
@@ -1084,8 +978,6 @@ func (fake *MockStub) GetHistoryForKeyArgsForCall(i int) string {
 }
 
 func (fake *MockStub) GetHistoryForKeyReturns(result1 shim.HistoryQueryIteratorInterface, result2 error) {
-	fake.getHistoryForKeyMutex.Lock()
-	defer fake.getHistoryForKeyMutex.Unlock()
 	fake.GetHistoryForKeyStub = nil
 	fake.getHistoryForKeyReturns = struct {
 		result1 shim.HistoryQueryIteratorInterface
@@ -1094,8 +986,6 @@ func (fake *MockStub) GetHistoryForKeyReturns(result1 shim.HistoryQueryIteratorI
 }
 
 func (fake *MockStub) GetHistoryForKeyReturnsOnCall(i int, result1 shim.HistoryQueryIteratorInterface, result2 error) {
-	fake.getHistoryForKeyMutex.Lock()
-	defer fake.getHistoryForKeyMutex.Unlock()
 	fake.GetHistoryForKeyStub = nil
 	if fake.getHistoryForKeyReturnsOnCall == nil {
 		fake.getHistoryForKeyReturnsOnCall = make(map[int]struct {
@@ -1134,12 +1024,6 @@ func (fake *MockStub) GetPrivateDataCallCount() int {
 	return len(fake.getPrivateDataArgsForCall)
 }
 
-func (fake *MockStub) GetPrivateDataCalls(stub func(string, string) ([]byte, error)) {
-	fake.getPrivateDataMutex.Lock()
-	defer fake.getPrivateDataMutex.Unlock()
-	fake.GetPrivateDataStub = stub
-}
-
 func (fake *MockStub) GetPrivateDataArgsForCall(i int) (string, string) {
 	fake.getPrivateDataMutex.RLock()
 	defer fake.getPrivateDataMutex.RUnlock()
@@ -1148,8 +1032,6 @@ func (fake *MockStub) GetPrivateDataArgsForCall(i int) (string, string) {
 }
 
 func (fake *MockStub) GetPrivateDataReturns(result1 []byte, result2 error) {
-	fake.getPrivateDataMutex.Lock()
-	defer fake.getPrivateDataMutex.Unlock()
 	fake.GetPrivateDataStub = nil
 	fake.getPrivateDataReturns = struct {
 		result1 []byte
@@ -1158,8 +1040,6 @@ func (fake *MockStub) GetPrivateDataReturns(result1 []byte, result2 error) {
 }
 
 func (fake *MockStub) GetPrivateDataReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getPrivateDataMutex.Lock()
-	defer fake.getPrivateDataMutex.Unlock()
 	fake.GetPrivateDataStub = nil
 	if fake.getPrivateDataReturnsOnCall == nil {
 		fake.getPrivateDataReturnsOnCall = make(map[int]struct {
@@ -1204,12 +1084,6 @@ func (fake *MockStub) GetPrivateDataByPartialCompositeKeyCallCount() int {
 	return len(fake.getPrivateDataByPartialCompositeKeyArgsForCall)
 }
 
-func (fake *MockStub) GetPrivateDataByPartialCompositeKeyCalls(stub func(string, string, []string) (shim.StateQueryIteratorInterface, error)) {
-	fake.getPrivateDataByPartialCompositeKeyMutex.Lock()
-	defer fake.getPrivateDataByPartialCompositeKeyMutex.Unlock()
-	fake.GetPrivateDataByPartialCompositeKeyStub = stub
-}
-
 func (fake *MockStub) GetPrivateDataByPartialCompositeKeyArgsForCall(i int) (string, string, []string) {
 	fake.getPrivateDataByPartialCompositeKeyMutex.RLock()
 	defer fake.getPrivateDataByPartialCompositeKeyMutex.RUnlock()
@@ -1218,8 +1092,6 @@ func (fake *MockStub) GetPrivateDataByPartialCompositeKeyArgsForCall(i int) (str
 }
 
 func (fake *MockStub) GetPrivateDataByPartialCompositeKeyReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getPrivateDataByPartialCompositeKeyMutex.Lock()
-	defer fake.getPrivateDataByPartialCompositeKeyMutex.Unlock()
 	fake.GetPrivateDataByPartialCompositeKeyStub = nil
 	fake.getPrivateDataByPartialCompositeKeyReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1228,8 +1100,6 @@ func (fake *MockStub) GetPrivateDataByPartialCompositeKeyReturns(result1 shim.St
 }
 
 func (fake *MockStub) GetPrivateDataByPartialCompositeKeyReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getPrivateDataByPartialCompositeKeyMutex.Lock()
-	defer fake.getPrivateDataByPartialCompositeKeyMutex.Unlock()
 	fake.GetPrivateDataByPartialCompositeKeyStub = nil
 	if fake.getPrivateDataByPartialCompositeKeyReturnsOnCall == nil {
 		fake.getPrivateDataByPartialCompositeKeyReturnsOnCall = make(map[int]struct {
@@ -1269,12 +1139,6 @@ func (fake *MockStub) GetPrivateDataByRangeCallCount() int {
 	return len(fake.getPrivateDataByRangeArgsForCall)
 }
 
-func (fake *MockStub) GetPrivateDataByRangeCalls(stub func(string, string, string) (shim.StateQueryIteratorInterface, error)) {
-	fake.getPrivateDataByRangeMutex.Lock()
-	defer fake.getPrivateDataByRangeMutex.Unlock()
-	fake.GetPrivateDataByRangeStub = stub
-}
-
 func (fake *MockStub) GetPrivateDataByRangeArgsForCall(i int) (string, string, string) {
 	fake.getPrivateDataByRangeMutex.RLock()
 	defer fake.getPrivateDataByRangeMutex.RUnlock()
@@ -1283,8 +1147,6 @@ func (fake *MockStub) GetPrivateDataByRangeArgsForCall(i int) (string, string, s
 }
 
 func (fake *MockStub) GetPrivateDataByRangeReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getPrivateDataByRangeMutex.Lock()
-	defer fake.getPrivateDataByRangeMutex.Unlock()
 	fake.GetPrivateDataByRangeStub = nil
 	fake.getPrivateDataByRangeReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1293,8 +1155,6 @@ func (fake *MockStub) GetPrivateDataByRangeReturns(result1 shim.StateQueryIterat
 }
 
 func (fake *MockStub) GetPrivateDataByRangeReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getPrivateDataByRangeMutex.Lock()
-	defer fake.getPrivateDataByRangeMutex.Unlock()
 	fake.GetPrivateDataByRangeStub = nil
 	if fake.getPrivateDataByRangeReturnsOnCall == nil {
 		fake.getPrivateDataByRangeReturnsOnCall = make(map[int]struct {
@@ -1333,12 +1193,6 @@ func (fake *MockStub) GetPrivateDataQueryResultCallCount() int {
 	return len(fake.getPrivateDataQueryResultArgsForCall)
 }
 
-func (fake *MockStub) GetPrivateDataQueryResultCalls(stub func(string, string) (shim.StateQueryIteratorInterface, error)) {
-	fake.getPrivateDataQueryResultMutex.Lock()
-	defer fake.getPrivateDataQueryResultMutex.Unlock()
-	fake.GetPrivateDataQueryResultStub = stub
-}
-
 func (fake *MockStub) GetPrivateDataQueryResultArgsForCall(i int) (string, string) {
 	fake.getPrivateDataQueryResultMutex.RLock()
 	defer fake.getPrivateDataQueryResultMutex.RUnlock()
@@ -1347,8 +1201,6 @@ func (fake *MockStub) GetPrivateDataQueryResultArgsForCall(i int) (string, strin
 }
 
 func (fake *MockStub) GetPrivateDataQueryResultReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getPrivateDataQueryResultMutex.Lock()
-	defer fake.getPrivateDataQueryResultMutex.Unlock()
 	fake.GetPrivateDataQueryResultStub = nil
 	fake.getPrivateDataQueryResultReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1357,8 +1209,6 @@ func (fake *MockStub) GetPrivateDataQueryResultReturns(result1 shim.StateQueryIt
 }
 
 func (fake *MockStub) GetPrivateDataQueryResultReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getPrivateDataQueryResultMutex.Lock()
-	defer fake.getPrivateDataQueryResultMutex.Unlock()
 	fake.GetPrivateDataQueryResultStub = nil
 	if fake.getPrivateDataQueryResultReturnsOnCall == nil {
 		fake.getPrivateDataQueryResultReturnsOnCall = make(map[int]struct {
@@ -1397,12 +1247,6 @@ func (fake *MockStub) GetPrivateDataValidationParameterCallCount() int {
 	return len(fake.getPrivateDataValidationParameterArgsForCall)
 }
 
-func (fake *MockStub) GetPrivateDataValidationParameterCalls(stub func(string, string) ([]byte, error)) {
-	fake.getPrivateDataValidationParameterMutex.Lock()
-	defer fake.getPrivateDataValidationParameterMutex.Unlock()
-	fake.GetPrivateDataValidationParameterStub = stub
-}
-
 func (fake *MockStub) GetPrivateDataValidationParameterArgsForCall(i int) (string, string) {
 	fake.getPrivateDataValidationParameterMutex.RLock()
 	defer fake.getPrivateDataValidationParameterMutex.RUnlock()
@@ -1411,8 +1255,6 @@ func (fake *MockStub) GetPrivateDataValidationParameterArgsForCall(i int) (strin
 }
 
 func (fake *MockStub) GetPrivateDataValidationParameterReturns(result1 []byte, result2 error) {
-	fake.getPrivateDataValidationParameterMutex.Lock()
-	defer fake.getPrivateDataValidationParameterMutex.Unlock()
 	fake.GetPrivateDataValidationParameterStub = nil
 	fake.getPrivateDataValidationParameterReturns = struct {
 		result1 []byte
@@ -1421,8 +1263,6 @@ func (fake *MockStub) GetPrivateDataValidationParameterReturns(result1 []byte, r
 }
 
 func (fake *MockStub) GetPrivateDataValidationParameterReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getPrivateDataValidationParameterMutex.Lock()
-	defer fake.getPrivateDataValidationParameterMutex.Unlock()
 	fake.GetPrivateDataValidationParameterStub = nil
 	if fake.getPrivateDataValidationParameterReturnsOnCall == nil {
 		fake.getPrivateDataValidationParameterReturnsOnCall = make(map[int]struct {
@@ -1460,12 +1300,6 @@ func (fake *MockStub) GetQueryResultCallCount() int {
 	return len(fake.getQueryResultArgsForCall)
 }
 
-func (fake *MockStub) GetQueryResultCalls(stub func(string) (shim.StateQueryIteratorInterface, error)) {
-	fake.getQueryResultMutex.Lock()
-	defer fake.getQueryResultMutex.Unlock()
-	fake.GetQueryResultStub = stub
-}
-
 func (fake *MockStub) GetQueryResultArgsForCall(i int) string {
 	fake.getQueryResultMutex.RLock()
 	defer fake.getQueryResultMutex.RUnlock()
@@ -1474,8 +1308,6 @@ func (fake *MockStub) GetQueryResultArgsForCall(i int) string {
 }
 
 func (fake *MockStub) GetQueryResultReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getQueryResultMutex.Lock()
-	defer fake.getQueryResultMutex.Unlock()
 	fake.GetQueryResultStub = nil
 	fake.getQueryResultReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1484,8 +1316,6 @@ func (fake *MockStub) GetQueryResultReturns(result1 shim.StateQueryIteratorInter
 }
 
 func (fake *MockStub) GetQueryResultReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getQueryResultMutex.Lock()
-	defer fake.getQueryResultMutex.Unlock()
 	fake.GetQueryResultStub = nil
 	if fake.getQueryResultReturnsOnCall == nil {
 		fake.getQueryResultReturnsOnCall = make(map[int]struct {
@@ -1525,12 +1355,6 @@ func (fake *MockStub) GetQueryResultWithPaginationCallCount() int {
 	return len(fake.getQueryResultWithPaginationArgsForCall)
 }
 
-func (fake *MockStub) GetQueryResultWithPaginationCalls(stub func(string, int32, string) (shim.StateQueryIteratorInterface, *peer.QueryResponseMetadata, error)) {
-	fake.getQueryResultWithPaginationMutex.Lock()
-	defer fake.getQueryResultWithPaginationMutex.Unlock()
-	fake.GetQueryResultWithPaginationStub = stub
-}
-
 func (fake *MockStub) GetQueryResultWithPaginationArgsForCall(i int) (string, int32, string) {
 	fake.getQueryResultWithPaginationMutex.RLock()
 	defer fake.getQueryResultWithPaginationMutex.RUnlock()
@@ -1539,8 +1363,6 @@ func (fake *MockStub) GetQueryResultWithPaginationArgsForCall(i int) (string, in
 }
 
 func (fake *MockStub) GetQueryResultWithPaginationReturns(result1 shim.StateQueryIteratorInterface, result2 *peer.QueryResponseMetadata, result3 error) {
-	fake.getQueryResultWithPaginationMutex.Lock()
-	defer fake.getQueryResultWithPaginationMutex.Unlock()
 	fake.GetQueryResultWithPaginationStub = nil
 	fake.getQueryResultWithPaginationReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1550,8 +1372,6 @@ func (fake *MockStub) GetQueryResultWithPaginationReturns(result1 shim.StateQuer
 }
 
 func (fake *MockStub) GetQueryResultWithPaginationReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 *peer.QueryResponseMetadata, result3 error) {
-	fake.getQueryResultWithPaginationMutex.Lock()
-	defer fake.getQueryResultWithPaginationMutex.Unlock()
 	fake.GetQueryResultWithPaginationStub = nil
 	if fake.getQueryResultWithPaginationReturnsOnCall == nil {
 		fake.getQueryResultWithPaginationReturnsOnCall = make(map[int]struct {
@@ -1590,15 +1410,7 @@ func (fake *MockStub) GetSignedProposalCallCount() int {
 	return len(fake.getSignedProposalArgsForCall)
 }
 
-func (fake *MockStub) GetSignedProposalCalls(stub func() (*peer.SignedProposal, error)) {
-	fake.getSignedProposalMutex.Lock()
-	defer fake.getSignedProposalMutex.Unlock()
-	fake.GetSignedProposalStub = stub
-}
-
 func (fake *MockStub) GetSignedProposalReturns(result1 *peer.SignedProposal, result2 error) {
-	fake.getSignedProposalMutex.Lock()
-	defer fake.getSignedProposalMutex.Unlock()
 	fake.GetSignedProposalStub = nil
 	fake.getSignedProposalReturns = struct {
 		result1 *peer.SignedProposal
@@ -1607,8 +1419,6 @@ func (fake *MockStub) GetSignedProposalReturns(result1 *peer.SignedProposal, res
 }
 
 func (fake *MockStub) GetSignedProposalReturnsOnCall(i int, result1 *peer.SignedProposal, result2 error) {
-	fake.getSignedProposalMutex.Lock()
-	defer fake.getSignedProposalMutex.Unlock()
 	fake.GetSignedProposalStub = nil
 	if fake.getSignedProposalReturnsOnCall == nil {
 		fake.getSignedProposalReturnsOnCall = make(map[int]struct {
@@ -1646,12 +1456,6 @@ func (fake *MockStub) GetStateCallCount() int {
 	return len(fake.getStateArgsForCall)
 }
 
-func (fake *MockStub) GetStateCalls(stub func(string) ([]byte, error)) {
-	fake.getStateMutex.Lock()
-	defer fake.getStateMutex.Unlock()
-	fake.GetStateStub = stub
-}
-
 func (fake *MockStub) GetStateArgsForCall(i int) string {
 	fake.getStateMutex.RLock()
 	defer fake.getStateMutex.RUnlock()
@@ -1660,8 +1464,6 @@ func (fake *MockStub) GetStateArgsForCall(i int) string {
 }
 
 func (fake *MockStub) GetStateReturns(result1 []byte, result2 error) {
-	fake.getStateMutex.Lock()
-	defer fake.getStateMutex.Unlock()
 	fake.GetStateStub = nil
 	fake.getStateReturns = struct {
 		result1 []byte
@@ -1670,8 +1472,6 @@ func (fake *MockStub) GetStateReturns(result1 []byte, result2 error) {
 }
 
 func (fake *MockStub) GetStateReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getStateMutex.Lock()
-	defer fake.getStateMutex.Unlock()
 	fake.GetStateStub = nil
 	if fake.getStateReturnsOnCall == nil {
 		fake.getStateReturnsOnCall = make(map[int]struct {
@@ -1715,12 +1515,6 @@ func (fake *MockStub) GetStateByPartialCompositeKeyCallCount() int {
 	return len(fake.getStateByPartialCompositeKeyArgsForCall)
 }
 
-func (fake *MockStub) GetStateByPartialCompositeKeyCalls(stub func(string, []string) (shim.StateQueryIteratorInterface, error)) {
-	fake.getStateByPartialCompositeKeyMutex.Lock()
-	defer fake.getStateByPartialCompositeKeyMutex.Unlock()
-	fake.GetStateByPartialCompositeKeyStub = stub
-}
-
 func (fake *MockStub) GetStateByPartialCompositeKeyArgsForCall(i int) (string, []string) {
 	fake.getStateByPartialCompositeKeyMutex.RLock()
 	defer fake.getStateByPartialCompositeKeyMutex.RUnlock()
@@ -1729,8 +1523,6 @@ func (fake *MockStub) GetStateByPartialCompositeKeyArgsForCall(i int) (string, [
 }
 
 func (fake *MockStub) GetStateByPartialCompositeKeyReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getStateByPartialCompositeKeyMutex.Lock()
-	defer fake.getStateByPartialCompositeKeyMutex.Unlock()
 	fake.GetStateByPartialCompositeKeyStub = nil
 	fake.getStateByPartialCompositeKeyReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1739,8 +1531,6 @@ func (fake *MockStub) GetStateByPartialCompositeKeyReturns(result1 shim.StateQue
 }
 
 func (fake *MockStub) GetStateByPartialCompositeKeyReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getStateByPartialCompositeKeyMutex.Lock()
-	defer fake.getStateByPartialCompositeKeyMutex.Unlock()
 	fake.GetStateByPartialCompositeKeyStub = nil
 	if fake.getStateByPartialCompositeKeyReturnsOnCall == nil {
 		fake.getStateByPartialCompositeKeyReturnsOnCall = make(map[int]struct {
@@ -1786,12 +1576,6 @@ func (fake *MockStub) GetStateByPartialCompositeKeyWithPaginationCallCount() int
 	return len(fake.getStateByPartialCompositeKeyWithPaginationArgsForCall)
 }
 
-func (fake *MockStub) GetStateByPartialCompositeKeyWithPaginationCalls(stub func(string, []string, int32, string) (shim.StateQueryIteratorInterface, *peer.QueryResponseMetadata, error)) {
-	fake.getStateByPartialCompositeKeyWithPaginationMutex.Lock()
-	defer fake.getStateByPartialCompositeKeyWithPaginationMutex.Unlock()
-	fake.GetStateByPartialCompositeKeyWithPaginationStub = stub
-}
-
 func (fake *MockStub) GetStateByPartialCompositeKeyWithPaginationArgsForCall(i int) (string, []string, int32, string) {
 	fake.getStateByPartialCompositeKeyWithPaginationMutex.RLock()
 	defer fake.getStateByPartialCompositeKeyWithPaginationMutex.RUnlock()
@@ -1800,8 +1584,6 @@ func (fake *MockStub) GetStateByPartialCompositeKeyWithPaginationArgsForCall(i i
 }
 
 func (fake *MockStub) GetStateByPartialCompositeKeyWithPaginationReturns(result1 shim.StateQueryIteratorInterface, result2 *peer.QueryResponseMetadata, result3 error) {
-	fake.getStateByPartialCompositeKeyWithPaginationMutex.Lock()
-	defer fake.getStateByPartialCompositeKeyWithPaginationMutex.Unlock()
 	fake.GetStateByPartialCompositeKeyWithPaginationStub = nil
 	fake.getStateByPartialCompositeKeyWithPaginationReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1811,8 +1593,6 @@ func (fake *MockStub) GetStateByPartialCompositeKeyWithPaginationReturns(result1
 }
 
 func (fake *MockStub) GetStateByPartialCompositeKeyWithPaginationReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 *peer.QueryResponseMetadata, result3 error) {
-	fake.getStateByPartialCompositeKeyWithPaginationMutex.Lock()
-	defer fake.getStateByPartialCompositeKeyWithPaginationMutex.Unlock()
 	fake.GetStateByPartialCompositeKeyWithPaginationStub = nil
 	if fake.getStateByPartialCompositeKeyWithPaginationReturnsOnCall == nil {
 		fake.getStateByPartialCompositeKeyWithPaginationReturnsOnCall = make(map[int]struct {
@@ -1853,12 +1633,6 @@ func (fake *MockStub) GetStateByRangeCallCount() int {
 	return len(fake.getStateByRangeArgsForCall)
 }
 
-func (fake *MockStub) GetStateByRangeCalls(stub func(string, string) (shim.StateQueryIteratorInterface, error)) {
-	fake.getStateByRangeMutex.Lock()
-	defer fake.getStateByRangeMutex.Unlock()
-	fake.GetStateByRangeStub = stub
-}
-
 func (fake *MockStub) GetStateByRangeArgsForCall(i int) (string, string) {
 	fake.getStateByRangeMutex.RLock()
 	defer fake.getStateByRangeMutex.RUnlock()
@@ -1867,8 +1641,6 @@ func (fake *MockStub) GetStateByRangeArgsForCall(i int) (string, string) {
 }
 
 func (fake *MockStub) GetStateByRangeReturns(result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getStateByRangeMutex.Lock()
-	defer fake.getStateByRangeMutex.Unlock()
 	fake.GetStateByRangeStub = nil
 	fake.getStateByRangeReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1877,8 +1649,6 @@ func (fake *MockStub) GetStateByRangeReturns(result1 shim.StateQueryIteratorInte
 }
 
 func (fake *MockStub) GetStateByRangeReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 error) {
-	fake.getStateByRangeMutex.Lock()
-	defer fake.getStateByRangeMutex.Unlock()
 	fake.GetStateByRangeStub = nil
 	if fake.getStateByRangeReturnsOnCall == nil {
 		fake.getStateByRangeReturnsOnCall = make(map[int]struct {
@@ -1919,12 +1689,6 @@ func (fake *MockStub) GetStateByRangeWithPaginationCallCount() int {
 	return len(fake.getStateByRangeWithPaginationArgsForCall)
 }
 
-func (fake *MockStub) GetStateByRangeWithPaginationCalls(stub func(string, string, int32, string) (shim.StateQueryIteratorInterface, *peer.QueryResponseMetadata, error)) {
-	fake.getStateByRangeWithPaginationMutex.Lock()
-	defer fake.getStateByRangeWithPaginationMutex.Unlock()
-	fake.GetStateByRangeWithPaginationStub = stub
-}
-
 func (fake *MockStub) GetStateByRangeWithPaginationArgsForCall(i int) (string, string, int32, string) {
 	fake.getStateByRangeWithPaginationMutex.RLock()
 	defer fake.getStateByRangeWithPaginationMutex.RUnlock()
@@ -1933,8 +1697,6 @@ func (fake *MockStub) GetStateByRangeWithPaginationArgsForCall(i int) (string, s
 }
 
 func (fake *MockStub) GetStateByRangeWithPaginationReturns(result1 shim.StateQueryIteratorInterface, result2 *peer.QueryResponseMetadata, result3 error) {
-	fake.getStateByRangeWithPaginationMutex.Lock()
-	defer fake.getStateByRangeWithPaginationMutex.Unlock()
 	fake.GetStateByRangeWithPaginationStub = nil
 	fake.getStateByRangeWithPaginationReturns = struct {
 		result1 shim.StateQueryIteratorInterface
@@ -1944,8 +1706,6 @@ func (fake *MockStub) GetStateByRangeWithPaginationReturns(result1 shim.StateQue
 }
 
 func (fake *MockStub) GetStateByRangeWithPaginationReturnsOnCall(i int, result1 shim.StateQueryIteratorInterface, result2 *peer.QueryResponseMetadata, result3 error) {
-	fake.getStateByRangeWithPaginationMutex.Lock()
-	defer fake.getStateByRangeWithPaginationMutex.Unlock()
 	fake.GetStateByRangeWithPaginationStub = nil
 	if fake.getStateByRangeWithPaginationReturnsOnCall == nil {
 		fake.getStateByRangeWithPaginationReturnsOnCall = make(map[int]struct {
@@ -1985,12 +1745,6 @@ func (fake *MockStub) GetStateValidationParameterCallCount() int {
 	return len(fake.getStateValidationParameterArgsForCall)
 }
 
-func (fake *MockStub) GetStateValidationParameterCalls(stub func(string) ([]byte, error)) {
-	fake.getStateValidationParameterMutex.Lock()
-	defer fake.getStateValidationParameterMutex.Unlock()
-	fake.GetStateValidationParameterStub = stub
-}
-
 func (fake *MockStub) GetStateValidationParameterArgsForCall(i int) string {
 	fake.getStateValidationParameterMutex.RLock()
 	defer fake.getStateValidationParameterMutex.RUnlock()
@@ -1999,8 +1753,6 @@ func (fake *MockStub) GetStateValidationParameterArgsForCall(i int) string {
 }
 
 func (fake *MockStub) GetStateValidationParameterReturns(result1 []byte, result2 error) {
-	fake.getStateValidationParameterMutex.Lock()
-	defer fake.getStateValidationParameterMutex.Unlock()
 	fake.GetStateValidationParameterStub = nil
 	fake.getStateValidationParameterReturns = struct {
 		result1 []byte
@@ -2009,8 +1761,6 @@ func (fake *MockStub) GetStateValidationParameterReturns(result1 []byte, result2
 }
 
 func (fake *MockStub) GetStateValidationParameterReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.getStateValidationParameterMutex.Lock()
-	defer fake.getStateValidationParameterMutex.Unlock()
 	fake.GetStateValidationParameterStub = nil
 	if fake.getStateValidationParameterReturnsOnCall == nil {
 		fake.getStateValidationParameterReturnsOnCall = make(map[int]struct {
@@ -2047,15 +1797,7 @@ func (fake *MockStub) GetStringArgsCallCount() int {
 	return len(fake.getStringArgsArgsForCall)
 }
 
-func (fake *MockStub) GetStringArgsCalls(stub func() []string) {
-	fake.getStringArgsMutex.Lock()
-	defer fake.getStringArgsMutex.Unlock()
-	fake.GetStringArgsStub = stub
-}
-
 func (fake *MockStub) GetStringArgsReturns(result1 []string) {
-	fake.getStringArgsMutex.Lock()
-	defer fake.getStringArgsMutex.Unlock()
 	fake.GetStringArgsStub = nil
 	fake.getStringArgsReturns = struct {
 		result1 []string
@@ -2063,8 +1805,6 @@ func (fake *MockStub) GetStringArgsReturns(result1 []string) {
 }
 
 func (fake *MockStub) GetStringArgsReturnsOnCall(i int, result1 []string) {
-	fake.getStringArgsMutex.Lock()
-	defer fake.getStringArgsMutex.Unlock()
 	fake.GetStringArgsStub = nil
 	if fake.getStringArgsReturnsOnCall == nil {
 		fake.getStringArgsReturnsOnCall = make(map[int]struct {
@@ -2099,15 +1839,7 @@ func (fake *MockStub) GetTransientCallCount() int {
 	return len(fake.getTransientArgsForCall)
 }
 
-func (fake *MockStub) GetTransientCalls(stub func() (map[string][]byte, error)) {
-	fake.getTransientMutex.Lock()
-	defer fake.getTransientMutex.Unlock()
-	fake.GetTransientStub = stub
-}
-
 func (fake *MockStub) GetTransientReturns(result1 map[string][]byte, result2 error) {
-	fake.getTransientMutex.Lock()
-	defer fake.getTransientMutex.Unlock()
 	fake.GetTransientStub = nil
 	fake.getTransientReturns = struct {
 		result1 map[string][]byte
@@ -2116,8 +1848,6 @@ func (fake *MockStub) GetTransientReturns(result1 map[string][]byte, result2 err
 }
 
 func (fake *MockStub) GetTransientReturnsOnCall(i int, result1 map[string][]byte, result2 error) {
-	fake.getTransientMutex.Lock()
-	defer fake.getTransientMutex.Unlock()
 	fake.GetTransientStub = nil
 	if fake.getTransientReturnsOnCall == nil {
 		fake.getTransientReturnsOnCall = make(map[int]struct {
@@ -2154,15 +1884,7 @@ func (fake *MockStub) GetTxIDCallCount() int {
 	return len(fake.getTxIDArgsForCall)
 }
 
-func (fake *MockStub) GetTxIDCalls(stub func() string) {
-	fake.getTxIDMutex.Lock()
-	defer fake.getTxIDMutex.Unlock()
-	fake.GetTxIDStub = stub
-}
-
 func (fake *MockStub) GetTxIDReturns(result1 string) {
-	fake.getTxIDMutex.Lock()
-	defer fake.getTxIDMutex.Unlock()
 	fake.GetTxIDStub = nil
 	fake.getTxIDReturns = struct {
 		result1 string
@@ -2170,8 +1892,6 @@ func (fake *MockStub) GetTxIDReturns(result1 string) {
 }
 
 func (fake *MockStub) GetTxIDReturnsOnCall(i int, result1 string) {
-	fake.getTxIDMutex.Lock()
-	defer fake.getTxIDMutex.Unlock()
 	fake.GetTxIDStub = nil
 	if fake.getTxIDReturnsOnCall == nil {
 		fake.getTxIDReturnsOnCall = make(map[int]struct {
@@ -2206,15 +1926,7 @@ func (fake *MockStub) GetTxTimestampCallCount() int {
 	return len(fake.getTxTimestampArgsForCall)
 }
 
-func (fake *MockStub) GetTxTimestampCalls(stub func() (*timestamp.Timestamp, error)) {
-	fake.getTxTimestampMutex.Lock()
-	defer fake.getTxTimestampMutex.Unlock()
-	fake.GetTxTimestampStub = stub
-}
-
 func (fake *MockStub) GetTxTimestampReturns(result1 *timestamp.Timestamp, result2 error) {
-	fake.getTxTimestampMutex.Lock()
-	defer fake.getTxTimestampMutex.Unlock()
 	fake.GetTxTimestampStub = nil
 	fake.getTxTimestampReturns = struct {
 		result1 *timestamp.Timestamp
@@ -2223,8 +1935,6 @@ func (fake *MockStub) GetTxTimestampReturns(result1 *timestamp.Timestamp, result
 }
 
 func (fake *MockStub) GetTxTimestampReturnsOnCall(i int, result1 *timestamp.Timestamp, result2 error) {
-	fake.getTxTimestampMutex.Lock()
-	defer fake.getTxTimestampMutex.Unlock()
 	fake.GetTxTimestampStub = nil
 	if fake.getTxTimestampReturnsOnCall == nil {
 		fake.getTxTimestampReturnsOnCall = make(map[int]struct {
@@ -2269,12 +1979,6 @@ func (fake *MockStub) InvokeChaincodeCallCount() int {
 	return len(fake.invokeChaincodeArgsForCall)
 }
 
-func (fake *MockStub) InvokeChaincodeCalls(stub func(string, [][]byte, string) peer.Response) {
-	fake.invokeChaincodeMutex.Lock()
-	defer fake.invokeChaincodeMutex.Unlock()
-	fake.InvokeChaincodeStub = stub
-}
-
 func (fake *MockStub) InvokeChaincodeArgsForCall(i int) (string, [][]byte, string) {
 	fake.invokeChaincodeMutex.RLock()
 	defer fake.invokeChaincodeMutex.RUnlock()
@@ -2283,8 +1987,6 @@ func (fake *MockStub) InvokeChaincodeArgsForCall(i int) (string, [][]byte, strin
 }
 
 func (fake *MockStub) InvokeChaincodeReturns(result1 peer.Response) {
-	fake.invokeChaincodeMutex.Lock()
-	defer fake.invokeChaincodeMutex.Unlock()
 	fake.InvokeChaincodeStub = nil
 	fake.invokeChaincodeReturns = struct {
 		result1 peer.Response
@@ -2292,8 +1994,6 @@ func (fake *MockStub) InvokeChaincodeReturns(result1 peer.Response) {
 }
 
 func (fake *MockStub) InvokeChaincodeReturnsOnCall(i int, result1 peer.Response) {
-	fake.invokeChaincodeMutex.Lock()
-	defer fake.invokeChaincodeMutex.Unlock()
 	fake.InvokeChaincodeStub = nil
 	if fake.invokeChaincodeReturnsOnCall == nil {
 		fake.invokeChaincodeReturnsOnCall = make(map[int]struct {
@@ -2336,12 +2036,6 @@ func (fake *MockStub) PutPrivateDataCallCount() int {
 	return len(fake.putPrivateDataArgsForCall)
 }
 
-func (fake *MockStub) PutPrivateDataCalls(stub func(string, string, []byte) error) {
-	fake.putPrivateDataMutex.Lock()
-	defer fake.putPrivateDataMutex.Unlock()
-	fake.PutPrivateDataStub = stub
-}
-
 func (fake *MockStub) PutPrivateDataArgsForCall(i int) (string, string, []byte) {
 	fake.putPrivateDataMutex.RLock()
 	defer fake.putPrivateDataMutex.RUnlock()
@@ -2350,8 +2044,6 @@ func (fake *MockStub) PutPrivateDataArgsForCall(i int) (string, string, []byte) 
 }
 
 func (fake *MockStub) PutPrivateDataReturns(result1 error) {
-	fake.putPrivateDataMutex.Lock()
-	defer fake.putPrivateDataMutex.Unlock()
 	fake.PutPrivateDataStub = nil
 	fake.putPrivateDataReturns = struct {
 		result1 error
@@ -2359,8 +2051,6 @@ func (fake *MockStub) PutPrivateDataReturns(result1 error) {
 }
 
 func (fake *MockStub) PutPrivateDataReturnsOnCall(i int, result1 error) {
-	fake.putPrivateDataMutex.Lock()
-	defer fake.putPrivateDataMutex.Unlock()
 	fake.PutPrivateDataStub = nil
 	if fake.putPrivateDataReturnsOnCall == nil {
 		fake.putPrivateDataReturnsOnCall = make(map[int]struct {
@@ -2402,12 +2092,6 @@ func (fake *MockStub) PutStateCallCount() int {
 	return len(fake.putStateArgsForCall)
 }
 
-func (fake *MockStub) PutStateCalls(stub func(string, []byte) error) {
-	fake.putStateMutex.Lock()
-	defer fake.putStateMutex.Unlock()
-	fake.PutStateStub = stub
-}
-
 func (fake *MockStub) PutStateArgsForCall(i int) (string, []byte) {
 	fake.putStateMutex.RLock()
 	defer fake.putStateMutex.RUnlock()
@@ -2416,8 +2100,6 @@ func (fake *MockStub) PutStateArgsForCall(i int) (string, []byte) {
 }
 
 func (fake *MockStub) PutStateReturns(result1 error) {
-	fake.putStateMutex.Lock()
-	defer fake.putStateMutex.Unlock()
 	fake.PutStateStub = nil
 	fake.putStateReturns = struct {
 		result1 error
@@ -2425,8 +2107,6 @@ func (fake *MockStub) PutStateReturns(result1 error) {
 }
 
 func (fake *MockStub) PutStateReturnsOnCall(i int, result1 error) {
-	fake.putStateMutex.Lock()
-	defer fake.putStateMutex.Unlock()
 	fake.PutStateStub = nil
 	if fake.putStateReturnsOnCall == nil {
 		fake.putStateReturnsOnCall = make(map[int]struct {
@@ -2468,12 +2148,6 @@ func (fake *MockStub) SetEventCallCount() int {
 	return len(fake.setEventArgsForCall)
 }
 
-func (fake *MockStub) SetEventCalls(stub func(string, []byte) error) {
-	fake.setEventMutex.Lock()
-	defer fake.setEventMutex.Unlock()
-	fake.SetEventStub = stub
-}
-
 func (fake *MockStub) SetEventArgsForCall(i int) (string, []byte) {
 	fake.setEventMutex.RLock()
 	defer fake.setEventMutex.RUnlock()
@@ -2482,8 +2156,6 @@ func (fake *MockStub) SetEventArgsForCall(i int) (string, []byte) {
 }
 
 func (fake *MockStub) SetEventReturns(result1 error) {
-	fake.setEventMutex.Lock()
-	defer fake.setEventMutex.Unlock()
 	fake.SetEventStub = nil
 	fake.setEventReturns = struct {
 		result1 error
@@ -2491,8 +2163,6 @@ func (fake *MockStub) SetEventReturns(result1 error) {
 }
 
 func (fake *MockStub) SetEventReturnsOnCall(i int, result1 error) {
-	fake.setEventMutex.Lock()
-	defer fake.setEventMutex.Unlock()
 	fake.SetEventStub = nil
 	if fake.setEventReturnsOnCall == nil {
 		fake.setEventReturnsOnCall = make(map[int]struct {
@@ -2535,12 +2205,6 @@ func (fake *MockStub) SetPrivateDataValidationParameterCallCount() int {
 	return len(fake.setPrivateDataValidationParameterArgsForCall)
 }
 
-func (fake *MockStub) SetPrivateDataValidationParameterCalls(stub func(string, string, []byte) error) {
-	fake.setPrivateDataValidationParameterMutex.Lock()
-	defer fake.setPrivateDataValidationParameterMutex.Unlock()
-	fake.SetPrivateDataValidationParameterStub = stub
-}
-
 func (fake *MockStub) SetPrivateDataValidationParameterArgsForCall(i int) (string, string, []byte) {
 	fake.setPrivateDataValidationParameterMutex.RLock()
 	defer fake.setPrivateDataValidationParameterMutex.RUnlock()
@@ -2549,8 +2213,6 @@ func (fake *MockStub) SetPrivateDataValidationParameterArgsForCall(i int) (strin
 }
 
 func (fake *MockStub) SetPrivateDataValidationParameterReturns(result1 error) {
-	fake.setPrivateDataValidationParameterMutex.Lock()
-	defer fake.setPrivateDataValidationParameterMutex.Unlock()
 	fake.SetPrivateDataValidationParameterStub = nil
 	fake.setPrivateDataValidationParameterReturns = struct {
 		result1 error
@@ -2558,8 +2220,6 @@ func (fake *MockStub) SetPrivateDataValidationParameterReturns(result1 error) {
 }
 
 func (fake *MockStub) SetPrivateDataValidationParameterReturnsOnCall(i int, result1 error) {
-	fake.setPrivateDataValidationParameterMutex.Lock()
-	defer fake.setPrivateDataValidationParameterMutex.Unlock()
 	fake.SetPrivateDataValidationParameterStub = nil
 	if fake.setPrivateDataValidationParameterReturnsOnCall == nil {
 		fake.setPrivateDataValidationParameterReturnsOnCall = make(map[int]struct {
@@ -2601,12 +2261,6 @@ func (fake *MockStub) SetStateValidationParameterCallCount() int {
 	return len(fake.setStateValidationParameterArgsForCall)
 }
 
-func (fake *MockStub) SetStateValidationParameterCalls(stub func(string, []byte) error) {
-	fake.setStateValidationParameterMutex.Lock()
-	defer fake.setStateValidationParameterMutex.Unlock()
-	fake.SetStateValidationParameterStub = stub
-}
-
 func (fake *MockStub) SetStateValidationParameterArgsForCall(i int) (string, []byte) {
 	fake.setStateValidationParameterMutex.RLock()
 	defer fake.setStateValidationParameterMutex.RUnlock()
@@ -2615,8 +2269,6 @@ func (fake *MockStub) SetStateValidationParameterArgsForCall(i int) (string, []b
 }
 
 func (fake *MockStub) SetStateValidationParameterReturns(result1 error) {
-	fake.setStateValidationParameterMutex.Lock()
-	defer fake.setStateValidationParameterMutex.Unlock()
 	fake.SetStateValidationParameterStub = nil
 	fake.setStateValidationParameterReturns = struct {
 		result1 error
@@ -2624,8 +2276,6 @@ func (fake *MockStub) SetStateValidationParameterReturns(result1 error) {
 }
 
 func (fake *MockStub) SetStateValidationParameterReturnsOnCall(i int, result1 error) {
-	fake.setStateValidationParameterMutex.Lock()
-	defer fake.setStateValidationParameterMutex.Unlock()
 	fake.SetStateValidationParameterStub = nil
 	if fake.setStateValidationParameterReturnsOnCall == nil {
 		fake.setStateValidationParameterReturnsOnCall = make(map[int]struct {
@@ -2661,12 +2311,6 @@ func (fake *MockStub) SplitCompositeKeyCallCount() int {
 	return len(fake.splitCompositeKeyArgsForCall)
 }
 
-func (fake *MockStub) SplitCompositeKeyCalls(stub func(string) (string, []string, error)) {
-	fake.splitCompositeKeyMutex.Lock()
-	defer fake.splitCompositeKeyMutex.Unlock()
-	fake.SplitCompositeKeyStub = stub
-}
-
 func (fake *MockStub) SplitCompositeKeyArgsForCall(i int) string {
 	fake.splitCompositeKeyMutex.RLock()
 	defer fake.splitCompositeKeyMutex.RUnlock()
@@ -2675,8 +2319,6 @@ func (fake *MockStub) SplitCompositeKeyArgsForCall(i int) string {
 }
 
 func (fake *MockStub) SplitCompositeKeyReturns(result1 string, result2 []string, result3 error) {
-	fake.splitCompositeKeyMutex.Lock()
-	defer fake.splitCompositeKeyMutex.Unlock()
 	fake.SplitCompositeKeyStub = nil
 	fake.splitCompositeKeyReturns = struct {
 		result1 string
@@ -2686,8 +2328,6 @@ func (fake *MockStub) SplitCompositeKeyReturns(result1 string, result2 []string,
 }
 
 func (fake *MockStub) SplitCompositeKeyReturnsOnCall(i int, result1 string, result2 []string, result3 error) {
-	fake.splitCompositeKeyMutex.Lock()
-	defer fake.splitCompositeKeyMutex.Unlock()
 	fake.SplitCompositeKeyStub = nil
 	if fake.splitCompositeKeyReturnsOnCall == nil {
 		fake.splitCompositeKeyReturnsOnCall = make(map[int]struct {
