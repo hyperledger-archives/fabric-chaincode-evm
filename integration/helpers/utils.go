@@ -10,6 +10,8 @@ import (
 	"github.com/hyperledger/fabric/integration/nwo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
+	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
 )
 
 type JsonRPCRequest struct {
@@ -40,18 +42,10 @@ type JsonRPCArrayResponse struct {
 }
 
 type JsonRPCTxReceipt struct {
-	JsonRPC string       `json:"jsonrpc"`
-	ID      int          `json:"id"`
-	Result  TxReceipt    `json:"result"`
-	Error   JsonRPCError `json:"error,omitempty"`
-}
-
-type TxReceipt struct {
-	TransactionHash  string `json:"transactionHash"`
-	TransactionIndex string `json:"transactionIndex"`
-	BlockNumber      string `json:"blockNumber"`
-	BlockHash        string `json:"blockHash"`
-	ContractAddress  string `json:"contractAddress,omitempty"`
+	JsonRPC string          `json:"jsonrpc"`
+	ID      int             `json:"id"`
+	Result  types.TxReceipt `json:"result"`
+	Error   JsonRPCError    `json:"error,omitempty"`
 }
 
 type MessageParams struct {

@@ -20,14 +20,16 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/crypto"
-	"github.com/hyperledger/fabric-chaincode-evm/event"
-	"github.com/hyperledger/fabric-chaincode-evm/fab3"
-	fab3_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fab3"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-chaincode-evm/event"
+	"github.com/hyperledger/fabric-chaincode-evm/fab3"
+	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
+
+	fab3_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fab3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -131,7 +133,7 @@ var _ = Describe("Ethservice", func() {
 	Describe("Call", func() {
 		var (
 			encodedResponse []byte
-			sampleArgs      *fab3.EthArgs
+			sampleArgs      *types.EthArgs
 		)
 
 		BeforeEach(func() {
@@ -142,7 +144,7 @@ var _ = Describe("Ethservice", func() {
 				Payload: sampleResponse,
 			}, nil)
 
-			sampleArgs = &fab3.EthArgs{
+			sampleArgs = &types.EthArgs{
 				To:   "1234567123",
 				Data: "sample-data",
 			}
@@ -176,7 +178,7 @@ var _ = Describe("Ethservice", func() {
 			It("returns a corresponding error", func() {
 				var reply string
 
-				err := ethservice.Call(&http.Request{}, &fab3.EthArgs{}, &reply)
+				err := ethservice.Call(&http.Request{}, &types.EthArgs{}, &reply)
 				Expect(err).To(MatchError(ContainSubstring("Failed to query the ledger")))
 				Expect(reply).To(BeEmpty())
 			})
@@ -235,7 +237,7 @@ var _ = Describe("Ethservice", func() {
 	Describe("SendTransaction", func() {
 		var (
 			sampleResponse channel.Response
-			sampleArgs     *fab3.EthArgs
+			sampleArgs     *types.EthArgs
 		)
 
 		BeforeEach(func() {
@@ -245,7 +247,7 @@ var _ = Describe("Ethservice", func() {
 			}
 			mockChClient.ExecuteReturns(sampleResponse, nil)
 
-			sampleArgs = &fab3.EthArgs{
+			sampleArgs = &types.EthArgs{
 				To:   "1234567123",
 				Data: "sample-data",
 			}
@@ -302,7 +304,7 @@ var _ = Describe("Ethservice", func() {
 			It("returns a corresponding error", func() {
 				var reply string
 
-				err := ethservice.SendTransaction(&http.Request{}, &fab3.EthArgs{}, &reply)
+				err := ethservice.SendTransaction(&http.Request{}, &types.EthArgs{}, &reply)
 				Expect(err).To(MatchError(ContainSubstring("Failed to execute transaction")))
 				Expect(reply).To(BeEmpty())
 			})
@@ -383,7 +385,7 @@ var _ = Describe("Ethservice", func() {
 		})
 
 		It("returns the transaction receipt associated to that transaction address", func() {
-			var reply fab3.TxReceipt
+			var reply types.TxReceipt
 
 			err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 			Expect(err).ToNot(HaveOccurred())
@@ -393,7 +395,7 @@ var _ = Describe("Ethservice", func() {
 			Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
 			Expect(reqOpts).To(HaveLen(0))
 
-			Expect(reply).To(Equal(fab3.TxReceipt{
+			Expect(reply).To(Equal(types.TxReceipt{
 				TransactionHash:   "0x" + sampleTransactionID,
 				TransactionIndex:  "0x1",
 				BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -450,7 +452,7 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("returns the transaction receipt associated to that transaction address", func() {
-				var reply fab3.TxReceipt
+				var reply types.TxReceipt
 
 				err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 				Expect(err).ToNot(HaveOccurred())
@@ -464,7 +466,7 @@ var _ = Describe("Ethservice", func() {
 					topics = append(topics, "0x"+topic)
 				}
 
-				expectedLog := fab3.Log{
+				expectedLog := types.Log{
 					Address:     "0x" + hex.EncodeToString([]byte(sampleAddress)),
 					Topics:      topics,
 					Data:        "0x" + msg.Data,
@@ -474,7 +476,7 @@ var _ = Describe("Ethservice", func() {
 					BlockHash:   "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
 					Index:       "0x0",
 				}
-				expectedLog2 := fab3.Log{
+				expectedLog2 := types.Log{
 					Address:     "0x" + hex.EncodeToString([]byte(sampleAddress)),
 					Topics:      topics,
 					BlockNumber: "0x1f",
@@ -484,11 +486,11 @@ var _ = Describe("Ethservice", func() {
 					Index:       "0x1",
 				}
 
-				var expectedLogs []fab3.Log
-				expectedLogs = make([]fab3.Log, 0)
+				var expectedLogs []types.Log
+				expectedLogs = make([]types.Log, 0)
 				expectedLogs = append(expectedLogs, expectedLog)
 				expectedLogs = append(expectedLogs, expectedLog2)
-				Expect(reply).To(Equal(fab3.TxReceipt{
+				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + sampleTransactionID,
 					TransactionIndex:  "0x0",
 					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -518,7 +520,7 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("returns the contract address in the transaction receipt", func() {
-				var reply fab3.TxReceipt
+				var reply types.TxReceipt
 
 				err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 				Expect(err).ToNot(HaveOccurred())
@@ -528,7 +530,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID)))
 				Expect(reqOpts).To(HaveLen(0))
 
-				Expect(reply).To(Equal(fab3.TxReceipt{
+				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + sampleTransactionID,
 					TransactionIndex:  "0x0",
 					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -546,7 +548,7 @@ var _ = Describe("Ethservice", func() {
 					sampleTransactionID = "0x" + sampleTransactionID
 				})
 				It("strips the prefix before querying the ledger", func() {
-					var reply fab3.TxReceipt
+					var reply types.TxReceipt
 
 					err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 					Expect(err).ToNot(HaveOccurred())
@@ -556,7 +558,7 @@ var _ = Describe("Ethservice", func() {
 					Expect(txID).To(Equal(fab.TransactionID(sampleTransactionID[2:])))
 					Expect(reqOpts).To(HaveLen(0))
 
-					Expect(reply).To(Equal(fab3.TxReceipt{
+					Expect(reply).To(Equal(types.TxReceipt{
 						TransactionHash:   sampleTransactionID,
 						TransactionIndex:  "0x0",
 						BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -599,11 +601,11 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("does not provide to field when the requested tx has less than 2 args", func() {
-				var reply fab3.TxReceipt
+				var reply types.TxReceipt
 				err := ethservice.GetTransactionReceipt(&http.Request{}, &txnID1, &reply)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(reply).To(Equal(fab3.TxReceipt{
+				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + txnID1,
 					TransactionIndex:  "0x0",
 					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -615,11 +617,11 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("does not provide to field when the requested tx has more than 2 args", func() {
-				var reply fab3.TxReceipt
+				var reply types.TxReceipt
 				err := ethservice.GetTransactionReceipt(&http.Request{}, &txnID2, &reply)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(reply).To(Equal(fab3.TxReceipt{
+				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + txnID2,
 					TransactionIndex:  "0x1",
 					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -631,11 +633,11 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("does not provide to field when the requested tx is a getCode", func() {
-				var reply fab3.TxReceipt
+				var reply types.TxReceipt
 				err := ethservice.GetTransactionReceipt(&http.Request{}, &txnID3, &reply)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(reply).To(Equal(fab3.TxReceipt{
+				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + txnID3,
 					TransactionIndex:  "0x2",
 					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -653,7 +655,7 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("returns a corresponding error", func() {
-				var reply fab3.TxReceipt
+				var reply types.TxReceipt
 
 				err := ethservice.GetTransactionReceipt(&http.Request{}, &sampleTransactionID, &reply)
 				Expect(err).To(MatchError(ContainSubstring("Failed to query the ledger")))
@@ -712,7 +714,7 @@ var _ = Describe("Ethservice", func() {
 	Describe("EstimateGas", func() {
 		It("always returns zero", func() {
 			var reply string
-			err := ethservice.EstimateGas(&http.Request{}, &fab3.EthArgs{}, &reply)
+			err := ethservice.EstimateGas(&http.Request{}, &types.EthArgs{}, &reply)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(reply).To(Equal("0x0"))
 		})
@@ -730,7 +732,7 @@ var _ = Describe("Ethservice", func() {
 
 	Describe("GetBlockByNumber", func() {
 		Context("when provided with bad parameters", func() {
-			var reply fab3.Block
+			var reply types.Block
 
 			It("returns an error when arg length is not 2", func() {
 				var arg []interface{}
@@ -762,7 +764,7 @@ var _ = Describe("Ethservice", func() {
 
 		Context("when there are good parameters", func() {
 			var (
-				reply                fab3.Block
+				reply                types.Block
 				args                 []interface{}
 				fullTransactions     bool
 				requestedBlockNumber string
@@ -946,7 +948,7 @@ var _ = Describe("Ethservice", func() {
 					txns := reply.Transactions
 					Expect(txns).To(HaveLen(2))
 
-					t0, ok := txns[0].(fab3.Transaction)
+					t0, ok := txns[0].(types.Transaction)
 					Expect(ok).To(BeTrue())
 					Expect(t0.BlockHash).To(Equal(blockHash))
 					Expect(t0.BlockNumber).To(Equal(blockNumber))
@@ -955,7 +957,7 @@ var _ = Describe("Ethservice", func() {
 					Expect(t0.TransactionIndex).To(Equal("0x0"))
 					Expect(t0.Hash).To(Equal("0x5678"))
 
-					t1, ok := txns[1].(fab3.Transaction)
+					t1, ok := txns[1].(types.Transaction)
 					Expect(ok).To(BeTrue())
 					Expect(t1.BlockHash).To(Equal(blockHash))
 					Expect(t1.BlockNumber).To(Equal(blockNumber))
@@ -990,7 +992,7 @@ var _ = Describe("Ethservice", func() {
 	})
 
 	Describe("GetTransactionByHash", func() {
-		var reply fab3.Transaction
+		var reply types.Transaction
 
 		It("returns an error when given an empty string for transaction hash", func() {
 			txID := ""
@@ -1052,11 +1054,11 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("does not provide to or input field when the requested tx has less than 2 args", func() {
-				var reply fab3.Transaction
+				var reply types.Transaction
 				err := ethservice.GetTransactionByHash(&http.Request{}, &txnID1, &reply)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(reply).To(Equal(fab3.Transaction{
+				Expect(reply).To(Equal(types.Transaction{
 					Hash:             "0x" + txnID1,
 					TransactionIndex: "0x0",
 					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -1065,11 +1067,11 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("does not provide to field when the requested transaction has more than 2 args", func() {
-				var reply fab3.Transaction
+				var reply types.Transaction
 				err := ethservice.GetTransactionByHash(&http.Request{}, &txnID2, &reply)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(reply).To(Equal(fab3.Transaction{
+				Expect(reply).To(Equal(types.Transaction{
 					Hash:             "0x" + txnID2,
 					TransactionIndex: "0x1",
 					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
@@ -1078,11 +1080,11 @@ var _ = Describe("Ethservice", func() {
 			})
 
 			It("does not provide to field when the requested transaction is a getCode", func() {
-				var reply fab3.Transaction
+				var reply types.Transaction
 				err := ethservice.GetTransactionByHash(&http.Request{}, &txnID3, &reply)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(reply).To(Equal(fab3.Transaction{
+				Expect(reply).To(Equal(types.Transaction{
 					Hash:             "0x" + txnID3,
 					TransactionIndex: "0x2",
 					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),

@@ -10,8 +10,7 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/hyperledger/fabric-chaincode-evm/fab3"
-
+	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -35,20 +34,20 @@ var _ = Describe("ethereum json rpc struct fields", func() {
 			fieldNames := []string{"transactionHash", "transactionIndex",
 				"blockHash", "blockNumber", "contractAddress", "gasUsed",
 				"cumulativeGasUsed", "to", "status", "logs"}
-			assertTypeMarshalsJSONFields(fieldNames, fab3.TxReceipt{})
+			assertTypeMarshalsJSONFields(fieldNames, types.TxReceipt{})
 		})
 		It("for Log subobjects in TxReceipt with the proper cases", func() {
 			fieldNames := []string{"address", "topics", "data", "blockNumber",
 				"transactionHash", "transactionIndex", "blockHash", "logIndex"}
-			assertTypeMarshalsJSONFields(fieldNames, fab3.Log{Data: "somedata"})
+			assertTypeMarshalsJSONFields(fieldNames, types.Log{Data: "somedata"})
 		})
 		It("for Transaction with the proper cases", func() {
 			fieldNames := []string{"blockHash", "blockNumber", "to", "input", "transactionIndex", "hash"}
-			assertTypeMarshalsJSONFields(fieldNames, fab3.Transaction{})
+			assertTypeMarshalsJSONFields(fieldNames, types.Transaction{})
 		})
 		It("for Block with the proper cases", func() {
 			fieldNames := []string{"number", "hash", "parentHash", "transactions"}
-			assertTypeMarshalsJSONFields(fieldNames, fab3.Block{})
+			assertTypeMarshalsJSONFields(fieldNames, types.Block{})
 		})
 	})
 })
