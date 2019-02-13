@@ -73,6 +73,7 @@ var _ = Describe("Fab3", func() {
 	It("implements the ethereum json rpc api", func() {
 		By("querying for an account")
 		resp, err := sendRPCRequest(client, "eth_accounts", proxyAddress, 5, []interface{}{})
+		Expect(err).ToNot(HaveOccurred())
 
 		expectedArrayBody := helpers.JsonRPCArrayResponse{JsonRPC: "2.0", ID: 5}
 
@@ -144,6 +145,8 @@ var _ = Describe("Fab3", func() {
 		By("verifying the code")
 		contractAddr := receipt.ContractAddress
 		resp, err = sendRPCRequest(client, "eth_getCode", proxyAddress, 17, []string{contractAddr})
+		Expect(err).ToNot(HaveOccurred())
+
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -160,6 +163,8 @@ var _ = Describe("Fab3", func() {
 			Data: SimpleStorage.FunctionHashes["set"] + val,
 		}
 		resp, err = sendRPCRequest(client, "eth_sendTransaction", proxyAddress, 18, params)
+		Expect(err).ToNot(HaveOccurred())
+
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -194,6 +199,8 @@ var _ = Describe("Fab3", func() {
 			Data: SimpleStorage.FunctionHashes["get"],
 		}
 		resp, err = sendRPCRequest(client, "eth_call", proxyAddress, 19, params)
+		Expect(err).ToNot(HaveOccurred())
+
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -205,6 +212,8 @@ var _ = Describe("Fab3", func() {
 
 		By("querying the latest block number")
 		resp, err = sendRPCRequest(client, "eth_blockNumber", proxyAddress, 20, []interface{}{})
+		Expect(err).ToNot(HaveOccurred())
+
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
