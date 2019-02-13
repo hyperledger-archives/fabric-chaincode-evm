@@ -156,12 +156,12 @@ Set the required variables before running the proxy.
 The proxy can be built like other go projects. Make sure you are at the root of this repo and the repo is in your gopath.
 
 ```bash
-  go build -o fab3 ./fab3/cmd
+  make fab3
 ```
-You should see a binary `fab3`. If you have set the required environment variables you can run the proxy by
+You should see a binary `fab3` in the `bin` subdirectory. If you have set the required environment variables you can run the proxy by
 
 ```bash
-  ./fab3
+  bin/fab3
 ```
 You should see output like `Starting Fab Proxy on port 5000` if you used the default port.
 
