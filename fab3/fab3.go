@@ -17,15 +17,15 @@ import (
 )
 
 type Fab3 struct {
-	rpcServer  *rpc.Server
-	httpServer *http.Server
+	RPCServer  *rpc.Server
+	HTTPServer *http.Server
 }
 
-func NewFab3(service EthService) *Fab3 {
+func NewFab3(service EthService, port int) *Fab3 {
 	rpcServer := rpc.NewServer()
 
 	proxy := &Fab3{
-		rpcServer: rpcServer,
+		RPCServer: rpcServer,
 	}
 
 	rpcServer.RegisterCodec(NewRPCCodec(), "application/json")
@@ -36,21 +36,25 @@ func NewFab3(service EthService) *Fab3 {
 	if err := rpcServer.RegisterService(&NetService{}, "net"); err != nil {
 		panic(msg)
 	}
-	return proxy
-}
 
-func (p *Fab3) Start(port int) error {
 	r := mux.NewRouter()
-	r.Handle("/", p.rpcServer)
+	r.Handle("/", proxy.RPCServer)
 
 	allowedHeaders := handlers.AllowedHeaders([]string{"Origin", "Content-Type"})
 	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
 	allowedMethods := handlers.AllowedMethods([]string{"POST"})
 
-	p.httpServer = &http.Server{Handler: handlers.CORS(allowedHeaders, allowedOrigins, allowedMethods)(r), Addr: fmt.Sprintf(":%d", port)}
-	return p.httpServer.ListenAndServe()
+	proxy.HTTPServer = &http.Server{Handler: handlers.CORS(allowedHeaders, allowedOrigins, allowedMethods)(r), Addr: fmt.Sprintf(":%d", port)}
+	return proxy
+}
+
+func (p *Fab3) Start() error {
+	return p.HTTPServer.ListenAndServe()
 }
 
 func (p *Fab3) Shutdown() error {
-	return p.httpServer.Shutdown(context.Background())
+	if p.HTTPServer != nil {
+		return p.HTTPServer.Shutdown(context.Background())
+	}
+	return nil
 }

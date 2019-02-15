@@ -134,11 +134,11 @@ func runFab3(cmd *cobra.Command, args []string) error {
 
 	ethService := fab3.NewEthService(client, ledger, ch, ccid, logger)
 
-	proxy := fab3.NewFab3(ethService)
+	proxy := fab3.NewFab3(ethService, port)
 
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- proxy.Start(port)
+		errChan <- proxy.Start()
 	}()
 	logger.Infow("Starting Fab3", "port", port)
 
