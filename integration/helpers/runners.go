@@ -26,7 +26,7 @@ func Fab3Runner(fab3BinPath, proxyConfig, org, user, channel, ccid string, port 
 	config := ginkgomon.Config{
 		Name:              fmt.Sprintf("fab3-%s-%s", org, user),
 		Command:           cmd,
-		StartCheck:        "Starting Fab3 on port",
+		StartCheck:        "starting-fab3",
 		StartCheckTimeout: 15 * time.Second,
 	}
 

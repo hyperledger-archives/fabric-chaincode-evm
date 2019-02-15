@@ -163,7 +163,10 @@ You should see a binary `fab3` in the `bin` subdirectory. If you have set the re
 ```bash
   bin/fab3
 ```
-You should see output like `Starting Fab Proxy on port 5000` if you used the default port.
+If you used the default port you should see output like the following:
+```
+{"level":"info","ts":1550530404.3546276,"logger":"fab3","caller":"cmd/main.go:143","msg":"starting-fab3","port":5000}
+```
 
 ##### Connecting to the Proxy
 The following directions require ``node`` and ``web3`` to be installed. The instructions follow the `web3` api for version `0.20.2`

@@ -111,31 +111,36 @@ func runFab3(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create Fabric SDK Client: %s\n", err)
 	}
-	defer sdk.Close()
 
 	clientChannelContext := sdk.ChannelContext(ch, fabsdk.WithUser(user), fabsdk.WithOrg(org))
 	client, err := channel.New(clientChannelContext)
 	if err != nil {
+		sdk.Close()
 		return fmt.Errorf("Failed to create Fabric SDK Channel Client: %s\n", err)
 	}
 
 	ledger, err := ledger.New(clientChannelContext)
 	if err != nil {
+		sdk.Close()
 		return fmt.Errorf("Failed to create Fabric SDK Ledger Client: %s\n", err)
 	}
 
-	rawLogger, _ := zap.NewProduction()
+	rawLogger, err := zap.NewProduction()
+	if err != nil {
+		sdk.Close()
+		return fmt.Errorf("Failed to create logger: %s\n", err)
+	}
 	logger := rawLogger.Named("fab3").Sugar()
 
 	ethService := fab3.NewEthService(client, ledger, ch, ccid, logger)
 
-	logger.Infof("Starting Fab3 on port %d", port)
 	proxy := fab3.NewFab3(ethService)
 
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- proxy.Start(port)
 	}()
+	logger.Infow("starting-fab3", "port", port)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
@@ -143,14 +148,16 @@ func runFab3(cmd *cobra.Command, args []string) error {
 	select {
 	case err = <-errChan:
 	case <-signalChan:
+		logger.Info("received-termination-signal")
 		err = proxy.Shutdown()
 	}
 
+	sdk.Close()
 	if err != nil {
-		logger.Infof("Fab3 has exited with an error: %s", err)
+		logger.Infow("fab3-exited-with-error", "error", err)
 		return err
 	}
-	logger.Info("Fab3 has exited")
+	logger.Info("fab3-exited")
 	return nil
 }
 
