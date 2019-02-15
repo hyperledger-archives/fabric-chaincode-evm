@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/crypto"
@@ -40,7 +41,9 @@ var _ = Describe("Ethservice", func() {
 		mockLedgerClient *fab3_mocks.MockLedgerClient
 		channelID        string
 	)
-	rawLogger, _ := zap.NewProduction()
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(GinkgoWriter), zap.DebugLevel)
+	rawLogger := zap.New(core)
+	zap.ReplaceGlobals(rawLogger)
 	logger := rawLogger.Sugar()
 
 	BeforeEach(func() {
