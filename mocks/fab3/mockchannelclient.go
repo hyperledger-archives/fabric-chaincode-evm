@@ -66,12 +66,6 @@ func (fake *MockChannelClient) ExecuteCallCount() int {
 	return len(fake.executeArgsForCall)
 }
 
-func (fake *MockChannelClient) ExecuteCalls(stub func(channel.Request, ...channel.RequestOption) (channel.Response, error)) {
-	fake.executeMutex.Lock()
-	defer fake.executeMutex.Unlock()
-	fake.ExecuteStub = stub
-}
-
 func (fake *MockChannelClient) ExecuteArgsForCall(i int) (channel.Request, []channel.RequestOption) {
 	fake.executeMutex.RLock()
 	defer fake.executeMutex.RUnlock()
@@ -80,8 +74,6 @@ func (fake *MockChannelClient) ExecuteArgsForCall(i int) (channel.Request, []cha
 }
 
 func (fake *MockChannelClient) ExecuteReturns(result1 channel.Response, result2 error) {
-	fake.executeMutex.Lock()
-	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = nil
 	fake.executeReturns = struct {
 		result1 channel.Response
@@ -90,8 +82,6 @@ func (fake *MockChannelClient) ExecuteReturns(result1 channel.Response, result2 
 }
 
 func (fake *MockChannelClient) ExecuteReturnsOnCall(i int, result1 channel.Response, result2 error) {
-	fake.executeMutex.Lock()
-	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = nil
 	if fake.executeReturnsOnCall == nil {
 		fake.executeReturnsOnCall = make(map[int]struct {
@@ -130,12 +120,6 @@ func (fake *MockChannelClient) QueryCallCount() int {
 	return len(fake.queryArgsForCall)
 }
 
-func (fake *MockChannelClient) QueryCalls(stub func(channel.Request, ...channel.RequestOption) (channel.Response, error)) {
-	fake.queryMutex.Lock()
-	defer fake.queryMutex.Unlock()
-	fake.QueryStub = stub
-}
-
 func (fake *MockChannelClient) QueryArgsForCall(i int) (channel.Request, []channel.RequestOption) {
 	fake.queryMutex.RLock()
 	defer fake.queryMutex.RUnlock()
@@ -144,8 +128,6 @@ func (fake *MockChannelClient) QueryArgsForCall(i int) (channel.Request, []chann
 }
 
 func (fake *MockChannelClient) QueryReturns(result1 channel.Response, result2 error) {
-	fake.queryMutex.Lock()
-	defer fake.queryMutex.Unlock()
 	fake.QueryStub = nil
 	fake.queryReturns = struct {
 		result1 channel.Response
@@ -154,8 +136,6 @@ func (fake *MockChannelClient) QueryReturns(result1 channel.Response, result2 er
 }
 
 func (fake *MockChannelClient) QueryReturnsOnCall(i int, result1 channel.Response, result2 error) {
-	fake.queryMutex.Lock()
-	defer fake.queryMutex.Unlock()
 	fake.QueryStub = nil
 	if fake.queryReturnsOnCall == nil {
 		fake.queryReturnsOnCall = make(map[int]struct {
