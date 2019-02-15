@@ -38,6 +38,7 @@ gotool.dep:
 	@git -C $(abspath $(GOTOOLS_GOPATH))/src/github.com/golang/dep checkout -q $(DEP_VERSION)
 	@echo "Building github.com/golang/dep $(DEP_VERSION) -> dep"
 	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install -ldflags="-X main.version=$(DEP_VERSION) -X main.buildDate=$$(date '+%Y-%m-%d')" github.com/golang/dep/cmd/dep
+# reset to a branch, so that the next time this target is run, go get starts on a branch, as it must
 	@git -C $(abspath $(GOTOOLS_GOPATH))/src/github.com/golang/dep checkout -q master
 
 gotool.counterfeiter: COUNTERFEITER_VERSION ?= "v6.0.1"
@@ -46,6 +47,8 @@ gotool.counterfeiter:
 	@git -C $(abspath $(GOTOOLS_GOPATH))/src/${go.fqp.counterfeiter} checkout -q $(COUNTERFEITER_VERSION)
 	@echo "Building counterfeiter"
 	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install ${go.fqp.counterfeiter}
+# reset to a branch, so that the next time this target is run, go get starts on a branch, as it must
+	@git -C $(abspath $(GOTOOLS_GOPATH))/src/${go.fqp.counterfeiter} checkout -q master
 
 # Default rule for gotools uses the name->path map for a generic 'go get' style build
 gotool.%:
