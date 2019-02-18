@@ -61,6 +61,7 @@ var _ = Describe("Fab3", func() {
 		proxy = ifrit.Invoke(proxyRunner)
 		Eventually(proxy.Ready(), LongEventualTimeout, LongPollingInterval).Should(BeClosed())
 		proxyAddress = fmt.Sprintf("http://127.0.0.1:%d", proxyPort)
+		helpers.WaitForFab3(proxyPort)
 	})
 
 	AfterEach(func() {

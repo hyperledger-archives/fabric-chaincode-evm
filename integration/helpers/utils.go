@@ -7,6 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package helpers
 
 import (
+	"fmt"
+	"net"
+
 	"github.com/hyperledger/fabric/integration/nwo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -137,4 +140,14 @@ func SimpleSoloNetwork() *nwo.Config {
 			Organizations: []string{"Org1"},
 		}},
 	}
+}
+
+func WaitForFab3(port uint16) {
+	Eventually(func() error {
+		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		if err == nil {
+			defer conn.Close()
+		}
+		return err
+	}).Should(Succeed())
 }
