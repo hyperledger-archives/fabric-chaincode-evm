@@ -199,6 +199,10 @@ func (evmcc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []b
 		return shim.Error(fmt.Sprintf("failed to get contract account: %s", err))
 	}
 
+	if len(acctBytes) == 0 {
+		return shim.Success(acctBytes)
+	}
+
 	acct, err := acm.Decode(acctBytes)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("failed to decode contract account: %s", err))

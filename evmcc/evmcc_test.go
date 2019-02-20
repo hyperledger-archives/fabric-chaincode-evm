@@ -176,18 +176,6 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 				Expect(hex.EncodeToString(res.Payload)).To(Equal("000000000000000000000000000000000000000000000000000000000000002a"))
 			})
 
-			Context("when getCode is invoked", func() {
-				BeforeEach(func() {
-					stub.GetArgsReturns([][]byte{[]byte("getCode"), []byte(contractAddress.String())})
-				})
-
-				It("will return the runtime bytecode of the contract", func() {
-					res := evmcc.Invoke(stub)
-					Expect(res.Status).To(Equal(int32(shim.OK)))
-					Expect(string(res.Payload)).To(Equal(runtimeCode))
-				})
-			})
-
 			Context("when another contract is deployed", func() {
 				BeforeEach(func() {
 					stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), deployCode})
@@ -258,6 +246,56 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 					res := evmcc.Invoke(stub)
 					Expect(res.Status).To(Equal(int32(shim.ERROR)))
 					Expect(res.Message).To(ContainSubstring("expects 2 args"))
+				})
+			})
+		})
+
+		Context("when getCode is the first arg provided", func() {
+			Context("when requested contract address exists", func() {
+				BeforeEach(func() {
+					// zero address, and deploy code is contract creation
+					stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), deployCode})
+					res := evmcc.Invoke(stub)
+					Expect(res.Status).To(Equal(int32(shim.OK)))
+					Expect(stub.PutStateCallCount()).To(Equal(2))
+
+					contractAddress, err := crypto.AddressFromHexString(string(res.Payload))
+					Expect(err).ToNot(HaveOccurred())
+
+					//Set the args for the Invoke Call to be "getCode, contractAddress"
+					stub.GetArgsReturns([][]byte{[]byte("getCode"), []byte(contractAddress.String())})
+				})
+
+				It("will return the runtime bytecode of the contract", func() {
+					res := evmcc.Invoke(stub)
+					Expect(res.Status).To(Equal(int32(shim.OK)))
+					Expect(string(res.Payload)).To(Equal(runtimeCode))
+				})
+
+			})
+
+			Context("when queried contract address does not exist", func() {
+				BeforeEach(func() {
+					//No contracts exists currently so no contract addresses exist
+					stub.GetArgsReturns([][]byte{[]byte("getCode"), []byte("0000000000000000000000000000000000000001")})
+				})
+
+				It("does not error and returns empty bytes", func() {
+					res := evmcc.Invoke(stub)
+					Expect(res.Status).To(Equal(int32(shim.OK)))
+					Expect(string(res.Payload)).To(BeEmpty())
+				})
+			})
+
+			Context("when the queried contract address is malformed", func() {
+				BeforeEach(func() {
+					stub.GetArgsReturns([][]byte{[]byte("getCode"), []byte("malformed-address")})
+				})
+
+				It("returns an error", func() {
+					res := evmcc.Invoke(stub)
+					Expect(res.Status).To(Equal(int32(shim.ERROR)))
+					Expect(res.Message).To(ContainSubstring("failed to decode callee address"))
 				})
 			})
 		})
