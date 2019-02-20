@@ -6,8 +6,8 @@
 GOTOOLS = counterfeiter dep golint goimports ginkgo gocov gocov-xml misspell mockery manifest-tool
 BUILD_DIR ?= .build
 GOTOOLS_GOPATH ?= $(BUILD_DIR)/gotools
-GOTOOLS_BINDIR ?= $(GOPATH)/bin
-GOROOT ?= $(GOPATH)
+GOTOOLS_BINDIR ?= $(firstword $(subst :, ,$(GOPATH)))/bin
+GOROOT ?= $(firstword $(subst :, ,$(GOPATH))
 
 # go tool->path mapping
 go.fqp.counterfeiter := github.com/maxbrunsfeld/counterfeiter
