@@ -52,7 +52,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	dockerClient, err = docker.NewClientFromEnv()
 	Expect(err).NotTo(HaveOccurred())
 
-	network = nwo.New(nwo.BasicSolo(), testDir, dockerClient, 30000, components)
+	network = nwo.New(helpers.SimpleSoloNetwork(), testDir, dockerClient, 30000, components)
 	network.GenerateConfigTree()
 	network.Bootstrap()
 
@@ -62,9 +62,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	components.Paths["Fab3Config"], err = helpers.CreateProxyConfig(testDir, channelName, network.CryptoPath(),
 		network.PeerPort(network.Peer("Org1", "peer0"), nwo.ListenPort),
-		network.PeerPort(network.Peer("Org1", "peer1"), nwo.ListenPort),
-		network.PeerPort(network.Peer("Org2", "peer0"), nwo.ListenPort),
-		network.PeerPort(network.Peer("Org2", "peer1"), nwo.ListenPort),
 		network.OrdererPort(network.Orderer("orderer"), nwo.ListenPort),
 	)
 	Expect(err).ToNot(HaveOccurred())
@@ -83,7 +80,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		Version: "0.0",
 		Path:    "github.com/hyperledger/fabric-chaincode-evm/evmcc",
 		Ctor:    `{"Args":[]}`,
-		Policy:  `AND ('Org1MSP.member','Org2MSP.member')`,
+		Policy:  `AND ('Org1MSP.member')`,
 	}
 	nwo.DeployChaincode(network, channelName, orderer, chaincode)
 

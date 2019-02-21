@@ -53,9 +53,9 @@ var _ = Describe("EndToEnd", func() {
 			Version: "0.0",
 			Path:    "github.com/hyperledger/fabric-chaincode-evm/evmcc",
 			Ctor:    `{"Args":[]}`,
-			Policy:  `AND ('Org1MSP.member','Org2MSP.member')`,
+			Policy:  `AND ('Org1MSP.member')`,
 		}
-		network = nwo.New(nwo.BasicSolo(), testDir, client, 30000, components)
+		network = nwo.New(helpers.SimpleSoloNetwork(), testDir, client, 30000, components)
 		network.GenerateConfigTree()
 		network.Bootstrap()
 
@@ -86,7 +86,7 @@ var _ = Describe("EndToEnd", func() {
 		nwo.DeployChaincode(network, "testchannel", orderer, chaincode)
 
 		By("getting the client peer by name")
-		peer := network.Peer("Org1", "peer1")
+		peer := network.Peer("Org1", "peer0")
 
 		By("installing a Simple Storage SmartContract")
 		sess, err := network.PeerUserSession(peer, "User1", commands.ChaincodeInvoke{
@@ -96,7 +96,6 @@ var _ = Describe("EndToEnd", func() {
 			Ctor:      fmt.Sprintf(`{"Args":["%s","%s"]}`, zeroAddress, SimpleStorage.CompiledBytecode),
 			PeerAddresses: []string{
 				network.PeerAddress(network.Peer("Org1", "peer0"), nwo.ListenPort),
-				network.PeerAddress(network.Peer("Org2", "peer1"), nwo.ListenPort),
 			},
 			WaitForEvent: true,
 		})
@@ -117,7 +116,6 @@ var _ = Describe("EndToEnd", func() {
 			Ctor: fmt.Sprintf(`{"Args":["%s","%s0000000000000000000000000000000000000000000000000000000000000003"]}`, contractAddr, SimpleStorage.FunctionHashes["set"]),
 			PeerAddresses: []string{
 				network.PeerAddress(network.Peer("Org1", "peer0"), nwo.ListenPort),
-				network.PeerAddress(network.Peer("Org2", "peer1"), nwo.ListenPort),
 			},
 			WaitForEvent: true,
 		})
@@ -159,7 +157,6 @@ var _ = Describe("EndToEnd", func() {
 			Ctor:      fmt.Sprintf(`{"Args":["%s","%s"]}`, zeroAddress, InvokeContract.CompiledBytecode+"000000000000000000000000"+contractAddr),
 			PeerAddresses: []string{
 				network.PeerAddress(network.Peer("Org1", "peer0"), nwo.ListenPort),
-				network.PeerAddress(network.Peer("Org2", "peer1"), nwo.ListenPort),
 			},
 			WaitForEvent: true,
 		})
@@ -180,7 +177,6 @@ var _ = Describe("EndToEnd", func() {
 			Ctor: fmt.Sprintf(`{"Args":["%s","%s0000000000000000000000000000000000000000000000000000000000000008"]}`, invokeAddr, InvokeContract.FunctionHashes["setVal"]),
 			PeerAddresses: []string{
 				network.PeerAddress(network.Peer("Org1", "peer0"), nwo.ListenPort),
-				network.PeerAddress(network.Peer("Org2", "peer1"), nwo.ListenPort),
 			},
 			WaitForEvent: true,
 		})

@@ -49,7 +49,7 @@ var _ = Describe("Web3 Integration", func() {
 
 		By("starting up a fab3 for user 2")
 		user2ProxyPort := uint16(3000 + config.GinkgoConfig.ParallelNode)
-		user2ProxyRunner := helpers.Fab3Runner(components.Paths["fab3"], components.Paths["Fab3Config"], "Org2", "User2", channelName, ccid, user2ProxyPort)
+		user2ProxyRunner := helpers.Fab3Runner(components.Paths["fab3"], components.Paths["Fab3Config"], "Org1", "User2", channelName, ccid, user2ProxyPort)
 		user2Proxy = ifrit.Invoke(user2ProxyRunner)
 		Eventually(user2Proxy.Ready(), LongEventualTimeout, LongPollingInterval).Should(BeClosed())
 
