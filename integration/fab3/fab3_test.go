@@ -128,7 +128,7 @@ var _ = Describe("Fab3", func() {
 
 			rBody, err = ioutil.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-
+			rpcResp = helpers.JsonRPCTxReceipt{}
 			err = json.Unmarshal(rBody, &rpcResp)
 			Expect(err).ToNot(HaveOccurred())
 			return rpcResp.Error
@@ -181,7 +181,7 @@ var _ = Describe("Fab3", func() {
 
 			rBody, err = ioutil.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-
+			rpcResp = helpers.JsonRPCTxReceipt{}
 			err = json.Unmarshal(rBody, &rpcResp)
 			Expect(err).ToNot(HaveOccurred())
 			return rpcResp.Error
