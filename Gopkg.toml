@@ -1,6 +1,10 @@
 #Copyright IBM Corp. All Rights Reserved.
 #SPDX-License-Identifier: Apache-2.0
 
+noverify = [
+    "github.com/grpc-ecosystem/go-grpc-middleware"
+]
+
 [[constraint]]
   version = "0.23.3"
   name = "github.com/hyperledger/burrow"
