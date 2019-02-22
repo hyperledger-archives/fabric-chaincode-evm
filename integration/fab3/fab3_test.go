@@ -230,14 +230,14 @@ var _ = Describe("Fab3", func() {
 		proxy.Signal(os.Interrupt)
 
 		Eventually(proxy.Wait()).Should(Receive())
-		Eventually(proxyRunner.Err()).Should(gbytes.Say("fab3-exited"))
+		Eventually(proxyRunner.Err()).Should(gbytes.Say("Fab3 exited"))
 	})
 
 	It("shuts down gracefully when it receives an SIGTERM signal", func() {
 		proxy.Signal(syscall.SIGTERM)
 
 		Eventually(proxy.Wait()).Should(Receive())
-		Eventually(proxyRunner.Err()).Should(gbytes.Say("fab3-exited"))
+		Eventually(proxyRunner.Err()).Should(gbytes.Say("Fab3 exited"))
 	})
 })
 

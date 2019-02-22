@@ -140,7 +140,7 @@ func runFab3(cmd *cobra.Command, args []string) error {
 	go func() {
 		errChan <- proxy.Start(port)
 	}()
-	logger.Infow("starting-fab3", "port", port)
+	logger.Infow("Starting Fab3", "port", port)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
@@ -148,16 +148,16 @@ func runFab3(cmd *cobra.Command, args []string) error {
 	select {
 	case err = <-errChan:
 	case <-signalChan:
-		logger.Info("received-termination-signal")
+		logger.Info("Received termination signal")
 		err = proxy.Shutdown()
 	}
 
 	sdk.Close()
 	if err != nil {
-		logger.Infow("fab3-exited-with-error", "error", err)
+		logger.Infow("Fab3 exited with error", "error", err)
 		return err
 	}
-	logger.Info("fab3-exited")
+	logger.Info("Fab3 exited")
 	return nil
 }
 
