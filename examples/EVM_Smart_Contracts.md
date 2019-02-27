@@ -165,7 +165,7 @@ You should see a binary `fab3` in the `bin` subdirectory. If you have set the re
 ```
 If you used the default port you should see output like the following:
 ```
-{"level":"info","ts":1550530404.3546276,"logger":"fab3","caller":"cmd/main.go:143","msg":"starting-fab3","port":5000}
+{"level":"info","ts":1550530404.3546276,"logger":"fab3","caller":"cmd/main.go:143","msg":"Starting Fab3","port":5000}
 ```
 
 ##### Connecting to the Proxy
