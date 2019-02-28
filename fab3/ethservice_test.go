@@ -508,7 +508,7 @@ var _ = Describe("Ethservice", func() {
 		Context("when the transaction is creation of a smart contract", func() {
 			var contractAddress []byte
 			BeforeEach(func() {
-				contractAddress = []byte("0x123456789abcdef1234")
+				contractAddress = []byte("123456789abcdef1234")
 				zeroAddress := make([]byte, hex.EncodedLen(len(fab3.ZeroAddress)))
 				hex.Encode(zeroAddress, fab3.ZeroAddress)
 
@@ -535,7 +535,7 @@ var _ = Describe("Ethservice", func() {
 					TransactionIndex:  "0x0",
 					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
 					BlockNumber:       "0x1f",
-					ContractAddress:   string(contractAddress),
+					ContractAddress:   "0x" + string(contractAddress),
 					GasUsed:           0,
 					CumulativeGasUsed: 0,
 					Logs:              nil,
@@ -563,7 +563,7 @@ var _ = Describe("Ethservice", func() {
 						TransactionIndex:  "0x0",
 						BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
 						BlockNumber:       "0x1f",
-						ContractAddress:   string(contractAddress),
+						ContractAddress:   "0x" + string(contractAddress),
 						GasUsed:           0,
 						CumulativeGasUsed: 0,
 						Logs:              nil,

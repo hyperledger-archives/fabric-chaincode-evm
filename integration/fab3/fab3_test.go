@@ -137,7 +137,7 @@ var _ = Describe("Fab3", func() {
 
 		receipt := rpcResp.Result
 
-		Expect(receipt.ContractAddress).ToNot(Equal(""))
+		checkHexEncoded(receipt.ContractAddress)
 		Expect(receipt.TransactionHash).To(Equal("0x" + txHash))
 		checkHexEncoded(receipt.BlockNumber)
 		checkHexEncoded(receipt.BlockHash)
@@ -192,7 +192,7 @@ var _ = Describe("Fab3", func() {
 		checkHexEncoded(receipt.BlockNumber)
 		checkHexEncoded(receipt.BlockHash)
 		checkHexEncoded(receipt.TransactionIndex)
-		Expect(receipt.ContractAddress).To(Equal(""))
+		Expect(receipt.ContractAddress).To(BeEmpty())
 
 		By("querying the contract")
 		params = helpers.MessageParams{
@@ -245,6 +245,9 @@ func checkHexEncoded(value string) {
 	// Check to see that the result is a hexadecimal string
 	// Check if the prefix is provided
 	Expect(value[0:2]).To(Equal("0x"))
+
+	// Check that the string is not empty
+	Expect(len(value)).To(BeNumerically(">=", 3), value+" is an empty hex string")
 
 	// Ensure the string is hex
 	Expect(value).To(MatchRegexp(fmt.Sprintf(`[0-9A-Fa-f]{%d}`, len(value[2:]))))

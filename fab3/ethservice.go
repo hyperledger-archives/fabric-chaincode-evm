@@ -162,7 +162,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 		}
 
 		if bytes.Equal(callee, ZeroAddress) {
-			receipt.ContractAddress = string(respPayload.GetResponse().GetPayload())
+			receipt.ContractAddress = "0x" + string(respPayload.GetResponse().GetPayload())
 		} else {
 			receipt.To = "0x" + to
 		}
