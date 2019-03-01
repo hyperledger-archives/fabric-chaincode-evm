@@ -18,9 +18,10 @@ that subset.
 
 We hang out in the
 [#fabric-evm channel](https://chat.hyperledger.org/channel/fabric-evm). We are
-always interested in feedback and help in development and testing! See the
-[Fabric's CONTRIBUTING documentation](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html)
-for information on how to contribute to this repository.
+always interested in feedback and help in development and testing! For more
+information about contributing look below at the [Contributions](#Contributions)
+section.
+
 
 ## Design Document
 
@@ -46,6 +47,21 @@ Basically, the interaction is the same as with any other chaincode, except that
 the first argument of a chaincode invoke is the address for the contract and
 the second argument is the input you typically provide for an Ethereum
 transaction.
+
+## Contributions
+The `fabric-chaincode-evm` lives in a [gerrit repository](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-chaincode-evm).
+The github repository is a mirror. For more information on how to contribute
+look at [Fabric's CONTRIBUTING documentation](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html).
+
+Please send all pull requests to the gerrit repository. For issues, open a ticket in
+the Hyperledger Fabric [JIRA](https://jira.hyperledger.org/projects/FAB/issues)
+and add `fabric-chaincode-evm` in the component field.
+
+Current Dependencies:
+- Hyperledger Fabric [v1.4](https://github.com/hyperledger/fabric/releases/tag/v1.4.0). EVMCC can be run on Fabric 1.0 and newer.
+- Hyperledger Fabric SDK Go [revision = "beccd9cb1450fddfe426616e151d709c99f7ccdd"](https://github.com/hyperledger/fabric-sdk-go/tree/beccd9cb1450fddfe426616e151d709c99f7ccdd)
+- Dep [v0.5](https://github.com/golang/dep/releases/tag/v0.5.0)
+- Minimum of Go 1.10 is required to compile Fab3.
 
 [![Creative Commons License](https://i.creativecommons.org/l/by/4.0/88x31.png)](http://creativecommons.org/licenses/by/4.0/)<br>
 This work is licensed under a [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/)
