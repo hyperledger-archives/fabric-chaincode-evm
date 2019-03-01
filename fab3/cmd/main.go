@@ -25,8 +25,8 @@ import (
 
 var fab3Cmd = &cobra.Command{
 	Use:   "fab3",
-	Short: "fab3 is a web3 provider used to interact with the EVM chaincode on a Fabric Network",
-	Long:  "fab3 is a web3 provider used to interact with the EVM chaincode on a Fabric Network",
+	Short: "fab3 is a web3 provider used to interact with the EVM chaincode on a Fabric Network. The flags provided will be honored over the corresponding environment variables.",
+	Long:  "fab3 is a web3 provider used to interact with the EVM chaincode on a Fabric Network. The flags provided will be honored over the corresponding environment variables.",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := checkFlags()
@@ -54,24 +54,30 @@ func initFlags() {
 	viper.BindEnv("ccid")
 	viper.BindEnv("port")
 
-	fab3Cmd.PersistentFlags().StringVarP(&cfg, "config", "c", "", "Path to a compatible Fabric SDK Go config file. Required if FAB3_CONFIG is not set")
+	fab3Cmd.PersistentFlags().StringVarP(&cfg, "config", "c", "",
+		"Path to a compatible Fabric SDK Go config file. This flag is required if FAB3_CONFIG is not set.")
 	viper.BindPFlag("config", fab3Cmd.PersistentFlags().Lookup("config"))
 
-	fab3Cmd.PersistentFlags().StringVarP(&user, "user", "u", "", "User identity being used for the proxy (Matches the users' names in the crypto-config directory specified in the config). Required if FAB3_USER is not set")
+	fab3Cmd.PersistentFlags().StringVarP(&user, "user", "u", "",
+		"User identity being used for the proxy (Matches the users' names in the crypto-config directory specified in the config). This flag is required if FAB3_USER is not set.")
 	viper.BindPFlag("user", fab3Cmd.PersistentFlags().Lookup("user"))
 
-	fab3Cmd.PersistentFlags().StringVarP(&org, "org", "o", "", "Organization of the specified user. Required if FAB3_ORG is not set")
+	fab3Cmd.PersistentFlags().StringVarP(&org, "org", "o", "",
+		"Organization of the specified user. This flag is required if FAB3_ORG is not set.")
 	viper.BindPFlag("org", fab3Cmd.PersistentFlags().Lookup("org"))
 
-	fab3Cmd.PersistentFlags().StringVarP(&ch, "channel", "C", "", "Channel to be used for the transactions. Required if FAB3_CHANNEL is not set")
+	fab3Cmd.PersistentFlags().StringVarP(&ch, "channel", "C", "",
+		"Channel to be used for the transactions. This flag is required if FAB3_CHANNEL is not set.")
 	viper.BindPFlag("channel", fab3Cmd.PersistentFlags().Lookup("channel"))
 
 	//CCID defaults to "evmcc" if FAB3_CCID is not set or `-i,-ccid` is not provided
-	fab3Cmd.PersistentFlags().StringVarP(&ccid, "ccid", "i", "evmcc", "ID of the EVM Chaincode deployed in your fabric network. Can also set FAB3_CCID instead")
+	fab3Cmd.PersistentFlags().StringVarP(&ccid, "ccid", "i", "evmcc",
+		"ID of the EVM Chaincode deployed in your fabric network. The CCID to be used in by fab3 can also be set by the FAB3_CCID environment variable.")
 	viper.BindPFlag("ccid", fab3Cmd.PersistentFlags().Lookup("ccid"))
 
 	//Port defaults to 5000 if PORT is not set or `-p,-port` is not provided
-	fab3Cmd.PersistentFlags().IntVarP(&port, "port", "p", 5000, "Port that Fab3 will be running on. Can also set PORT")
+	fab3Cmd.PersistentFlags().IntVarP(&port, "port", "p", 5000,
+		"Port that Fab3 will be running on. The listening port can also be set by the FAB3_PORT environment variable.")
 	viper.BindPFlag("port", fab3Cmd.PersistentFlags().Lookup("port"))
 }
 
