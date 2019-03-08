@@ -120,7 +120,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 
 			// First PutState Call is for setting the code for the contract account
 			// Second PutState Call is to store the current sequence number
-			Expect(stub.PutStateCallCount()).To(Equal(2))
+			Expect(stub.PutStateCallCount()).To(Equal(3))
 
 			value := fakeLedger[string(res.Payload)]
 			contractAcct, err := acm.Decode(value)
@@ -153,7 +153,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 				stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), deployCode})
 				res := evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
-				Expect(stub.PutStateCallCount()).To(Equal(2))
+				Expect(stub.PutStateCallCount()).To(Equal(3))
 
 				var err error
 				contractAddress, err = crypto.AddressFromHexString(string(res.Payload))

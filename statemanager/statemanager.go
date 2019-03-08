@@ -8,6 +8,7 @@ package statemanager
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	"github.com/hyperledger/burrow/acm"
@@ -91,4 +92,22 @@ func (s *stateManager) SetStorage(address crypto.Address, key, value binary.Word
 	}
 
 	return err
+}
+
+// Bump the sequence number of an account
+func IncSequence(state StateManager, address crypto.Address) error {
+	const errHeader = "IncSequence():"
+	acc, err := state.GetAccount(address)
+	if err != nil {
+		return fmt.Errorf("%s could not get account: %v", errHeader, err)
+	}
+	if acc == nil {
+		return fmt.Errorf("%s account %v does not exist: %v", errHeader, address, err)
+	}
+	acc.Sequence++
+	err = state.UpdateAccount(acc)
+	if err != nil {
+		return fmt.Errorf("%s could not update account: %v", errHeader, err)
+	}
+	return nil
 }
