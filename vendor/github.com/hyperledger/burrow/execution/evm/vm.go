@@ -21,13 +21,15 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/hyperledger/burrow/execution/evm/abi"
+
 	"github.com/hyperledger/burrow/acm"
-	"github.com/hyperledger/burrow/acm/state"
+	"github.com/hyperledger/burrow/acm/acmstate"
 	. "github.com/hyperledger/burrow/binary"
 	"github.com/hyperledger/burrow/crypto"
+	"github.com/hyperledger/burrow/crypto/sha3"
 	"github.com/hyperledger/burrow/execution/errors"
 	. "github.com/hyperledger/burrow/execution/evm/asm"
-	"github.com/hyperledger/burrow/execution/evm/sha3"
 	"github.com/hyperledger/burrow/execution/exec"
 	"github.com/hyperledger/burrow/logging"
 	"github.com/hyperledger/burrow/permission"
@@ -35,13 +37,13 @@ import (
 )
 
 const (
-	DataStackInitialCapacity = 1024
-	callStackCapacity        = 100 // TODO ensure usage.
+	DataStackInitialCapacity    = 1024
+	MaximumAllowedBlockLookBack = 256
+	uint64Length                = 8
 )
 
 type Params struct {
 	BlockHeight              uint64
-	BlockHash                Word256
 	BlockTime                int64
 	GasLimit                 uint64
 	CallStackMaxDepth        uint64
@@ -53,20 +55,24 @@ type VM struct {
 	memoryProvider func(errors.Sink) Memory
 	params         Params
 	origin         crypto.Address
-	tx             *txs.Tx
+	nonce          []byte
 	stackDepth     uint64
 	logger         *logging.Logger
 	debugOpcodes   bool
 	dumpTokens     bool
+	sequence       uint64
 }
 
-func NewVM(params Params, origin crypto.Address, tx *txs.Tx, logger *logging.Logger, options ...func(*VM)) *VM {
+// Create a new EVM instance. Nonce is required to be globally unique (nearly almost surely) to avoid duplicate
+// addresses for EVM created accounts. In Burrow we use TxHash for this but a random nonce or sequence number could be
+// used.
+func NewVM(params Params, origin crypto.Address, nonce []byte, logger *logging.Logger, options ...func(*VM)) *VM {
 	vm := &VM{
 		memoryProvider: DefaultDynamicMemoryProvider,
 		params:         params,
 		origin:         origin,
 		stackDepth:     0,
-		tx:             tx,
+		nonce:          nonce,
 		logger:         logger.WithScope("NewVM"),
 	}
 	for _, option := range options {
@@ -221,10 +227,10 @@ func (vm *VM) execute(callState Interface, eventSink EventSink, caller, callee c
 	code, input []byte, value uint64, gas *uint64) (returnData []byte) {
 	vm.Debugf("(%d) (%s) %s (code=%d) gas: %v (d) %X\n", vm.stackDepth, caller, callee, len(code), *gas, input)
 
-	logger := vm.logger.With("tx_hash", vm.tx.Hash())
+	logger := vm.logger.With("evm_nonce", vm.nonce)
 
 	if vm.dumpTokens {
-		dumpTokens(vm.tx.Hash(), caller, callee, code)
+		dumpTokens(vm.nonce, caller, callee, code)
 	}
 
 	// Program counter - the index into code that tracks current instruction
@@ -610,9 +616,48 @@ func (vm *VM) execute(callState Interface, eventSink EventSink, caller, callee c
 			memory.Write(memOff, returnData)
 			vm.Debugf(" => [%v, %v, %v] %X\n", memOff, outputOff, length, returnData)
 
+		case EXTCODEHASH: // 0x3F
+			address := stack.PopAddress()
+
+			if !callState.Exists(address) {
+				// In case the account does not exist 0 is pushed to the stack.
+				stack.PushU64(0)
+			} else {
+				code := callState.GetCode(address)
+				if code == nil {
+					// In case the account does not have code the keccak256 hash of empty data
+					code = acm.Bytecode{}
+				}
+
+				// keccak256 hash of a contract's code
+				var extcodehash Word256
+				hash := sha3.NewKeccak256()
+				hash.Write(code)
+				copy(extcodehash[:], hash.Sum(nil))
+
+				stack.Push(extcodehash)
+			}
+
 		case BLOCKHASH: // 0x40
-			stack.Push(Zero256)
-			vm.Debugf(" => 0x%X (NOT SUPPORTED)\n", stack.Peek().Bytes())
+			blockNumber := stack.PopU64()
+
+			if blockNumber >= vm.params.BlockHeight {
+				vm.Debugf(" => attempted to get block hash of a non-existent block: %v", blockNumber)
+				callState.PushError(errors.ErrorCodeInvalidBlockNumber)
+			} else if vm.params.BlockHeight-blockNumber > MaximumAllowedBlockLookBack {
+				vm.Debugf(" => attempted to get block hash of a block %d outside of the allowed range "+
+					"(must be within %d blocks)", blockNumber, MaximumAllowedBlockLookBack)
+				callState.PushError(errors.ErrorCodeBlockNumberOutOfRange)
+			} else {
+				blockHash, err := callState.GetBlockHash(blockNumber)
+				if err != nil {
+					vm.Debugf(" => error attempted to get block hash: %v, %v", blockNumber, err)
+					callState.PushError(errors.ErrorCodeInvalidBlockNumber)
+				} else {
+					stack.Push(blockHash)
+					vm.Debugf(" => 0x%X\n", blockHash)
+				}
+			}
 
 		case COINBASE: // 0x41
 			stack.Push(Zero256)
@@ -732,17 +777,26 @@ func (vm *VM) execute(callState Interface, eventSink EventSink, caller, callee c
 			}))
 			vm.Debugf(" => T:%X D:%X\n", topics, data)
 
-		case CREATE: // 0xF0
+		case CREATE, CREATE2: // 0xF0, 0xFB
 			returnData = nil
-
 			contractValue := stack.PopU64()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			input := memory.Read(offset, size)
 
 			// TODO charge for gas to create account _ the code length * GasCreateByte
 			useGasNegative(gas, GasCreateAccount, callState)
-			callState.IncSequence(callee)
-			newAccount := crypto.NewContractAddress(callee, callState.GetSequence(callee))
+
+			var newAccount crypto.Address
+			if op == CREATE {
+				vm.sequence++
+				nonce := make([]byte, txs.HashLength+uint64Length)
+				copy(nonce, vm.nonce)
+				PutUint64BE(nonce[txs.HashLength:], vm.sequence)
+				newAccount = crypto.NewContractAddress(callee, nonce)
+			} else if op == CREATE2 {
+				salt := stack.Pop()
+				newAccount = crypto.NewContractAddress2(callee, salt, callState.GetCode(callee))
+			}
 
 			// Check the CreateContract permission for this account
 			EnsurePermission(callState, callee, permission.CreateContract)
@@ -851,9 +905,9 @@ func (vm *VM) execute(callState Interface, eventSink EventSink, caller, callee c
 						callState.GetCode(address), args, value, &gasLimit, exec.CallTypeDelegate)
 
 				case STATICCALL:
-					childCallState = callState.NewCache(state.ReadOnly)
+					childCallState = callState.NewCache(acmstate.ReadOnly)
 					returnData, callErr = vm.delegateCall(childCallState, NewLogFreeEventSink(eventSink),
-						caller, callee, callState.GetCode(address), args, value, &gasLimit, exec.CallTypeStatic)
+						callee, address, callState.GetCode(address), args, value, &gasLimit, exec.CallTypeStatic)
 
 				default:
 					panic(fmt.Errorf("switch statement should be exhaustive so this should not have been reached"))
@@ -899,7 +953,7 @@ func (vm *VM) execute(callState Interface, eventSink EventSink, caller, callee c
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			output := memory.Read(offset, size)
 			vm.Debugf(" => [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
-			callState.PushError(errors.ErrorCodeExecutionReverted)
+			callState.PushError(newRevertException(output))
 			return output
 
 		case INVALID: // 0xFE
@@ -924,10 +978,6 @@ func (vm *VM) execute(callState Interface, eventSink EventSink, caller, callee c
 			return nil
 
 		case STOP: // 0x00
-			return nil
-
-		case CREATE2:
-			callState.PushError(errors.Errorf("%v not yet implemented", op))
 			return nil
 
 		default:
@@ -1011,7 +1061,7 @@ func transfer(st Interface, from, to crypto.Address, amount uint64) errors.Coded
 }
 
 // Dump the bytecode being sent to the EVM in the current working directory
-func dumpTokens(txHash []byte, caller, callee crypto.Address, code []byte) {
+func dumpTokens(nonce []byte, caller, callee crypto.Address, code []byte) {
 	var tokensString string
 	tokens, err := acm.Bytecode(code).Tokens()
 	if err != nil {
@@ -1019,9 +1069,9 @@ func dumpTokens(txHash []byte, caller, callee crypto.Address, code []byte) {
 	} else {
 		tokensString = strings.Join(tokens, "\n")
 	}
-	txHashString := "tx-none"
-	if len(txHash) >= 4 {
-		txHashString = fmt.Sprintf("tx-%X", txHash[:4])
+	txHashString := "nil-nonce"
+	if len(nonce) >= 4 {
+		txHashString = fmt.Sprintf("nonce-%X", nonce[:4])
 	}
 	callerString := "caller-none"
 	if caller != crypto.ZeroAddress {
@@ -1040,4 +1090,16 @@ func (vm *VM) ensureStackDepth() errors.CodedError {
 		return errors.ErrorCodeCallStackOverflow
 	}
 	return nil
+}
+
+func newRevertException(ret []byte) errors.CodedError {
+	code := errors.ErrorCodeExecutionReverted
+	if len(ret) > 0 {
+		// Attempt decode
+		reason, err := abi.UnpackRevert(ret)
+		if err == nil {
+			return errors.ErrorCodef(code, "with reason '%s'", *reason)
+		}
+	}
+	return code
 }
