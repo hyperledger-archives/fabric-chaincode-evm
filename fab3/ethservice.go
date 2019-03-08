@@ -531,30 +531,30 @@ func findTransaction(txID string, blockData [][]byte) (string, *common.Payload, 
 }
 
 func fabricEventToEVMLogs(events []byte, blocknumber, txhash, txindex, blockhash string) ([]types.Log, error) {
-	if events == nil {
+	if len(events) == 0 {
 		return nil, nil
 	}
 
 	chaincodeEvent := &peer.ChaincodeEvent{}
 	err := proto.Unmarshal(events, chaincodeEvent)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode chaincode event: %s", err)
+		return nil, errors.Wrap(err, "failed to decode chaincode event")
 	}
 
 	var eventMsgs []event.Event
 	err = json.Unmarshal(chaincodeEvent.Payload, &eventMsgs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal chaincode event payload: %s", err)
+		return nil, errors.Wrap(err, "failed to unmarshal chaincode event payload")
 	}
 
 	var txLogs []types.Log
 	txLogs = make([]types.Log, len(eventMsgs))
 	for i, logEvent := range eventMsgs {
-		topics := []string{}
+		var topics []string
 		for _, topic := range logEvent.Topics {
 			topics = append(topics, "0x"+topic)
 		}
-		logObj := types.Log{
+		log := types.Log{
 			Address:     "0x" + logEvent.Address,
 			Topics:      topics,
 			BlockNumber: blocknumber,
@@ -565,10 +565,10 @@ func fabricEventToEVMLogs(events []byte, blocknumber, txhash, txindex, blockhash
 		}
 
 		if logEvent.Data != "" {
-			logObj.Data = "0x" + logEvent.Data
+			log.Data = "0x" + logEvent.Data
 		}
 
-		txLogs[i] = logObj
+		txLogs[i] = log
 	}
 	return txLogs, nil
 }
