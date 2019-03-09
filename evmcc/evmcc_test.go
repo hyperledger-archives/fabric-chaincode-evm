@@ -493,7 +493,9 @@ H8GZeN2ifTyJzzGo
 						stub.GetCreatorReturns(user1, nil)
 						res := evmcc.Invoke(stub)
 						Expect(res.Status).To(Equal(int32(shim.OK)))
-						Expect(stub.PutStateCallCount()).To(Equal(baseCallCount+5), "`vote` should perform 5 writes: contract account, length of proposals, sender.voted, sender.vote, voteCount")
+						Expect(stub.PutStateCallCount()).To(Equal(baseCallCount+7),
+							"`vote` should perform 7 writes: create caller, create contract, "+
+								"length of proposals, sender.voted, sender.vote, voteCount, inc sequence")
 					})
 
 					It("sets the variables of voter 1 (user1) properly", func() {
@@ -533,7 +535,8 @@ H8GZeN2ifTyJzzGo
 					It("does not increment vote count of proposal 'a'", func() {
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(proposals + "0000000000000000000000000000000000000000000000000000000000000000")})
 						res := evmcc.Invoke(stub)
-						Expect(stub.PutStateCallCount()).To(Equal(baseCallCount), "query should not write to ledger")
+						Expect(stub.PutStateCallCount()).To(Equal(baseCallCount+1),
+							"only write should be caller address sequence number update")
 						Expect(res.Status).To(Equal(int32(shim.OK)))
 						Expect(hex.EncodeToString(res.Payload)).To(Equal("61000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
 					})

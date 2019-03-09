@@ -95,25 +95,23 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 	})
 	eventSink := &eventmanager.EventManager{Stub: stub}
 
-	// Sequence number is used to create the contract address.
-	seq := evmCache.GetSequence(callerAddr)
+	// The nonce is based of the caller's sequence number and is used to ensure unique addresses are created.
+	nonce := crypto.SequenceNonce(callerAddr, evmCache.GetSequence(callerAddr))
+	// Create caller account if it does not exist.
+	if !evmCache.Exists(callerAddr){
+		evmCache.CreateAccount(callerAddr)
+		if evmErr := evmCache.Error(); evmErr != nil {
+			return shim.Error(fmt.Sprintf("failed to create user account: %s ", evmErr))
+		}
+	}
+	var output []byte
 	if calleeAddr == crypto.ZeroAddress {
 		logger.Debugf("Deploy contract")
 
-		// Sequence number of 0 means this is the caller's first contract
-		// Therefore a new account needs to be created for them to keep track of their sequence.
-		if seq == 0 {
-			evmCache.CreateAccount(callerAddr)
-			if evmErr := evmCache.Error(); evmErr != nil {
-				return shim.Error(fmt.Sprintf("failed to create user account: %s ", evmErr))
-			}
-		}
-
 		// Update contract seq
 		// If sequence is not incremented every contract a person deploys with have the same contract address.
-		logger.Debugf("Contract sequence number = %d", seq)
+		logger.Debugf("Contract nonce number = %X", nonce)
 
-		nonce := crypto.SequenceNonce(callerAddr, seq)
 		contractAddr := crypto.NewContractAddress(callerAddr, nonce)
 		// Contract account needs to be created before setting code to it
 		evmCache.CreateAccount(contractAddr)
@@ -149,14 +147,8 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 		if evmErr := evmCache.Sync(); evmErr != nil {
 			return shim.Error(fmt.Sprintf("failed to sync: %s", evmErr))
 		}
-		// Now update the caller's sequence number to ensure future contracts are created with a different address
-		// This happens post evmCache.Sync() in case caller was created within this state frame
-		err = statemanager.IncSequence(state, callerAddr)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("could not increment sequence number for caller %v: %v", callerAddr, err))
-		}
 		// return encoded hex bytes for human-readability
-		return shim.Success([]byte(hex.EncodeToString(contractAddr.Bytes())))
+		output = []byte(hex.EncodeToString(contractAddr.Bytes()))
 	} else {
 		logger.Debugf("Invoke contract at %x", calleeAddr.Bytes())
 
@@ -165,11 +157,10 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 			return shim.Error(fmt.Sprintf("failed to retrieve contract code: %s", evmErr))
 		}
 
-		nonce := crypto.SequenceNonce(calleeAddr, seq)
 		vm := evm.NewVM(newParams(), callerAddr, nonce, evmLogger)
-		output, evmErr := vm.Call(evmCache, eventSink, callerAddr, calleeAddr, calleeCode, input, 0, &gas)
-		if evmErr != nil {
-			return shim.Error(fmt.Sprintf("failed to execute contract: %s", evmErr))
+		output, err = vm.Call(evmCache, eventSink, callerAddr, calleeAddr, calleeCode, input, 0, &gas)
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to execute contract: %s", err))
 		}
 
 		// Passing the function hash of the method that has triggered the event
@@ -183,8 +174,13 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 		if evmErr := evmCache.Sync(); evmErr != nil {
 			return shim.Error(fmt.Sprintf("failed to sync: %s", evmErr))
 		}
-		return shim.Success(output)
 	}
+	// Now update the caller's sequence number to ensure future EVM invocations have a unique nonce
+	err = statemanager.IncSequence(state, callerAddr)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("could not increment sequence number for caller %v: %v", callerAddr, err))
+	}
+	return shim.Success(output)
 }
 
 func (evmcc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []byte) pb.Response {
