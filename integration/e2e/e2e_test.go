@@ -196,5 +196,19 @@ var _ = Describe("EndToEnd", func() {
 		output, _ = sess.Command.CombinedOutput()
 		fmt.Println(string(output))
 		Expect(sess.Out).To(gbytes.Say("0000000000000000000000000000000000000000000000000000000000000008"))
+
+		// The following query tests the opcode STATICCALL
+		By("querying the SimpleStorage Contract through the InvokeContract")
+		sess, err = network.PeerUserSession(peer, "User1", helpers.ChaincodeQueryWithHex{
+			ChannelID: "testchannel",
+			Name:      "evmcc",
+			//get()
+			Ctor: fmt.Sprintf(`{"Args":["%s","%s"]}`, invokeAddr, InvokeContract.FunctionHashes["getVal"]),
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(sess, LongEventualTimeout).Should(gexec.Exit(0))
+		output, _ = sess.Command.CombinedOutput()
+		fmt.Println(string(output))
+		Expect(sess.Out).To(gbytes.Say("0000000000000000000000000000000000000000000000000000000000000008"))
 	})
 })
