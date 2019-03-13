@@ -37,12 +37,11 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2c00f064ba355903866cbfbf3f7f4c0fe64af6638cc7d1b8bdcf3181bc67f1d8"
+  digest = "1:093bf93a65962e8191e3e8cd8fc6c363f83d43caca9739c906531ba7210a9904"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
   pruneopts = "UT"
-  revision = "fdfc19097e7ac6b57035062056f5b7b4638b8898"
+  revision = "ed77733ec07dfc8a513741138419b8d9d3de9d2d"
 
 [[projects]]
   digest = "1:a1e402c0a7eb4122cb9e4c3dcd1aa20bb238767ea1a857cc5d245f05c0cd5b3c"
@@ -314,15 +313,16 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:7ccc39018520df6956f940fdab52603a8bf6cca73b8d344a3bc93aa481ee6959"
+  digest = "1:dc9ef46e42fa6024d4be90013e28da47f38c71e35df687a0de80b8554d043714"
   name = "github.com/hyperledger/burrow"
   packages = [
     "acm",
+    "acm/acmstate",
     "acm/balance",
-    "acm/state",
     "acm/validator",
     "binary",
     "crypto",
+    "crypto/sha3",
     "deploy/compile",
     "event",
     "event/pubsub",
@@ -332,7 +332,6 @@
     "execution/evm/abi",
     "execution/evm/asm",
     "execution/evm/asm/bc",
-    "execution/evm/sha3",
     "execution/exec",
     "execution/names",
     "genesis",
@@ -346,8 +345,8 @@
     "txs/payload",
   ]
   pruneopts = "UT"
-  revision = "9596a8883cf94810be7eb2ffc521433d3dade212"
-  version = "v0.23.3"
+  revision = "3894efc2e7f2ce6c045bcee65a0eace84d27205b"
+  version = "v0.24.4"
 
 [[projects]]
   digest = "1:4cd622ed9ac84766be9783453f3fe419e9f0a6fc4a77d9bf9a83df55872e6a7e"
@@ -812,47 +811,39 @@
   revision = "bea94bb476ccecfbd31b12ed493a971bdb8c904b"
 
 [[projects]]
-  digest = "1:605b6546f3f43745695298ec2d342d3e952b6d91cdf9f349bea9315f677d759f"
-  name = "github.com/tendermint/btcd"
-  packages = ["btcec"]
-  pruneopts = "UT"
-  revision = "e5840949ff4fff0c56f9b6a541e22b63581ea9df"
-
-[[projects]]
-  branch = "master"
-  digest = "1:087aaa7920e5d0bf79586feb57ce01c35c830396ab4392798112e8aae8c47722"
-  name = "github.com/tendermint/ed25519"
-  packages = [
-    ".",
-    "edwards25519",
-    "extra25519",
-  ]
-  pruneopts = "UT"
-  revision = "d8387025d2b9d158cf4efb07e7ebf814bcce2057"
-
-[[projects]]
-  digest = "1:2c971a45c89ca2ccc735af50919cdee05fbdc54d4bf50625073693300e31ead8"
+  digest = "1:ad9c4c1a4e7875330b1f62906f2830f043a23edb5db997e3a5ac5d3e6eadf80a"
   name = "github.com/tendermint/go-amino"
   packages = ["."]
   pruneopts = "UT"
-  revision = "faa6e731944e2b7b6a46ad202902851e8ce85bee"
-  version = "v0.12.0"
+  revision = "dc14acf9ef15f85828bfbc561ed9dd9d2a284885"
+  version = "v0.14.1"
 
 [[projects]]
-  digest = "1:e8e52fa7bb589bb2db447e3e7576810952cfd9addc126b3bd7be08add3930895"
+  digest = "1:ecadde44ac599fc575383b1a45a33e0de467cb496b1d980d96fed110f662a711"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/types",
     "crypto",
     "crypto/ed25519",
+    "crypto/encoding/amino",
+    "crypto/merkle",
+    "crypto/multisig",
+    "crypto/multisig/bitarray",
     "crypto/secp256k1",
+    "crypto/secp256k1/internal/secp256k1",
     "crypto/tmhash",
     "libs/common",
     "libs/log",
+    "libs/pubsub",
+    "libs/pubsub/query",
+    "types",
+    "types/time",
+    "version",
   ]
   pruneopts = "UT"
-  revision = "0c9c3292c918617624f6f3fbcd95eceade18bcd5"
-  version = "v0.25.0"
+  revision = "df304d2276b731f2f924e93ef176337951bb5f27"
+  source = "github.com/silasdavis/tendermint"
+  version = "v0.30.1"
 
 [[projects]]
   branch = "master"
@@ -915,8 +906,7 @@
   version = "v1.9.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:397cd8969e00ef374ecd5bd61ed2eccd5ccd2ee647942722600f4c0f1c50ee4e"
+  digest = "1:ffeae0d916fd06ed860e474344f0a9e6b0028d3052b83b804e87576bcd18e204"
   name = "golang.org/x/crypto"
   packages = [
     "cryptobyte",
@@ -933,7 +923,7 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
+  revision = "505ab145d0a99da450461ae2c1a9f6cd10d1f447"
 
 [[projects]]
   digest = "1:28fb5707d8d87145e53f3e958db31d652ff5e2da5229140abe99033139800327"

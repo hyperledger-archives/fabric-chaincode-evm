@@ -72,6 +72,10 @@ accounts are not stored on the ledger and the addresses are generated on the fly
 when needed. This should not affect Ethereum smart contract execution. If a
 contract stores an address, it will be stored under that contract's data.
 
+**NOTE** In the current implementation of the EVMCC, the opcode `BLOCKHASH` is
+not supported. Therefore contracts that use the `blockhash(uint blockNumber)`
+function will result in an error.
+
 ## Running Fab3
 
 Fab3 is a web3 provider that allows the use of ethereum tools such as Web3.js

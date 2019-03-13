@@ -41,6 +41,7 @@ var _ = Describe("evmcc", func() {
 		evmcc      shim.Chaincode
 		stub       *evmcc_mocks.MockStub
 		fakeLedger map[string][]byte
+		nonce      uint64
 	)
 
 	BeforeEach(func() {
@@ -60,6 +61,12 @@ var _ = Describe("evmcc", func() {
 		stub.DelStateStub = func(key string) error {
 			delete(fakeLedger, key)
 			return nil
+		}
+
+		//TxID is used to create a nonce which is used to create contract addresses
+		stub.GetTxIDStub = func() string {
+			nonce = nonce + 1
+			return fmt.Sprintf("%d", nonce)
 		}
 
 	})
@@ -118,9 +125,8 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 			res := evmcc.Invoke(stub)
 			Expect(res.Status).To(Equal(int32(shim.OK)))
 
-			// First PutState Call is for setting the code for the contract account
-			// Second PutState Call is to store the current sequence number
-			Expect(stub.PutStateCallCount()).To(Equal(2))
+			// PutState Call is for setting the code for the contract account
+			Expect(stub.PutStateCallCount()).To(Equal(1))
 
 			value := fakeLedger[string(res.Payload)]
 			contractAcct, err := acm.Decode(value)
@@ -129,16 +135,6 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 			Expect(hex.EncodeToString(contractAcct.Code.Bytes())).To(Equal(runtimeCode))
 			Expect(hex.EncodeToString(contractAcct.Address.Bytes())).To(Equal(string(res.Payload)))
 			Expect(contractAcct.Permissions).To(Equal(evm.ContractPerms))
-
-			userAddr, err := identityToAddr([]byte(user0Cert))
-			Expect(err).ToNot(HaveOccurred())
-
-			value = fakeLedger[strings.ToLower(userAddr.String())]
-			userAcct, err := acm.Decode(value)
-			Expect(userAcct.Address).To(Equal(userAddr))
-
-			//Sequence should be equal to the number of contracts previously deployed by this user
-			Expect(userAcct.Sequence).To(Equal(uint64(1)))
 		})
 
 		Context("when a contract has already been deployed", func() {
@@ -153,7 +149,9 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 				stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), deployCode})
 				res := evmcc.Invoke(stub)
 				Expect(res.Status).To(Equal(int32(shim.OK)))
-				Expect(stub.PutStateCallCount()).To(Equal(2))
+
+				// PutState Call is for setting the code for the contract account
+				Expect(stub.PutStateCallCount()).To(Equal(1))
 
 				var err error
 				contractAddress, err = crypto.AddressFromHexString(string(res.Payload))
@@ -257,7 +255,9 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 					stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), deployCode})
 					res := evmcc.Invoke(stub)
 					Expect(res.Status).To(Equal(int32(shim.OK)))
-					Expect(stub.PutStateCallCount()).To(Equal(2))
+
+					// PutState Call is for setting the code for the contract account
+					Expect(stub.PutStateCallCount()).To(Equal(1))
 
 					contractAddress, err := crypto.AddressFromHexString(string(res.Payload))
 					Expect(err).ToNot(HaveOccurred())

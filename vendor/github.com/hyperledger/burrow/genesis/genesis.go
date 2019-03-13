@@ -21,6 +21,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/hyperledger/burrow/binary"
+
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/acm/validator"
 	"github.com/hyperledger/burrow/crypto"
@@ -67,11 +69,14 @@ type params struct {
 type GenesisDoc struct {
 	GenesisTime       time.Time
 	ChainName         string
-	Params            params `json:",omitempty" toml:",omitempty"`
-	Salt              []byte `json:",omitempty" toml:",omitempty"`
+	AppHash           binary.HexBytes `json:",omitempty" toml:",omitempty"`
+	Params            params          `json:",omitempty" toml:",omitempty"`
+	Salt              []byte          `json:",omitempty" toml:",omitempty"`
 	GlobalPermissions permission.AccountPermissions
 	Accounts          []Account
 	Validators        []Validator
+	// memo
+	hash []byte
 }
 
 func (genesisDoc *GenesisDoc) JSONString() string {
@@ -90,6 +95,10 @@ func (genesisDoc *GenesisDoc) JSONBytes() ([]byte, error) {
 }
 
 func (genesisDoc *GenesisDoc) Hash() []byte {
+	if genesisDoc.hash != nil {
+		return genesisDoc.hash
+	}
+
 	genesisDocBytes, err := genesisDoc.JSONBytes()
 	if err != nil {
 		panic(fmt.Errorf("could not create hash of GenesisDoc: %v", err))
@@ -116,7 +125,12 @@ func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	if err != nil {
 		return nil, fmt.Errorf("couldn't read GenesisDoc: %v", err)
 	}
+	if len(genDoc.AppHash) != 0 {
+		genDoc.hash = genDoc.AppHash
+	}
+
 	return genDoc, nil
+
 }
 
 //------------------------------------------------------------
@@ -143,6 +157,15 @@ func (genesisAccount *Account) Clone() Account {
 		},
 		Name:        genesisAccount.Name,
 		Permissions: genesisAccount.Permissions.Clone(),
+	}
+}
+
+func (genesisAccount *Account) AcmAccount() *acm.Account {
+	return &acm.Account{
+		Address:     genesisAccount.Address,
+		PublicKey:   genesisAccount.PublicKey,
+		Balance:     genesisAccount.Amount,
+		Permissions: genesisAccount.Permissions,
 	}
 }
 
@@ -192,7 +215,7 @@ func (basicAccount *BasicAccount) Clone() BasicAccount {
 // failure.  In particular MakeGenesisDocFromAccount uses the local time as a
 // timestamp for the GenesisDoc.
 func MakeGenesisDocFromAccounts(chainName string, salt []byte, genesisTime time.Time, accounts map[string]*acm.Account,
-	validators map[string]validator.Validator) *GenesisDoc {
+	validators map[string]*validator.Validator) *GenesisDoc {
 
 	// Establish deterministic order of accounts by name so we obtain identical GenesisDoc
 	// from identical input
