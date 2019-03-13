@@ -1,3 +1,55 @@
+## v0.2.0
+Mon Apr  8 20:58:07 PDT 2019
+
+* [8de03f8](https://github.com/hyperledger/fabric-chaincode-evm/commit/8de03f8) [FAB-14837](https://jira.hyperledger.org/browse/FAB-14837) Release v0.2
+* [b1f36a6](https://github.com/hyperledger/fabric-chaincode-evm/commit/b1f36a6) [FAB-14649](https://jira.hyperledger.org/browse/FAB-14649) Add EndToEnd diagram to README
+* [a02855c](https://github.com/hyperledger/fabric-chaincode-evm/commit/a02855c) [FAB-14092](https://jira.hyperledger.org/browse/FAB-14092) getLogs blockhash argument implementation
+* [57b3661](https://github.com/hyperledger/fabric-chaincode-evm/commit/57b3661) [FAB-15072](https://jira.hyperledger.org/browse/FAB-15072) eth_getLogs documentation
+* [e76b141](https://github.com/hyperledger/fabric-chaincode-evm/commit/e76b141) [FAB-14021](https://jira.hyperledger.org/browse/FAB-14021) implement topic filters
+* [be13643](https://github.com/hyperledger/fabric-chaincode-evm/commit/be13643) [FAB-14864](https://jira.hyperledger.org/browse/FAB-14864) change ginkgo flags used for unit-test
+* [413ebda](https://github.com/hyperledger/fabric-chaincode-evm/commit/413ebda) [FAB-14020](https://jira.hyperledger.org/browse/FAB-14020) address filtering for GetLogs
+* [3c5deb9](https://github.com/hyperledger/fabric-chaincode-evm/commit/3c5deb9) [FAB-14213](https://jira.hyperledger.org/browse/FAB-14213) Add STATICCALL test
+* [464c77d](https://github.com/hyperledger/fabric-chaincode-evm/commit/464c77d) [FAB-14213](https://jira.hyperledger.org/browse/FAB-14213) Update Burrow to 0.24.4
+* [3cb2955](https://github.com/hyperledger/fabric-chaincode-evm/commit/3cb2955) [FAB-14798](https://jira.hyperledger.org/browse/FAB-14798) use new golint import
+* [ddd84e2](https://github.com/hyperledger/fabric-chaincode-evm/commit/ddd84e2) [FAB-13630](https://jira.hyperledger.org/browse/FAB-13630) minimum eth_getLogs implementation
+* [2c4c128](https://github.com/hyperledger/fabric-chaincode-evm/commit/2c4c128) [FAB-14636](https://jira.hyperledger.org/browse/FAB-14636) Add missing closing bracket
+* [382477f](https://github.com/hyperledger/fabric-chaincode-evm/commit/382477f) [FAB-14043](https://jira.hyperledger.org/browse/FAB-14043) Clean up of fabricEventToEVMLogs
+* [d44fedd](https://github.com/hyperledger/fabric-chaincode-evm/commit/d44fedd) [FAB-13740](https://jira.hyperledger.org/browse/FAB-13740) Update documentation and README
+* [5d98164](https://github.com/hyperledger/fabric-chaincode-evm/commit/5d98164) [FAB-14452](https://jira.hyperledger.org/browse/FAB-14452) Update the flag documentation
+* [211db70](https://github.com/hyperledger/fabric-chaincode-evm/commit/211db70) [FAB-14059](https://jira.hyperledger.org/browse/FAB-14059) Add Contribution information
+* [135fc8e](https://github.com/hyperledger/fabric-chaincode-evm/commit/135fc8e) [FAB-14191](https://jira.hyperledger.org/browse/FAB-14191) Create httpserver in Fab3 constructor
+* [badebf5](https://github.com/hyperledger/fabric-chaincode-evm/commit/badebf5) [FAB-14190](https://jira.hyperledger.org/browse/FAB-14190) Contract Address has "0x" prefix
+* [8d1c5ae](https://github.com/hyperledger/fabric-chaincode-evm/commit/8d1c5ae) [FAB-14258](https://jira.hyperledger.org/browse/FAB-14258) getCode doesn't error on empty acct
+* [857b62d](https://github.com/hyperledger/fabric-chaincode-evm/commit/857b62d) [FAB-14244](https://jira.hyperledger.org/browse/FAB-14244) Log messages should not use dashes
+* [84342a3](https://github.com/hyperledger/fabric-chaincode-evm/commit/84342a3) [FAB-14301](https://jira.hyperledger.org/browse/FAB-14301) clear json unmarshal struct target
+* [29fe032](https://github.com/hyperledger/fabric-chaincode-evm/commit/29fe032) [FAB-14244](https://jira.hyperledger.org/browse/FAB-14244) Fix logging in Fab3 main
+* [23c9208](https://github.com/hyperledger/fabric-chaincode-evm/commit/23c9208) [FAB-14243](https://jira.hyperledger.org/browse/FAB-14243) Dial fab3 port before tests
+* [e41187b](https://github.com/hyperledger/fabric-chaincode-evm/commit/e41187b) [FAB-14279](https://jira.hyperledger.org/browse/FAB-14279) Integration tests use simpler network
+* [6f7056a](https://github.com/hyperledger/fabric-chaincode-evm/commit/6f7056a) [FAB-13284](https://jira.hyperledger.org/browse/FAB-13284) update golang dep to v0.5.0
+* [641c6fb](https://github.com/hyperledger/fabric-chaincode-evm/commit/641c6fb) [FAB-14164](https://jira.hyperledger.org/browse/FAB-14164) move input and output structs to fab3/types
+* [548b543](https://github.com/hyperledger/fabric-chaincode-evm/commit/548b543) [FAB-14034](https://jira.hyperledger.org/browse/FAB-14034) write down why reset the branch
+* [a3f658d](https://github.com/hyperledger/fabric-chaincode-evm/commit/a3f658d) [FAB-14194](https://jira.hyperledger.org/browse/FAB-14194) Install only the necessary gotools
+* [93048eb](https://github.com/hyperledger/fabric-chaincode-evm/commit/93048eb) [FAB-14043](https://jira.hyperledger.org/browse/FAB-14043) conditionally add data to output
+* [2570de3](https://github.com/hyperledger/fabric-chaincode-evm/commit/2570de3) [FAB-14203](https://jira.hyperledger.org/browse/FAB-14203) Add Web3 integration tests to Fab3
+* [e6c8fdf](https://github.com/hyperledger/fabric-chaincode-evm/commit/e6c8fdf) [FAB-14177](https://jira.hyperledger.org/browse/FAB-14177) check all errs in fab3 integration tests
+* [eb940a3](https://github.com/hyperledger/fabric-chaincode-evm/commit/eb940a3) [FAB-13947](https://jira.hyperledger.org/browse/FAB-13947) Change fab3 output file in documentation
+* [08a8c37](https://github.com/hyperledger/fabric-chaincode-evm/commit/08a8c37) [FAB-14034](https://jira.hyperledger.org/browse/FAB-14034) download counterfeiter
+* [ad60dda](https://github.com/hyperledger/fabric-chaincode-evm/commit/ad60dda) [FAB-14055](https://jira.hyperledger.org/browse/FAB-14055) CC-evm make fails if GOPATH contains >1 el
+* [9d45323](https://github.com/hyperledger/fabric-chaincode-evm/commit/9d45323) [FAB-14038](https://jira.hyperledger.org/browse/FAB-14038) log to ginkgowriter
+* [f8c8925](https://github.com/hyperledger/fabric-chaincode-evm/commit/f8c8925) [FAB-14060](https://jira.hyperledger.org/browse/FAB-14060) set empty environment during test
+* [df0dd75](https://github.com/hyperledger/fabric-chaincode-evm/commit/df0dd75) [FAB-14039](https://jira.hyperledger.org/browse/FAB-14039) Update examples to use FAB3_PORT
+* [4fbf01c](https://github.com/hyperledger/fabric-chaincode-evm/commit/4fbf01c) [FAB-13585](https://jira.hyperledger.org/browse/FAB-13585) Implement eth_BlockNumber
+* [f79ebff](https://github.com/hyperledger/fabric-chaincode-evm/commit/f79ebff) [FAB-13065](https://jira.hyperledger.org/browse/FAB-13065) Fab3 exits gracefully on exit
+* [95b572b](https://github.com/hyperledger/fabric-chaincode-evm/commit/95b572b) [FAB-13385](https://jira.hyperledger.org/browse/FAB-13385) fab3 can be configured with flags
+* [515498f](https://github.com/hyperledger/fabric-chaincode-evm/commit/515498f) [FAB-13903](https://jira.hyperledger.org/browse/FAB-13903) typo in getting deployed contract address
+* [00cf19a](https://github.com/hyperledger/fabric-chaincode-evm/commit/00cf19a) [FAB-13384](https://jira.hyperledger.org/browse/FAB-13384) Rename all references of fabproxy to fab3.
+* [58f25fb](https://github.com/hyperledger/fabric-chaincode-evm/commit/58f25fb) [FAB-13102](https://jira.hyperledger.org/browse/FAB-13102) implement burrow EventSink for fabric backend
+* [3c697d4](https://github.com/hyperledger/fabric-chaincode-evm/commit/3c697d4) [FAB-13102](https://jira.hyperledger.org/browse/FAB-13102) Update burrow to 0.23.3
+* [76335b5](https://github.com/hyperledger/fabric-chaincode-evm/commit/76335b5) [FAB-13851](https://jira.hyperledger.org/browse/FAB-13851) avoid printing during unit-tests
+* [3b1ab16](https://github.com/hyperledger/fabric-chaincode-evm/commit/3b1ab16) [FAB-13628](https://jira.hyperledger.org/browse/FAB-13628) Release fabric-chaincode-evm v0.1.0
+* [e6ed45b](https://github.com/hyperledger/fabric-chaincode-evm/commit/e6ed45b) [FAB-13576](https://jira.hyperledger.org/browse/FAB-13576) integration tests timeouts
+* [fdacdd2](https://github.com/hyperledger/fabric-chaincode-evm/commit/fdacdd2) [FAB-10787](https://jira.hyperledger.org/browse/FAB-10787) Integration tests for events
+
 ## 0.1.0
 Thu Jan 10 14:38:02 PST 2019
 
