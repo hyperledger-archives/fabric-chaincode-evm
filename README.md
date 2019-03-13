@@ -58,7 +58,7 @@ The only actions that do not follow the above pattern are to query for contract
 runtime code and accounts.
 ```
 # To query for the user account address that is generated from the user public key
-peer chaincode query -n evmcc -C <channel-name> -c '{"Args":["account"]'
+peer chaincode query -n evmcc -C <channel-name> -c '{"Args":["account"]}'
 
 # To query for the runtime bytecode for a contract
 peer chaincode query -n evmcc -C <channel-name> -c '{"Args":["getCode", "<contract-address>"]}'
