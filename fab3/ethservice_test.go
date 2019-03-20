@@ -21,6 +21,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -1093,15 +1094,104 @@ var _ = Describe("Ethservice", func() {
 			})
 		})
 	})
+
+	Describe("GetLogs", func() {
+		var logsArgs *types.GetLogsArgs
+		var reply *[]types.Log
+		BeforeEach(func() {
+			logsArgs = &types.GetLogsArgs{}
+			reply = &[]types.Log{}
+		})
+		Context("errors appropriately", func() {
+			It("fails when the ledger is down", func() {
+				mockLedgerClient.QueryInfoReturns(nil, fmt.Errorf("it's broke"))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 1}}, nil)
+				mockLedgerClient.QueryBlockReturns(nil, fmt.Errorf("yup still broke"))
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+			})
+			It("does not allow FromBlock to be greater than ToBlock", func() {
+				logsArgs = &types.GetLogsArgs{FromBlock: "0x1", ToBlock: "0x0"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+			})
+			It("does not accept pending as a block parameter", func() {
+				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 1}}, nil)
+				sampleBlock := GetSampleBlock(1)
+				mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
+
+				logsArgs = &types.GetLogsArgs{FromBlock: "pending"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+				logsArgs = &types.GetLogsArgs{ToBlock: "pending"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).ShouldNot(Succeed())
+			})
+		})
+		Context("succeeds on valid input", func() {
+			It("accepts an empty input struct by defaulting", func() {
+				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 1}}, nil)
+				sampleBlock := GetSampleBlock(1)
+				mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
+				By("running the test with an empty struct as argument")
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(2))
+				reply1 := reply
+				By("running the same test with explicit args")
+				logsArgs = &types.GetLogsArgs{FromBlock: "latest", ToBlock: "latest"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(2))
+				reply2 := reply
+				By("comparing the results of the two invocations")
+				Expect(*reply1).To(Equal(*reply2))
+			})
+			It("returns logs when both FromBlock and ToBlock are specified", func() {
+				sampleBlock1 := GetSampleBlock(1)
+				sampleBlock2 := GetSampleBlock(2)
+				qbs := func(b uint64, _ ...ledger.RequestOption) (*common.Block, error) {
+					if b == 1 {
+						return sampleBlock1, nil
+					} else if b == 2 {
+						return sampleBlock2, nil
+					} else {
+						return nil, fmt.Errorf("no block")
+					}
+				}
+				mockLedgerClient.QueryBlockStub = qbs
+				logsArgs = &types.GetLogsArgs{FromBlock: "0x1", ToBlock: "0x2"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).Should(Succeed())
+				Expect(len(*reply)).Should(Equal(4))
+			})
+		})
+	})
 })
 
 func GetSampleBlock(blockNumber uint64) *common.Block {
-	tx, err := GetSampleTransaction([][]byte{[]byte("12345678"), []byte("sample arg 1")}, []byte("sample-response1"), []byte{}, "5678")
+	addr, err := crypto.AddressFromBytes([]byte("82373458164820947891"))
+	Expect(err).ToNot(HaveOccurred())
+
+	msg := event.Event{
+		Address: strings.ToLower(addr.String()),
+		Topics:  []string{"sample-topic-1", "sample-topic2"},
+		Data:    "sample-data",
+	}
+	events := []event.Event{msg}
+	eventPayload, err := json.Marshal(events)
+	Expect(err).ToNot(HaveOccurred())
+
+	chaincodeEvent := peer.ChaincodeEvent{
+		ChaincodeId: "qscc",
+		TxId:        "1234",
+		EventName:   "Chaincode event",
+		Payload:     eventPayload,
+	}
+
+	eventBytes, err := proto.Marshal(&chaincodeEvent)
+	Expect(err).ToNot(HaveOccurred())
+
+	tx, err := GetSampleTransaction([][]byte{[]byte("12345678"), []byte("sample arg 1")}, []byte("sample-response1"), eventBytes, "5678")
 	Expect(err).ToNot(HaveOccurred())
 	txn1, err := proto.Marshal(tx.TransactionEnvelope)
 	Expect(err).ToNot(HaveOccurred())
 
-	tx, err = GetSampleTransaction([][]byte{[]byte("98765432"), []byte("sample arg 2")}, []byte("sample-response2"), []byte{}, "1234")
+	tx, err = GetSampleTransaction([][]byte{[]byte("98765432"), []byte("sample arg 2")}, []byte("sample-response2"), eventBytes, "1234")
 	txn2, err := proto.Marshal(tx.TransactionEnvelope)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -1111,8 +1201,9 @@ func GetSampleBlock(blockNumber uint64) *common.Block {
 		Header: &common.BlockHeader{Number: blockNumber,
 			PreviousHash: phash,
 			DataHash:     dhash},
-		Data:     &common.BlockData{Data: [][]byte{txn1, txn2}},
-		Metadata: &common.BlockMetadata{Metadata: [][]byte{{0}, {0}}},
+		Data: &common.BlockData{Data: [][]byte{txn1, txn2}},
+		// each block data needs each of the metadata
+		Metadata: &common.BlockMetadata{Metadata: [][]byte{{0, 0}, {0, 0}, {0, 0}, {0, 0}}},
 	}
 }
 
@@ -1213,7 +1304,7 @@ func GetSampleTransaction(inputArgs [][]byte, txResponse, eventBytes []byte, txI
 		return &peer.ProcessedTransaction{}, err
 	}
 
-	chdr := &common.ChannelHeader{TxId: txId}
+	chdr := &common.ChannelHeader{Type: int32(common.HeaderType_ENDORSER_TRANSACTION), TxId: txId}
 	chdrBytes, err := proto.Marshal(chdr)
 	if err != nil {
 		return &peer.ProcessedTransaction{}, err

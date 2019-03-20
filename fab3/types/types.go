@@ -25,6 +25,11 @@ type EthArgs struct {
 	Nonce    string `json:"nonce"`
 }
 
+type GetLogsArgs struct {
+	FromBlock string `json:"fromBlock,omitempty"`
+	ToBlock   string `json:"toBlock,omitempty"`
+}
+
 /*
 Output types used as return values from ethservice methods.
 */
