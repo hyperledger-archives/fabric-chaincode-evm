@@ -12,7 +12,7 @@ GOROOT ?= $(firstword $(subst :, ,$(GOPATH))
 # go tool->path mapping
 go.fqp.counterfeiter := github.com/maxbrunsfeld/counterfeiter
 go.fqp.goimports     := golang.org/x/tools/cmd/goimports
-go.fqp.golint        := github.com/golang/lint/golint
+go.fqp.golint        := golang.org/x/lint/golint
 go.fqp.misspell      := github.com/client9/misspell/cmd/misspell
 
 .PHONY: gotools-install
