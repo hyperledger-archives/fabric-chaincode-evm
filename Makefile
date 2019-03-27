@@ -18,10 +18,6 @@
 #   - docker-images - pulls the latest docker ccenv and couchdb images needed for integration tests
 #   - update-mocks - update the counterfeiter test doubles
 #
-ARCH=$(shell go env GOARCH)
-BASEIMAGE_RELEASE=0.4.13
-BASE_DOCKER_NS ?= hyperledger
-BASE_DOCKER_TAG=$(ARCH)-$(BASEIMAGE_RELEASE)
 FABRIC_RELEASE=1.4
 PREV_VERSION=0.1.0
 BASE_VERSION=0.2.0
@@ -77,15 +73,18 @@ check-deps: gotool.dep
 changelog:
 	@scripts/changelog.sh v$(PREV_VERSION) v$(BASE_VERSION)
 
+# we don't use any of these images, they just need to exist for the integration
+# tests, so pull busybox and tag it as needed
+.PHONY: docker-images
 docker-images:
-	docker pull $(BASE_DOCKER_NS)/fabric-javaenv:$(FABRIC_RELEASE)
-	docker tag $(BASE_DOCKER_NS)/fabric-javaenv:$(FABRIC_RELEASE) $(BASE_DOCKER_NS)/fabric-javaenv:$(ARCH)-latest
-	docker pull $(BASE_DOCKER_NS)/fabric-couchdb:$(BASE_DOCKER_TAG)
-	docker tag $(BASE_DOCKER_NS)/fabric-couchdb:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-couchdb
-	docker pull $(BASE_DOCKER_NS)/fabric-zookeeper:$(BASE_DOCKER_TAG)
-	docker tag $(BASE_DOCKER_NS)/fabric-zookeeper:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-zookeeper
-	docker pull $(BASE_DOCKER_NS)/fabric-kafka:$(BASE_DOCKER_TAG)
-	docker tag $(BASE_DOCKER_NS)/fabric-kafka:$(BASE_DOCKER_TAG) $(BASE_DOCKER_NS)/fabric-kafka
+	docker pull busybox
+	@# check if the image exists, we only want the exit code, so give an empty format string
+	for IMAGE in couchdb kafka zookeeper; do \
+		docker inspect hyperledger/fabric-$$IMAGE --format ' ' || \
+			echo "tag $$IMAGE" && docker tag busybox hyperledger/fabric-$$IMAGE ; \
+	done
+	@docker inspect hyperledger/fabric-javaenv:amd64-latest --format ' ' || \
+		echo "tag javaenv" && docker tag busybox hyperledger/fabric-javaenv:amd64-latest
 
 .PHONY: integration-test
 integration-test: docker-images gotool.ginkgo
