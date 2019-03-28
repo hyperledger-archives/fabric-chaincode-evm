@@ -30,6 +30,8 @@ tags
 *.log
 # code coverage
 *.cov
+# ginkgo auto generated coverage reports
+*.coverprofile
 go-carpet-coverage*
 # Test result xml files
 report.xml
