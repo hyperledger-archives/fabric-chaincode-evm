@@ -5,14 +5,25 @@ Burrow EVM. At its essence, this project enables one to use the Hyperledger
 Fabric permissioned blockchain platform to interact with Ethereum smart
 contracts written in an EVM compatible language such as Solidity or Vyper.
 
-The integration has two main pieces. The chaincode, which integrates the
-Hyperledger Burrow EVM package in a Go chaincode shim and maps the various
-methods between the peer and the EVM itself.
+The integration is achieved through the EVM chaincode (EVMCC) and Fab3. The
+EVMCC wraps the Hyperledger Burrow EVM package in a Go chaincode shim and maps
+the various methods between the peer and the EVM itself. The EVMCC acts as the
+smart contract runtime and stores the deployed contract code on the ledger under
+the `evmcc` namespace.
 
 The second piece is Fab3, a web3 provider, which is a proxy that implements a
 subset of the Ethereum compliant JSON RPC interfaces, so that users could use
 tools such as Web3.js to interact with smart contracts running in the Fabric
-EVM.
+EVM. Using the Fabric GO SDK, Fab3 is able to communicate with the Fabric
+network to interact with the EVMCC. Without Fab3, users can still interact with
+the EVMCC using the Fabric APIs.
+
+Used together, the EVMCC and Fab3 recreates the Ethereum smart contract runtime
+and developer experience. Applications that make use of the Ethereum JSON RPC
+API and EVM smart contracts should be able to stay unchanged and can be brought
+to use with Hyperledger Fabric.
+
+![EndToEnd](EndToEnd.png)
 
 We hang out in the
 [#fabric-evm channel](https://chat.hyperledger.org/channel/fabric-evm). We are
