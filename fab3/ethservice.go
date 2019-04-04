@@ -655,7 +655,18 @@ LOG_EVENT:
 		}
 
 		logger.Debug("checking for topics")
-		// check match for each topic,
+		// Check match for each topic. This implementation matches behavior we have observed from other implementations.
+		//
+		// [] "anything"
+		// [A] "A in first position (and anything after)"
+		// [null, B] "anything in first position AND B in second position (and anything after)"
+		// [A, B] "A in first position AND B in second position (and anything after)"
+		// [[A, B], [A, B]] "(A OR B) in first position AND (A OR B) in second position (and anything after)"
+		//
+		// null matchers can be used to force an event to have at least that many topics
+		// [] "anything"
+		// [null] "anything with at least one topic"
+		// [null, null] "anything with two or more topics"
 		for i, topicFilter := range tf {
 			// if filter is empty it matches automatically.
 			if len(topicFilter) == 0 {
