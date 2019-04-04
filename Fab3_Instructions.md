@@ -24,6 +24,7 @@ Fab3 currently supports:
 - [eth_blockNumber](#eth_blockNumber)
 - [eth_getTransactionByHash](#eth_getTransactionByHash)
 - [eth_getTransactionReceipt](#eth_getTransactionReceipt)
+- [eth_getLogs](#eth_getLogs)
 
 
 ### net_version
@@ -305,8 +306,8 @@ number will result in an error. Address is an individual address or array of add
 match the entries in the log objects. Topics is an array of matching topics which must match the
 entries of the log objects.  See the [spec for the
 format](https://github.com/ethereum/wiki/wiki/JSON-RPC#a-note-on-specifying-topic-filters) of topic
-filters.
-
+filters. BlockHash is the exact hash of a fabric block, which will be the only block searched for
+transactions that contain matching log entries.
 
 **Example**
 ```
