@@ -2,13 +2,12 @@
 package fab3
 
 import (
-	"sync"
+	sync "sync"
 
-	"github.com/hyperledger/fabric-chaincode-evm/fab3"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	fab3 "github.com/hyperledger/fabric-chaincode-evm/fab3"
+	ledger "github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
+	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
 type MockLedgerClient struct {
@@ -23,6 +22,20 @@ type MockLedgerClient struct {
 		result2 error
 	}
 	queryBlockReturnsOnCall map[int]struct {
+		result1 *common.Block
+		result2 error
+	}
+	QueryBlockByHashStub        func([]byte, ...ledger.RequestOption) (*common.Block, error)
+	queryBlockByHashMutex       sync.RWMutex
+	queryBlockByHashArgsForCall []struct {
+		arg1 []byte
+		arg2 []ledger.RequestOption
+	}
+	queryBlockByHashReturns struct {
+		result1 *common.Block
+		result2 error
+	}
+	queryBlockByHashReturnsOnCall map[int]struct {
 		result1 *common.Block
 		result2 error
 	}
@@ -51,20 +64,6 @@ type MockLedgerClient struct {
 	}
 	queryInfoReturnsOnCall map[int]struct {
 		result1 *fab.BlockchainInfoResponse
-		result2 error
-	}
-	QueryTransactionStub        func(fab.TransactionID, ...ledger.RequestOption) (*peer.ProcessedTransaction, error)
-	queryTransactionMutex       sync.RWMutex
-	queryTransactionArgsForCall []struct {
-		arg1 fab.TransactionID
-		arg2 []ledger.RequestOption
-	}
-	queryTransactionReturns struct {
-		result1 *peer.ProcessedTransaction
-		result2 error
-	}
-	queryTransactionReturnsOnCall map[int]struct {
-		result1 *peer.ProcessedTransaction
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -120,6 +119,65 @@ func (fake *MockLedgerClient) QueryBlockReturnsOnCall(i int, result1 *common.Blo
 		})
 	}
 	fake.queryBlockReturnsOnCall[i] = struct {
+		result1 *common.Block
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLedgerClient) QueryBlockByHash(arg1 []byte, arg2 ...ledger.RequestOption) (*common.Block, error) {
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.queryBlockByHashMutex.Lock()
+	ret, specificReturn := fake.queryBlockByHashReturnsOnCall[len(fake.queryBlockByHashArgsForCall)]
+	fake.queryBlockByHashArgsForCall = append(fake.queryBlockByHashArgsForCall, struct {
+		arg1 []byte
+		arg2 []ledger.RequestOption
+	}{arg1Copy, arg2})
+	fake.recordInvocation("QueryBlockByHash", []interface{}{arg1Copy, arg2})
+	fake.queryBlockByHashMutex.Unlock()
+	if fake.QueryBlockByHashStub != nil {
+		return fake.QueryBlockByHashStub(arg1, arg2...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.queryBlockByHashReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *MockLedgerClient) QueryBlockByHashCallCount() int {
+	fake.queryBlockByHashMutex.RLock()
+	defer fake.queryBlockByHashMutex.RUnlock()
+	return len(fake.queryBlockByHashArgsForCall)
+}
+
+func (fake *MockLedgerClient) QueryBlockByHashArgsForCall(i int) ([]byte, []ledger.RequestOption) {
+	fake.queryBlockByHashMutex.RLock()
+	defer fake.queryBlockByHashMutex.RUnlock()
+	argsForCall := fake.queryBlockByHashArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *MockLedgerClient) QueryBlockByHashReturns(result1 *common.Block, result2 error) {
+	fake.QueryBlockByHashStub = nil
+	fake.queryBlockByHashReturns = struct {
+		result1 *common.Block
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLedgerClient) QueryBlockByHashReturnsOnCall(i int, result1 *common.Block, result2 error) {
+	fake.QueryBlockByHashStub = nil
+	if fake.queryBlockByHashReturnsOnCall == nil {
+		fake.queryBlockByHashReturnsOnCall = make(map[int]struct {
+			result1 *common.Block
+			result2 error
+		})
+	}
+	fake.queryBlockByHashReturnsOnCall[i] = struct {
 		result1 *common.Block
 		result2 error
 	}{result1, result2}
@@ -232,71 +290,17 @@ func (fake *MockLedgerClient) QueryInfoReturnsOnCall(i int, result1 *fab.Blockch
 	}{result1, result2}
 }
 
-func (fake *MockLedgerClient) QueryTransaction(arg1 fab.TransactionID, arg2 ...ledger.RequestOption) (*peer.ProcessedTransaction, error) {
-	fake.queryTransactionMutex.Lock()
-	ret, specificReturn := fake.queryTransactionReturnsOnCall[len(fake.queryTransactionArgsForCall)]
-	fake.queryTransactionArgsForCall = append(fake.queryTransactionArgsForCall, struct {
-		arg1 fab.TransactionID
-		arg2 []ledger.RequestOption
-	}{arg1, arg2})
-	fake.recordInvocation("QueryTransaction", []interface{}{arg1, arg2})
-	fake.queryTransactionMutex.Unlock()
-	if fake.QueryTransactionStub != nil {
-		return fake.QueryTransactionStub(arg1, arg2...)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.queryTransactionReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *MockLedgerClient) QueryTransactionCallCount() int {
-	fake.queryTransactionMutex.RLock()
-	defer fake.queryTransactionMutex.RUnlock()
-	return len(fake.queryTransactionArgsForCall)
-}
-
-func (fake *MockLedgerClient) QueryTransactionArgsForCall(i int) (fab.TransactionID, []ledger.RequestOption) {
-	fake.queryTransactionMutex.RLock()
-	defer fake.queryTransactionMutex.RUnlock()
-	argsForCall := fake.queryTransactionArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *MockLedgerClient) QueryTransactionReturns(result1 *peer.ProcessedTransaction, result2 error) {
-	fake.QueryTransactionStub = nil
-	fake.queryTransactionReturns = struct {
-		result1 *peer.ProcessedTransaction
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *MockLedgerClient) QueryTransactionReturnsOnCall(i int, result1 *peer.ProcessedTransaction, result2 error) {
-	fake.QueryTransactionStub = nil
-	if fake.queryTransactionReturnsOnCall == nil {
-		fake.queryTransactionReturnsOnCall = make(map[int]struct {
-			result1 *peer.ProcessedTransaction
-			result2 error
-		})
-	}
-	fake.queryTransactionReturnsOnCall[i] = struct {
-		result1 *peer.ProcessedTransaction
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *MockLedgerClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.queryBlockMutex.RLock()
 	defer fake.queryBlockMutex.RUnlock()
+	fake.queryBlockByHashMutex.RLock()
+	defer fake.queryBlockByHashMutex.RUnlock()
 	fake.queryBlockByTxIDMutex.RLock()
 	defer fake.queryBlockByTxIDMutex.RUnlock()
 	fake.queryInfoMutex.RLock()
 	defer fake.queryInfoMutex.RUnlock()
-	fake.queryTransactionMutex.RLock()
-	defer fake.queryTransactionMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

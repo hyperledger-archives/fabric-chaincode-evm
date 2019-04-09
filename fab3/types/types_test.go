@@ -57,6 +57,9 @@ var _ = Describe("GetLogsArgs UnmarshalJSON", func() {
 		Entry("block refs",
 			[]byte(`{"fromBlock":"0x0","toBlock":"0x1"}`),
 			valid{"0", "1", nil, nil}),
+		Entry("block hash",
+			[]byte(`{"blockHash":"0x0"}`),
+			valid{"", "", nil, nil}),
 		Entry("slack block refs",
 			[]byte(`{"fromBlock":"0","toBlock":"1"}`),
 			valid{"0", "1", nil, nil}),
@@ -165,5 +168,7 @@ var _ = Describe("GetLogsArgs UnmarshalJSON", func() {
 			[]byte(`{"topics":[[1234]]}`)),
 		Entry("incorrect topics format",
 			[]byte(`{"topics":[{"trash":"object"}]}`)),
+		Entry("mixed block specifier and blockhash",
+			[]byte(`{"fromBlock":"0x1", "blockHash":"0x47"}`)),
 	)
 })

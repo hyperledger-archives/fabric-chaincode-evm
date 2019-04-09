@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fab3_test
 
 import (
+	"crypto/sha256"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -399,7 +402,7 @@ var _ = Describe("Ethservice", func() {
 			Expect(reply).To(Equal(types.TxReceipt{
 				TransactionHash:   "0x" + sampleTransactionID,
 				TransactionIndex:  "0x1",
-				BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+				BlockHash:         "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 				BlockNumber:       "0x1f",
 				GasUsed:           0,
 				CumulativeGasUsed: 0,
@@ -474,7 +477,7 @@ var _ = Describe("Ethservice", func() {
 					BlockNumber: "0x1f",
 					TxHash:      "0x" + sampleTransactionID,
 					TxIndex:     "0x0",
-					BlockHash:   "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:   "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					Index:       "0x0",
 				}
 				expectedLog2 := types.Log{
@@ -483,7 +486,7 @@ var _ = Describe("Ethservice", func() {
 					BlockNumber: "0x1f",
 					TxHash:      "0x" + sampleTransactionID,
 					TxIndex:     "0x0",
-					BlockHash:   "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:   "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					Index:       "0x1",
 				}
 
@@ -494,7 +497,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + sampleTransactionID,
 					TransactionIndex:  "0x0",
-					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:         "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:       "0x1f",
 					GasUsed:           0,
 					CumulativeGasUsed: 0,
@@ -534,7 +537,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + sampleTransactionID,
 					TransactionIndex:  "0x0",
-					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:         "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:       "0x1f",
 					ContractAddress:   "0x" + string(contractAddress),
 					GasUsed:           0,
@@ -562,7 +565,7 @@ var _ = Describe("Ethservice", func() {
 					Expect(reply).To(Equal(types.TxReceipt{
 						TransactionHash:   sampleTransactionID,
 						TransactionIndex:  "0x0",
-						BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+						BlockHash:         "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 						BlockNumber:       "0x1f",
 						ContractAddress:   "0x" + string(contractAddress),
 						GasUsed:           0,
@@ -609,7 +612,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + txnID1,
 					TransactionIndex:  "0x0",
-					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:         "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:       "0x1f",
 					GasUsed:           0,
 					CumulativeGasUsed: 0,
@@ -625,7 +628,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + txnID2,
 					TransactionIndex:  "0x1",
-					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:         "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:       "0x1f",
 					GasUsed:           0,
 					CumulativeGasUsed: 0,
@@ -641,7 +644,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.TxReceipt{
 					TransactionHash:   "0x" + txnID3,
 					TransactionIndex:  "0x2",
-					BlockHash:         "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:         "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:       "0x1f",
 					GasUsed:           0,
 					CumulativeGasUsed: 0,
@@ -837,7 +840,7 @@ var _ = Describe("Ethservice", func() {
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(reply.Number).To(Equal("0x"+requestedBlockNumber), "block number")
-						Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
+						Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(blockHash(sampleBlock.Header))), "block data hash")
 						Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
 						txns := reply.Transactions
 						Expect(txns).To(HaveLen(2))
@@ -870,7 +873,7 @@ var _ = Describe("Ethservice", func() {
 							err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
 							Expect(err).ToNot(HaveOccurred())
 							Expect(reply.Number).To(Equal("0xabc0"), "block number")
-							Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
+							Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(blockHash(sampleBlock.Header))), "block data hash")
 							Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
 
 							Expect(mockLedgerClient.QueryBlockCallCount()).To(Equal(1))
@@ -896,7 +899,7 @@ var _ = Describe("Ethservice", func() {
 							err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
 							Expect(err).ToNot(HaveOccurred())
 							Expect(reply.Number).To(Equal("0x0"), "block number")
-							Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.DataHash)), "block data hash")
+							Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(blockHash(sampleBlock.Header))), "block data hash")
 							Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
 
 							Expect(mockLedgerClient.QueryBlockCallCount()).To(Equal(1))
@@ -942,7 +945,7 @@ var _ = Describe("Ethservice", func() {
 					blockNumber := "0x" + requestedBlockNumber
 					Expect(reply.Number).To(Equal(blockNumber), "block number")
 
-					blockHash := "0x" + hex.EncodeToString(sampleBlock.Header.DataHash)
+					blockHash := "0x" + hex.EncodeToString(blockHash(sampleBlock.Header))
 					Expect(reply.Hash).To(Equal(blockHash), "block data hash")
 					Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
 
@@ -1019,7 +1022,7 @@ var _ = Describe("Ethservice", func() {
 			err := ethservice.GetTransactionByHash(&http.Request{}, &txID, &reply)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(reply.Hash).To(Equal(txID), "txn id hash that was passed in")
-			Expect(reply.BlockHash).To(Equal("0x"+hex.EncodeToString(block.Header.DataHash)), "block data hash")
+			Expect(reply.BlockHash).To(Equal("0x"+hex.EncodeToString(blockHash(block.Header))), "block data hash")
 			Expect(reply.BlockNumber).To(Equal("0x1"), "blocknumber")
 			Expect(reply.TransactionIndex).To(Equal("0x1"), "txn Index")
 			Expect(reply.To).To(Equal("0x98765432"))
@@ -1062,7 +1065,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.Transaction{
 					Hash:             "0x" + txnID1,
 					TransactionIndex: "0x0",
-					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:        "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:      "0x1f",
 				}))
 			})
@@ -1075,7 +1078,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.Transaction{
 					Hash:             "0x" + txnID2,
 					TransactionIndex: "0x1",
-					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:        "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:      "0x1f",
 				}))
 			})
@@ -1088,7 +1091,7 @@ var _ = Describe("Ethservice", func() {
 				Expect(reply).To(Equal(types.Transaction{
 					Hash:             "0x" + txnID3,
 					TransactionIndex: "0x2",
-					BlockHash:        "0x" + hex.EncodeToString(sampleBlock.GetHeader().GetDataHash()),
+					BlockHash:        "0x" + hex.EncodeToString(blockHash(sampleBlock.GetHeader())),
 					BlockNumber:      "0x1f",
 				}))
 			})
@@ -1127,7 +1130,7 @@ var _ = Describe("Ethservice", func() {
 		})
 		Context("when valid arguments are given; with Block Number 2 available as the latest block", func() {
 			BeforeEach(func() {
-				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 2}}, nil)
+				mockLedgerClient.QueryInfoReturns(&fab.BlockchainInfoResponse{BCI: &common.BlockchainInfo{Height: 3}}, nil)
 				sampleBlock1 := GetSampleBlock(1)
 				sampleBlock2 := GetSampleBlock(2)
 				qbs := func(b uint64, _ ...ledger.RequestOption) (*common.Block, error) {
@@ -1137,14 +1140,11 @@ var _ = Describe("Ethservice", func() {
 					} else if b == 2 {
 						return sampleBlock2, nil
 					} else {
-						return nil, fmt.Errorf("no block")
+						return nil, fmt.Errorf("no block available for block number %d", b)
 					}
 				}
 				mockLedgerClient.QueryBlockStub = qbs
-				logsArgs = &types.GetLogsArgs{FromBlock: "1", ToBlock: "2"}
-				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
-				Expect(len(*reply)).To(Equal(4))
-
+				mockLedgerClient.QueryBlockByHashReturns(sampleBlock2, nil)
 				logsArgs = &types.GetLogsArgs{}
 				reply = &[]types.Log{}
 			})
@@ -1165,6 +1165,12 @@ var _ = Describe("Ethservice", func() {
 			// Block references as input
 			It("returns the latest block when explicitly asking for latest", func() {
 				logsArgs = &types.GetLogsArgs{FromBlock: "latest", ToBlock: "latest"}
+				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
+				Expect(len(*reply)).To(Equal(2))
+			})
+
+			It("returns events from the requested block when asking by blockhash", func() {
+				logsArgs = &types.GetLogsArgs{BlockHash: "deff"}
 				Expect(ethservice.GetLogs(&http.Request{}, logsArgs, reply)).To(Succeed())
 				Expect(len(*reply)).To(Equal(2))
 			})
@@ -1489,4 +1495,35 @@ func GetSampleTransaction(inputArgs [][]byte, txResponse, eventBytes []byte, txI
 	}
 
 	return tx, nil
+}
+
+type asn1Header struct {
+	Number       int64
+	PreviousHash []byte
+	DataHash     []byte
+}
+
+// Bytes returns the ASN.1 marshaled representation of the block header.
+func blockHash(b *common.BlockHeader) []byte {
+	asn1Header := asn1Header{
+		PreviousHash: b.PreviousHash,
+		DataHash:     b.DataHash,
+	}
+	if b.Number > uint64(math.MaxInt64) {
+		panic(fmt.Errorf("Golang does not currently support encoding uint64 to asn1"))
+	} else {
+		asn1Header.Number = int64(b.Number)
+	}
+	result, err := asn1.Marshal(asn1Header)
+	if err != nil {
+		// Errors should only arise for types which cannot be encoded, since the
+		// BlockHeader type is known a-priori to contain only encodable types, an
+		// error here is fatal and should not be propogated
+		panic(err)
+	}
+
+	//util.ComputeSHA256(result)
+	h := sha256.New()
+	h.Write(result)
+	return h.Sum(nil)
 }

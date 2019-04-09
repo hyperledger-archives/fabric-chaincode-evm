@@ -8,9 +8,12 @@ package fab3
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -44,7 +47,7 @@ type LedgerClient interface {
 	QueryInfo(options ...ledger.RequestOption) (*fab.BlockchainInfoResponse, error)
 	QueryBlock(blockNumber uint64, options ...ledger.RequestOption) (*common.Block, error)
 	QueryBlockByTxID(txid fab.TransactionID, options ...ledger.RequestOption) (*common.Block, error)
-	QueryTransaction(txid fab.TransactionID, options ...ledger.RequestOption) (*peer.ProcessedTransaction, error)
+	QueryBlockByHash(blockHash []byte, options ...ledger.RequestOption) (*common.Block, error)
 }
 
 //go:generate counterfeiter -o ../mocks/fab3/mockethservice.go --fake-name MockEthService ./ EthService
@@ -147,7 +150,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 
 	receipt := types.TxReceipt{
 		TransactionHash:   "0x" + strippedTxID,
-		BlockHash:         "0x" + hex.EncodeToString(blkHeader.GetDataHash()),
+		BlockHash:         "0x" + hex.EncodeToString(blockHash(blkHeader)),
 		BlockNumber:       "0x" + strconv.FormatUint(blkHeader.GetNumber(), 16),
 		GasUsed:           0,
 		CumulativeGasUsed: 0,
@@ -262,7 +265,7 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 
 	blkHeader := block.GetHeader()
 
-	blockHash := "0x" + hex.EncodeToString(blkHeader.GetDataHash())
+	blockHash := "0x" + hex.EncodeToString(blockHash(blkHeader))
 	blockNumber := "0x" + strconv.FormatUint(parsedNumber, 16)
 
 	// each data is a txn
@@ -353,7 +356,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 		return fmt.Errorf("Failed to query the ledger: %s", err)
 	}
 	blkHeader := block.GetHeader()
-	txn.BlockHash = "0x" + hex.EncodeToString(blkHeader.GetDataHash())
+	txn.BlockHash = "0x" + hex.EncodeToString(blockHash(blkHeader))
 	txn.BlockNumber = "0x" + strconv.FormatUint(blkHeader.GetNumber(), 16)
 
 	index, txPayload, err := findTransaction(strippedTxId, block.GetData().GetData())
@@ -380,36 +383,52 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 	return nil
 }
 
-//GetLogs currently returns all logs in range FromBlock to ToBlock
+// GetLogs returns matching logs in range FromBlock to ToBlock. If BlockHash is specified, the
+// single matching block is searched for logs.
 func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]types.Log) error {
 	logger := s.logger.With("method", "GetLogs")
 	logger.Debug("parameters", args)
 
-	// set defaults *after* checking for input conflicts and validating
-	if args.FromBlock == "" {
-		args.FromBlock = "latest"
-	}
-	if args.ToBlock == "" {
-		args.ToBlock = "latest"
-	}
-
 	var from, to uint64
-	from, err := s.parseBlockNum(args.FromBlock)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse the block number")
-	}
-	// check if both from and to are the same to avoid doing two
-	// queries to the fabric network.
-	if args.FromBlock == args.ToBlock {
-		to = from
+	var err error
+	if args.BlockHash != "" {
+		hash, err := hex.DecodeString(args.BlockHash)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse the block hash")
+		}
+		block, err := s.ledgerClient.QueryBlockByHash(hash)
+		if err != nil {
+			return errors.Wrap(err, "failed to find block by block hash")
+		}
+		blockNumber := block.Header.Number
+		from = blockNumber
+		to = blockNumber
 	} else {
-		to, err = s.parseBlockNum(args.ToBlock)
+		// set defaults *after* checking for input conflicts and validating
+		if args.FromBlock == "" {
+			args.FromBlock = "latest"
+		}
+		if args.ToBlock == "" {
+			args.ToBlock = "latest"
+		}
+
+		from, err = s.parseBlockNum(args.FromBlock)
 		if err != nil {
 			return errors.Wrap(err, "failed to parse the block number")
 		}
-	}
-	if from > to {
-		return fmt.Errorf("fromBlock number greater than toBlock number")
+		// check if both from and to are the same to avoid doing two
+		// queries to the fabric network.
+		if args.FromBlock == args.ToBlock {
+			to = from
+		} else {
+			to, err = s.parseBlockNum(args.ToBlock)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse the block number")
+			}
+		}
+		if from > to {
+			return fmt.Errorf("fromBlock number greater than toBlock number")
+		}
 	}
 
 	var txLogs []types.Log
@@ -423,7 +442,7 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 			return errors.Wrap(err, "failed to query the ledger")
 		}
 		blockHeader := block.GetHeader()
-		blockHash := "0x" + hex.EncodeToString(blockHeader.GetDataHash())
+		blockHash := "0x" + hex.EncodeToString(blockHash(blockHeader))
 		blockData := block.GetData().GetData()
 		transactionsFilter := block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER]
 		logger.Debug("handling ", len(blockData), " transactions in block")
@@ -495,7 +514,6 @@ func (s *ethService) parseBlockNum(input string) (uint64, error) {
 			s.logger.Debug(err)
 			return 0, fmt.Errorf("failed to query the ledger: %v", err)
 		}
-
 		// height is the block being worked on now, we want the previous block
 		topBlockNumber := blockchainInfo.BCI.GetHeight() - 1
 		return topBlockNumber, nil
@@ -727,4 +745,34 @@ func getChannelHeaderandPayloadFromTransactionData(transactionData []byte) (*com
 		return nil, nil, err
 	}
 	return payload, chdr, nil
+}
+
+type asn1Header struct {
+	Number       int64
+	PreviousHash []byte
+	DataHash     []byte
+}
+
+// Bytes returns the ASN.1 marshaled representation of the block header.
+func blockHash(b *common.BlockHeader) []byte {
+	asn1Header := asn1Header{
+		PreviousHash: b.PreviousHash,
+		DataHash:     b.DataHash,
+	}
+	if b.Number > uint64(math.MaxInt64) {
+		panic(fmt.Errorf("Golang does not currently support encoding uint64 to asn1"))
+	} else {
+		asn1Header.Number = int64(b.Number)
+	}
+	result, err := asn1.Marshal(asn1Header)
+	if err != nil {
+		// Errors should only arise for types which cannot be encoded, since the
+		// BlockHeader type is known a-priori to contain only encodable types, an
+		// error here is fatal and should not be propogated
+		panic(err)
+	}
+
+	h := sha256.New()
+	h.Write(result)
+	return h.Sum(nil)
 }

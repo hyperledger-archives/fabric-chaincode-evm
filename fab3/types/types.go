@@ -44,6 +44,7 @@ type GetLogsArgs struct {
 	ToBlock   string        `json:"toBlock,omitempty"`
 	Address   AddressFilter `json:"address,omitempty"`
 	Topics    TopicsFilter  `json:"topics,omitempty"`
+	BlockHash string        `json:"blockHash,omitempty"`
 }
 
 type AddressFilter []string // 20 Byte Addresses, OR'd together
@@ -58,6 +59,7 @@ func (gla *GetLogsArgs) UnmarshalJSON(data []byte) error {
 		ToBlock   string      `json:"toBlock"`
 		Address   interface{} `json:"address"` // string or array of strings.
 		Topics    interface{} `json:"topics"`  // array of strings, or array of array of strings
+		BlockHash string      `json:"blockHash"`
 	}
 	var input inputGetLogsArgs
 	if err := json.Unmarshal(data, &input); err != nil {
@@ -66,6 +68,10 @@ func (gla *GetLogsArgs) UnmarshalJSON(data []byte) error {
 
 	gla.FromBlock = strip0x(input.FromBlock)
 	gla.ToBlock = strip0x(input.ToBlock)
+	gla.BlockHash = strip0x(input.BlockHash)
+	if gla.BlockHash != "" && (gla.FromBlock != "" || gla.ToBlock != "") {
+		return errors.New("cannot provide BlockHash and (FromBlock or ToBlock), they are exclusive options")
+	}
 
 	if input.Address != nil {
 		var af AddressFilter

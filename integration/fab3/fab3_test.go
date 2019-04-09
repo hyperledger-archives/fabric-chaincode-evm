@@ -333,11 +333,42 @@ var _ = Describe("Fab3", func() {
 		Expect(log.Topics).To(HaveLen(3))
 		Expect(log.Index).To(Equal("0x0"))
 		topics := log.Topics
-		// topics, are hash of function, 0 from initial setting, & the value we set earlier
+		// topics are, hash of event signature, 0 from initial setting, & the value we set earlier
 		Expect(topics[0]).To(Equal("0xd81ec364c58bcc9b49b6c953fc8e1f1c158ee89255bae73029133234a2936aad"))
 		Expect(topics[1]).To(Equal("0x0000000000000000000000000000000000000000000000000000000000000000"))
 		Expect(topics[2]).To(Equal("0x" + val))
 		txReceipt := rpcResp.Result
+		Expect(log.BlockNumber).To(Equal(txReceipt.BlockNumber))
+		Expect(log.BlockHash).To(Equal(txReceipt.BlockHash))
+		Expect(log.TxIndex).To(Equal(txReceipt.TransactionIndex))
+		Expect(log.TxHash).To(Equal(txReceipt.TransactionHash))
+
+		By("doing the same thing with the known blockhash instead of block parameters, we get the same results")
+		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 23,
+			types.GetLogsArgs{BlockHash: txReceipt.BlockHash,
+				Address: types.AddressFilter{contractAddr},
+				Topics: types.TopicsFilter{
+					types.TopicFilter{}, // a null topic filter, and a no 0x prefix topic
+					types.TopicFilter{"0000000000000000000000000000000000000000000000000000000000000000"}}})
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		respArrayBody = helpers.JsonRPCLogArrayResponse{}
+		err = json.Unmarshal(rBody, &respArrayBody)
+		Expect(err).ToNot(HaveOccurred())
+		logs = respArrayBody.Result
+		Expect(logs).To(HaveLen(1), "this contract only emits one log entry")
+		log = logs[0]
+		Expect(log.Address).To(Equal(contractAddr), "logs come from the contract")
+		Expect(log.Topics).To(HaveLen(3))
+		Expect(log.Index).To(Equal("0x0"))
+		topics = log.Topics
+		// topics are, hash of event signature, 0 from initial setting, & the value we set earlier
+		Expect(topics[0]).To(Equal("0xd81ec364c58bcc9b49b6c953fc8e1f1c158ee89255bae73029133234a2936aad"))
+		Expect(topics[1]).To(Equal("0x0000000000000000000000000000000000000000000000000000000000000000"))
+		Expect(topics[2]).To(Equal("0x" + val))
+		txReceipt = rpcResp.Result
 		Expect(log.BlockNumber).To(Equal(txReceipt.BlockNumber))
 		Expect(log.BlockHash).To(Equal(txReceipt.BlockHash))
 		Expect(log.TxIndex).To(Equal(txReceipt.TransactionIndex))
