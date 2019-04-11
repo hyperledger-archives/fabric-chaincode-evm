@@ -7,9 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
-	"math/rand"
-
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -50,6 +49,17 @@ func (s *ChannelService) Close() {
 }
 
 func (s *ChannelService) queryPeers() ([]fab.Peer, error) {
+	peers, err := s.doQueryPeers()
+
+	if err != nil && s.ErrHandler != nil {
+		logger.Infof("[%s] Got error from discovery query: %s. Invoking error handler", s.channelID, err)
+		s.ErrHandler(s.ctx, s.channelID, err)
+	}
+
+	return peers, err
+}
+
+func (s *ChannelService) doQueryPeers() ([]fab.Peer, error) {
 	logger.Debugf("Refreshing peers of channel [%s] from discovery service...", s.channelID)
 
 	ctx := s.context()
@@ -77,18 +87,15 @@ func (s *ChannelService) queryPeers() ([]fab.Peer, error) {
 }
 
 func (s *ChannelService) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, error) {
-	chPeers, ok := ctx.EndpointConfig().ChannelPeers(s.channelID)
-	if !ok {
-		return nil, errors.Errorf("failed to get channel peer configs for channel [%s]", s.channelID)
+	chPeers := ctx.EndpointConfig().ChannelPeers(s.channelID)
+	if len(chPeers) == 0 {
+		return nil, errors.Errorf("no channel peers configured for channel [%s]", s.channelID)
 	}
 
-	chConfig, ok := ctx.EndpointConfig().ChannelConfig(s.channelID)
-	if !ok {
-		return nil, errors.Errorf("failed to get channel endpoint configs for channel [%s]", s.channelID)
-	}
+	chConfig := ctx.EndpointConfig().ChannelConfig(s.channelID)
 
 	//pick number of peers given in channel policy
-	return pickRandomNPeerConfigs(chPeers, chConfig.Policies.QueryChannelConfig.QueryDiscovery), nil
+	return random.PickRandomNPeerConfigs(chPeers, chConfig.Policies.Discovery.MaxTargets), nil
 }
 
 // evaluate validates the responses and returns the peers
@@ -105,8 +112,8 @@ func (s *ChannelService) evaluate(ctx contextAPI.Client, responses []fabdiscover
 	for _, response := range responses {
 		endpoints, err := response.ForChannel(s.channelID).Peers()
 		if err != nil {
-			lastErr = errors.Wrap(err, "error getting peers from discovery response")
-			logger.Warn(lastErr.Error())
+			lastErr = DiscoveryError(err)
+			logger.Warnf("error getting peers from discovery response: %s", lastErr)
 			continue
 		}
 		return s.asPeers(ctx, endpoints), nil
@@ -140,17 +147,4 @@ type peerEndpoint struct {
 
 func (p *peerEndpoint) BlockHeight() uint64 {
 	return p.blockHeight
-}
-
-//pickRandomNPeerConfigs picks N random  unique peer configs from given channel peer list
-func pickRandomNPeerConfigs(chPeers []fab.ChannelPeer, n int) []fab.PeerConfig {
-
-	var result []fab.PeerConfig
-	for _, index := range rand.Perm(len(chPeers)) {
-		result = append(result, chPeers[index].PeerConfig)
-		if len(result) == n {
-			break
-		}
-	}
-	return result
 }

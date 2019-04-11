@@ -38,7 +38,7 @@ const (
 // chaincode, and transaction status events. Client also monitors the connection to the
 // event server and attempts to reconnect if the connection is closed.
 type Client struct {
-	eventservice.Service
+	*eventservice.Service
 	params
 	sync.RWMutex
 	connEvent       chan *dispatcher.ConnectionEvent
@@ -57,7 +57,7 @@ func New(dispatcher eventservice.Dispatcher, opts ...options.Opt) *Client {
 	options.Apply(params, opts)
 
 	return &Client{
-		Service:         *eventservice.New(dispatcher, opts...),
+		Service:         eventservice.New(dispatcher, opts...),
 		params:          *params,
 		connectionState: int32(Disconnected),
 	}
@@ -108,40 +108,66 @@ func (c *Client) Connect() error {
 // A return value of false indicates that the client could not be closed since
 // there was at least one registration.
 func (c *Client) CloseIfIdle() bool {
-	return c.close(false)
+	logger.Debug("Attempting to close event client...")
+
+	// Check if there are any outstanding registrations
+	regInfoCh := make(chan *esdispatcher.RegistrationInfo)
+	err := c.Submit(esdispatcher.NewRegistrationInfoEvent(regInfoCh))
+	if err != nil {
+		logger.Debugf("Submit failed %s", err)
+		return false
+	}
+	regInfo := <-regInfoCh
+
+	logger.Debugf("Outstanding registrations: %d", regInfo.TotalRegistrations)
+
+	if regInfo.TotalRegistrations > 0 {
+		logger.Debugf("Cannot stop client since there are %d outstanding registrations", regInfo.TotalRegistrations)
+		return false
+	}
+
+	c.Close()
+
+	return true
 }
 
 // Close closes the connection to the event server and releases all resources.
 // Once this function is invoked the client may no longer be used.
 func (c *Client) Close() {
-	c.close(true)
+	c.close(func() {
+		c.Stop()
+	})
 }
 
-func (c *Client) close(force bool) bool {
-	logger.Debug("Attempting to close event client...")
-
-	if !force {
-		// Check if there are any outstanding registrations
-		regInfoCh := make(chan *esdispatcher.RegistrationInfo)
-		err := c.Submit(esdispatcher.NewRegistrationInfoEvent(regInfoCh))
-		if err != nil {
-			logger.Debugf("Submit failed %s", err)
-			return false
-		}
-		regInfo := <-regInfoCh
-
-		logger.Debugf("Outstanding registrations: %d", regInfo.TotalRegistrations)
-
-		if regInfo.TotalRegistrations > 0 {
-			logger.Debugf("Cannot stop client since there are %d outstanding registrations", regInfo.TotalRegistrations)
-			return false
-		}
+// TransferRegistrations transfers all registrations into an EventSnapshot.
+// The registrations are not closed and may susequently be transferred to a
+// new event client.
+// - close - if true then the client will also be closed
+func (c *Client) TransferRegistrations(close bool) (fab.EventSnapshot, error) {
+	if !close {
+		return c.Transfer()
 	}
+
+	var snapshot fab.EventSnapshot
+	var err error
+	c.close(func() {
+		logger.Debug("Stopping dispatcher and taking snapshot of all registrations...")
+		snapshot, err = c.StopAndTransfer()
+		if err != nil {
+			logger.Errorf("An error occurred while stopping dispatcher and taking snapshot: %s", err)
+		}
+	})
+
+	return snapshot, err
+}
+
+func (c *Client) close(stopHandler func()) {
+	logger.Debug("Attempting to close event client...")
 
 	if !c.setStoppped() {
 		// Already stopped
 		logger.Debug("Client already stopped")
-		return true
+		return
 	}
 
 	logger.Debug("Stopping client...")
@@ -154,7 +180,7 @@ func (c *Client) close(force bool) bool {
 	err1 := c.Submit(dispatcher.NewDisconnectEvent(errch))
 	if err1 != nil {
 		logger.Debugf("Submit failed %s", err1)
-		return false
+		return
 	}
 	err := <-errch
 
@@ -166,13 +192,11 @@ func (c *Client) close(force bool) bool {
 
 	logger.Debug("Stopping dispatcher...")
 
-	c.Stop()
+	stopHandler()
 
 	c.mustSetConnectionState(Disconnected)
 
 	logger.Debug("... event client is stopped")
-
-	return true
 }
 
 func (c *Client) connect() error {
@@ -339,13 +363,7 @@ func (c *Client) mustSetConnectionState(newState ConnectionState) {
 
 func (c *Client) monitorConnection() {
 	logger.Debug("Monitoring connection")
-	for {
-		event, ok := <-c.connEvent
-		if !ok {
-			logger.Debugln("Connection has closed.")
-			break
-		}
-
+	for event := range c.connEvent {
 		if c.Stopped() {
 			logger.Debugln("Event client has been stopped.")
 			break
@@ -358,6 +376,12 @@ func (c *Client) monitorConnection() {
 		} else if c.reconn {
 			logger.Warnf("Event client has disconnected. Details: %s", event.Err)
 			if c.setConnectionState(Connected, Disconnected) {
+				if event.Err.IsFatal() {
+					logger.Warnf("Reconnect is not possible due to fatal error. Terminating: %s", event.Err)
+					go c.Close()
+					break
+				}
+
 				logger.Warn("Attempting to reconnect...")
 				go c.reconnect()
 			} else if c.setConnectionState(Connecting, Disconnected) {

@@ -25,12 +25,11 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/pkg/errors"
-
 	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/pkg/errors"
 )
 
 // DefaultCipherSuites is a set of strong TLS cipher suites
@@ -81,7 +80,7 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp core.CryptoSuite) (*tls.Config
 	}
 	rootCAPool := x509.NewCertPool()
 	if len(cfg.CertFiles) == 0 {
-		return nil, errors.New("No TLS certificate files were provided")
+		return nil, errors.New("No trusted root certificates for TLS were provided")
 	}
 
 	for _, cacert := range cfg.CertFiles {

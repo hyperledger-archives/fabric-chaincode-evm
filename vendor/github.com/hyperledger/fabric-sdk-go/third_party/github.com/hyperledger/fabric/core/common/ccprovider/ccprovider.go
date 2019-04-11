@@ -11,7 +11,10 @@ Please review third_party pinning scripts and patches for more details.
 package ccprovider
 
 import (
+	"os"
+
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/common/privdata"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -65,6 +68,12 @@ type CCCacheSupport interface {
 // CCInfoFSImpl provides the implementation for CC on the FS and the access to it
 // It implements CCCacheSupport
 type CCInfoFSImpl struct{}
+
+// DirEnumerator enumerates directories
+type DirEnumerator func(string) ([]os.FileInfo, error)
+
+// ChaincodeExtractor extracts chaincode from a given path
+type ChaincodeExtractor func(ccname string, ccversion string, path string) (CCPackage, error)
 
 // ccInfoFSStorageMgr is the storage manager used either by the cache or if the
 // cache is bypassed
@@ -169,6 +178,8 @@ type TransactionParams struct {
 	Proposal             *pb.Proposal
 	TXSimulator          ledger.TxSimulator
 	HistoryQueryExecutor ledger.HistoryQueryExecutor
+	CollectionStore      privdata.CollectionStore
+	IsInitTransaction    bool
 
 	// this is additional data passed to the chaincode
 	ProposalDecorations map[string][]byte

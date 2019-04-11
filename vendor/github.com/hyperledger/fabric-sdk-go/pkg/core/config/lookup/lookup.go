@@ -23,7 +23,7 @@ func New(coreBackends ...core.ConfigBackend) *ConfigLookup {
 
 //unmarshalOpts opts for unmarshal key function
 type unmarshalOpts struct {
-	hookFunc mapstructure.DecodeHookFunc
+	hooks []mapstructure.DecodeHookFunc
 }
 
 // UnmarshalOption describes a functional parameter unmarshaling
@@ -33,7 +33,7 @@ type UnmarshalOption func(o *unmarshalOpts)
 // for unmarshaling
 func WithUnmarshalHookFunction(hookFunction mapstructure.DecodeHookFunc) UnmarshalOption {
 	return func(o *unmarshalOpts) {
-		o.hookFunc = hookFunction
+		o.hooks = append(o.hooks, hookFunction)
 	}
 }
 
@@ -110,18 +110,17 @@ func (c *ConfigLookup) UnmarshalKey(key string, rawVal interface{}, opts ...Unma
 	}
 
 	//mandatory hook func
-	hookFn := mapstructure.StringToTimeDurationHookFunc()
+	var unmarshalHooks []mapstructure.DecodeHookFunc
+	unmarshalHooks = append(unmarshalHooks, mapstructure.StringToTimeDurationHookFunc())
 
 	//check for opts
-	unmarshalOpts := unmarshalOpts{}
+	unmarshalOptions := unmarshalOpts{}
 	for _, param := range opts {
-		param(&unmarshalOpts)
+		param(&unmarshalOptions)
 	}
 
 	//compose multiple hook funcs to one if found in opts
-	if unmarshalOpts.hookFunc != nil {
-		hookFn = mapstructure.ComposeDecodeHookFunc(hookFn, unmarshalOpts.hookFunc)
-	}
+	hookFn := mapstructure.ComposeDecodeHookFunc(append(unmarshalHooks, unmarshalOptions.hooks...)...)
 
 	//build decoder
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{

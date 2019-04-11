@@ -7,10 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/pkg/errors"
 )
 
@@ -60,8 +59,8 @@ func (s *CertFileUserStore) Load(key msp.IdentityIdentifier) (*msp.UserData, err
 		return nil, errors.New("user is not of proper type")
 	}
 	userData := &msp.UserData{
-		MSPID: key.MSPID,
-		ID:    key.ID,
+		MSPID:                 key.MSPID,
+		ID:                    key.ID,
 		EnrollmentCertificate: certBytes,
 	}
 	return userData, nil

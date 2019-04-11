@@ -15,8 +15,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"github.com/pkg/errors"
+	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential"
@@ -24,6 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/common"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/pkg/errors"
 )
 
 // Identity is fabric-ca's implementation of an identity
@@ -235,6 +235,107 @@ func (i *Identity) RemoveIdentity(req *api.RemoveIdentityRequest) (*api.Identity
 	return result, nil
 }
 
+// GetAffiliation returns information about the requested affiliation
+func (i *Identity) GetAffiliation(affiliation, caname string) (*api.AffiliationResponse, error) {
+	log.Debugf("Entering identity.GetAffiliation %+v", affiliation)
+	result := &api.AffiliationResponse{}
+	err := i.Get(fmt.Sprintf("affiliations/%s", affiliation), caname, result)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Successfully retrieved affiliation: %+v", result)
+	return result, nil
+}
+
+// GetAllAffiliations returns all affiliations that the caller is authorized to see
+func (i *Identity) GetAllAffiliations(caname string) (*api.AffiliationResponse, error) {
+	log.Debugf("Entering identity.GetAllAffiliations")
+	result := &api.AffiliationResponse{}
+	err := i.Get("affiliations", caname, result)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Successfully retrieved affiliations")
+	return result, nil
+}
+
+// AddAffiliation adds a new affiliation to the server
+func (i *Identity) AddAffiliation(req *api.AddAffiliationRequest) (*api.AffiliationResponse, error) {
+	log.Debugf("Entering identity.AddAffiliation with request: %+v", req)
+	if req.Name == "" {
+		return nil, errors.New("Affiliation to add was not specified")
+	}
+
+	reqBody, err := util.Marshal(req, "addAffiliation")
+	if err != nil {
+		return nil, err
+	}
+
+	// Send a post to the "affiliations" endpoint with req as body
+	result := &api.AffiliationResponse{}
+	queryParam := make(map[string]string)
+	queryParam["force"] = strconv.FormatBool(req.Force)
+	err = i.Post("affiliations", reqBody, result, queryParam)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debugf("Successfully added new affiliation")
+	return result, nil
+}
+
+// ModifyAffiliation renames an existing affiliation on the server
+func (i *Identity) ModifyAffiliation(req *api.ModifyAffiliationRequest) (*api.AffiliationResponse, error) {
+	log.Debugf("Entering identity.ModifyAffiliation with request: %+v", req)
+	modifyAff := req.Name
+	if modifyAff == "" {
+		return nil, errors.New("Affiliation to modify was not specified")
+	}
+
+	if req.NewName == "" {
+		return nil, errors.New("New affiliation not specified")
+	}
+
+	reqBody, err := util.Marshal(req, "modifyIdentity")
+	if err != nil {
+		return nil, err
+	}
+
+	// Send a put to the "affiliations" endpoint with req as body
+	result := &api.AffiliationResponse{}
+	queryParam := make(map[string]string)
+	queryParam["force"] = strconv.FormatBool(req.Force)
+	err = i.Put(fmt.Sprintf("affiliations/%s", modifyAff), reqBody, queryParam, result)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debugf("Successfully modified affiliation")
+	return result, nil
+}
+
+// RemoveAffiliation removes an existing affiliation from the server
+func (i *Identity) RemoveAffiliation(req *api.RemoveAffiliationRequest) (*api.AffiliationResponse, error) {
+	log.Debugf("Entering identity.RemoveAffiliation with request: %+v", req)
+	removeAff := req.Name
+	if removeAff == "" {
+		return nil, errors.New("Affiliation to remove was not specified")
+	}
+
+	// Send a delete to the "affiliations" endpoint with the affiliation as a path parameter
+	result := &api.AffiliationResponse{}
+	queryParam := make(map[string]string)
+	queryParam["force"] = strconv.FormatBool(req.Force)
+	queryParam["ca"] = req.CAName
+	err := i.Delete(fmt.Sprintf("affiliations/%s", removeAff), result, queryParam)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debugf("Successfully removed affiliation")
+	return result, nil
+}
+
 // Get sends a get request to an endpoint
 func (i *Identity) Get(endpoint, caname string, result interface{}) error {
 	req, err := i.client.newGet(endpoint)
@@ -329,11 +430,18 @@ func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}, que
 }
 
 func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
+	// TODO remove the below compatibility logic once Fabric CA v1.3 is not supported by the SDK anymore
+	caVer, e := i.client.GetFabCAVersion()
+	if e != nil {
+		return errors.WithMessage(e, "Failed to add token authorization header because client is unable to fetch the Fabric CA version")
+	}
+	compatibility := isCompatibleFabCA(caVer)
+
 	log.Debug("Adding token-based authorization header")
 	var token string
 	var err error
 	for _, cred := range i.creds {
-		token, err = cred.CreateToken(req, body)
+		token, err = cred.CreateToken(req, body, compatibility)
 		if err != nil {
 			return errors.WithMessage(err, "Failed to add token authorization header")
 		}
@@ -341,4 +449,30 @@ func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
 	}
 	req.Header.Set("authorization", token)
 	return nil
+}
+
+// TODO remove the function below once Fabric CA v1.3 is not supported by the SDK anymore
+func isCompatibleFabCA(caVersion string) bool {
+	versions := strings.Split(caVersion, ".")
+	// 1.0-1.3 -> set Compatible CA to true, otherwise (1.4 and above) set false
+	if len(versions) > 1 {
+		majv, e := strconv.Atoi(versions[0])
+		if e != nil {
+			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)
+			return false
+		}
+		if majv == 0 {
+			return true
+		}
+
+		minv, e := strconv.Atoi(versions[1])
+		if e != nil {
+			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)
+			return false
+		}
+		if majv == 1 && minv < 4 {
+			return true
+		}
+	}
+	return false
 }

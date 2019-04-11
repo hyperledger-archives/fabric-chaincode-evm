@@ -28,6 +28,10 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 // deliverProvider is the connection provider used for connecting to the Deliver service
 var deliverProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
+	if peer == nil {
+		return nil, errors.New("Peer is nil")
+	}
+
 	eventEndpoint, ok := peer.(api.EventEndpoint)
 	if !ok {
 		panic("peer is not an EventEndpoint")
@@ -37,6 +41,10 @@ var deliverProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, p
 
 // deliverFilteredProvider is the connection provider used for connecting to the DeliverFiltered service
 var deliverFilteredProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
+	if peer == nil {
+		return nil, errors.New("Peer is nil")
+	}
+
 	eventEndpoint, ok := peer.(api.EventEndpoint)
 	if !ok {
 		panic("peer is not an EventEndpoint")
@@ -46,7 +54,7 @@ var deliverFilteredProvider = func(context fabcontext.Client, chConfig fab.Chann
 
 // Client connects to a peer and receives channel events, such as bock, filtered block, chaincode, and transaction status events.
 type Client struct {
-	client.Client
+	*client.Client
 	params
 }
 
@@ -69,11 +77,11 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fa
 		params.seekType = seek.Newest
 		//discard (do not publish) next BlockEvent/FilteredBlockEvent in dispatcher, since default seek type 'newest' is
 		// only needed for block height calculations
-		dispatcher.DiscardNextEvent()
+		dispatcher.UpdateLastBlockInfoOnly()
 	}
 
 	client := &Client{
-		Client: *client.New(dispatcher, opts...),
+		Client: client.New(dispatcher, opts...),
 		params: *params,
 	}
 

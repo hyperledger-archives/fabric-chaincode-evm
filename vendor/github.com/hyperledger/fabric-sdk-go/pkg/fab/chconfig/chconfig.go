@@ -12,8 +12,6 @@ import (
 	"regexp"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
-
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -27,6 +25,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -34,11 +33,6 @@ var logger = logging.NewLogger("fabsdk/fab")
 //overrideRetryHandler is private and used for unit-tests to test query retry behaviors
 var overrideRetryHandler retry.Handler
 var versionCapabilityPattern = regexp.MustCompile(`^V(\d+)_(\d+)$`)
-
-const (
-	defaultMinResponses = 1
-	defaultMaxTargets   = 2
-)
 
 // Opts contains options for retrieving channel configuration
 type Opts struct {
@@ -165,9 +159,7 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	if err = c.resolveOptsFromConfig(ctx); err != nil {
-		return nil, errors.WithMessage(err, "failed to resolve opts from config")
-	}
+	c.resolveOptsFromConfig(ctx)
 
 	targets := []fab.ProposalProcessor{}
 	if c.opts.Targets == nil {
@@ -202,9 +194,9 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 
 func (c *ChannelConfig) calculateTargetsFromConfig(ctx context.Client) ([]fab.ProposalProcessor, error) {
 	targets := []fab.ProposalProcessor{}
-	chPeers, ok := ctx.EndpointConfig().ChannelPeers(c.channelID)
-	if !ok {
-		return nil, errors.New("read configuration for channel peers failed")
+	chPeers := ctx.EndpointConfig().ChannelPeers(c.channelID)
+	if len(chPeers) == 0 {
+		return nil, errors.Errorf("no channel peers configured for channel [%s]", c.channelID)
 	}
 
 	for _, p := range chPeers {
@@ -234,56 +226,45 @@ func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, er
 }
 
 //resolveOptsFromConfig loads opts from config if not loaded/initialized
-func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
+func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) {
 
 	if c.opts.MaxTargets != 0 && c.opts.MinResponses != 0 && c.opts.RetryOpts.RetryableCodes != nil {
 		//already loaded
-		return nil
+		return
 	}
 
-	//If missing from opts, check config and update opts from config
-	chSdkCfg, ok := ctx.EndpointConfig().ChannelConfig(c.channelID)
-	if ok {
-		//resolve opts
-		c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
-		c.resolveMinResponsesOptsFromConfig(chSdkCfg)
-		c.resolveRetryOptsFromConfig(chSdkCfg)
-	}
+	chSdkCfg := ctx.EndpointConfig().ChannelConfig(c.channelID)
+
+	//resolve opts
+	c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
+	c.resolveMinResponsesOptsFromConfig(chSdkCfg)
+	c.resolveRetryOptsFromConfig(chSdkCfg)
 
 	//apply default to missing opts
 	c.applyDefaultOpts()
 
-	return nil
 }
 
 func (c *ChannelConfig) resolveMaxResponsesOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
-	if c.opts.MaxTargets == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+	if c.opts.MaxTargets == 0 {
 		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
 	}
 }
 
 func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
-	if c.opts.MinResponses == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+	if c.opts.MinResponses == 0 {
 		c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
 	}
 }
 
 func (c *ChannelConfig) resolveRetryOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
 	if c.opts.RetryOpts.RetryableCodes == nil {
-		if c.opts.RetryOpts.RetryableCodes == nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
-			c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
-		}
+		c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
 		c.opts.RetryOpts.RetryableCodes = retry.ChannelConfigRetryableCodes
 	}
 }
 
 func (c *ChannelConfig) applyDefaultOpts() {
-	if c.opts.MaxTargets == 0 {
-		c.opts.MaxTargets = defaultMaxTargets
-	}
-	if c.opts.MinResponses == 0 {
-		c.opts.MinResponses = defaultMinResponses
-	}
 	if c.opts.RetryOpts.Attempts == 0 {
 		c.opts.RetryOpts.Attempts = retry.DefaultAttempts
 	}
@@ -427,16 +408,16 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 		}
 	}
 
-	return loadConfigGroupPolicies(name, org, configItems, versionsGroup, group)
+	return loadConfigGroupPolicies(versionsGroup, group)
 }
 
-func loadConfigGroupPolicies(name, org string, configItems *ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup) error {
+func loadConfigGroupPolicies(versionsGroup *common.ConfigGroup, group *common.ConfigGroup) error {
 	policies := group.GetPolicies()
 	if policies != nil {
 		versionsGroup.Policies = make(map[string]*common.ConfigPolicy)
 		for key, configPolicy := range policies {
 			versionsGroup.Policies[key] = &common.ConfigPolicy{}
-			err := loadConfigPolicy(configItems, key, versionsGroup.Policies[key], configPolicy, name, org)
+			err := loadConfigPolicy(versionsGroup.Policies[key], configPolicy)
 			if err != nil {
 				return err
 			}
@@ -447,12 +428,12 @@ func loadConfigGroupPolicies(name, org string, configItems *ChannelCfg, versions
 
 }
 
-func loadConfigPolicy(configItems *ChannelCfg, key string, versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy, groupName string, org string) error {
+func loadConfigPolicy(versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy) error {
 	versionsPolicy.Version = configPolicy.Version
-	return loadPolicy(configPolicy.Policy, groupName)
+	return loadPolicy(configPolicy.Policy)
 }
 
-func loadPolicy(policy *common.Policy, groupName string) error {
+func loadPolicy(policy *common.Policy) error {
 
 	policyType := common.Policy_PolicyType(policy.Type)
 
@@ -484,7 +465,7 @@ func loadPolicy(policy *common.Policy, groupName string) error {
 	return nil
 }
 
-func loadAnchorPeers(configValue *common.ConfigValue, configItems *ChannelCfg, groupName, org string) error {
+func loadAnchorPeers(configValue *common.ConfigValue, configItems *ChannelCfg, org string) error {
 	anchorPeers := &pb.AnchorPeers{}
 	err := proto.Unmarshal(configValue.Value, anchorPeers)
 	if err != nil {
@@ -500,7 +481,7 @@ func loadAnchorPeers(configValue *common.ConfigValue, configItems *ChannelCfg, g
 	return nil
 }
 
-func loadMSPKey(configValue *common.ConfigValue, configItems *ChannelCfg, groupName string) error {
+func loadMSPKey(configValue *common.ConfigValue, configItems *ChannelCfg) error {
 	mspConfig := &mb.MSPConfig{}
 	err := proto.Unmarshal(configValue.Value, mspConfig)
 	if err != nil {
@@ -517,7 +498,7 @@ func loadMSPKey(configValue *common.ConfigValue, configItems *ChannelCfg, groupN
 
 }
 
-func loadOrdererAddressesKey(configValue *common.ConfigValue, configItems *ChannelCfg, groupName string) error {
+func loadOrdererAddressesKey(configValue *common.ConfigValue, configItems *ChannelCfg) error {
 	ordererAddresses := &common.OrdererAddresses{}
 	err := proto.Unmarshal(configValue.Value, ordererAddresses)
 	if err != nil {
@@ -549,11 +530,11 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 
 	switch key {
 	case channelConfig.AnchorPeersKey:
-		if err := loadAnchorPeers(configValue, configItems, groupName, org); err != nil {
+		if err := loadAnchorPeers(configValue, configItems, org); err != nil {
 			return err
 		}
 	case channelConfig.MSPKey:
-		if err := loadMSPKey(configValue, configItems, groupName); err != nil {
+		if err := loadMSPKey(configValue, configItems); err != nil {
 			return err
 		}
 	case channelConfig.CapabilitiesKey:
@@ -619,7 +600,7 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//	// TODO: Do something with this value
 
 	case channelConfig.OrdererAddressesKey:
-		if err := loadOrdererAddressesKey(configValue, configItems, groupName); err != nil {
+		if err := loadOrdererAddressesKey(configValue, configItems); err != nil {
 			return err
 		}
 

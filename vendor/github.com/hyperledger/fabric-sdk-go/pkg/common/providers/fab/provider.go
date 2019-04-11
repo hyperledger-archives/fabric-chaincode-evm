@@ -10,13 +10,12 @@ import (
 	reqContext "context"
 	"crypto/tls"
 	"crypto/x509"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	"google.golang.org/grpc"
 )
 
@@ -69,6 +68,21 @@ type TargetFilter interface {
 	Accept(peer Peer) bool
 }
 
+// TargetSorter allows for sorting target peers
+type TargetSorter interface {
+	// Returns the sorted peers
+	Sort(peers []Peer) []Peer
+}
+
+// PrioritySelector determines how likely a peer is to be
+// selected over another peer
+type PrioritySelector interface {
+	// A positive return value means peer1 is selected
+	// A negative return value means the peer2 is selected
+	// Zero return value means their priorities are the same
+	Compare(peer1, peer2 Peer) int
+}
+
 // CommManager enables network communication.
 type CommManager interface {
 	DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
@@ -84,34 +98,12 @@ type EndpointConfig interface {
 	PeerConfig(nameOrURL string) (*PeerConfig, bool)
 	NetworkConfig() *NetworkConfig
 	NetworkPeers() []NetworkPeer
-	ChannelConfig(name string) (*ChannelEndpointConfig, bool)
-	ChannelPeers(name string) ([]ChannelPeer, bool)
-	ChannelOrderers(name string) ([]OrdererConfig, bool)
+	ChannelConfig(name string) *ChannelEndpointConfig
+	ChannelPeers(name string) []ChannelPeer
+	ChannelOrderers(name string) []OrdererConfig
 	TLSCACertPool() CertPool
-	EventServiceConfig() EventServiceConfig
 	TLSClientCerts() []tls.Certificate
 	CryptoConfigPath() string
-}
-
-// EventServiceConfig specifies configuration options for the event service
-type EventServiceConfig interface {
-	// BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer
-	// to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
-	// blocks then it will be excluded from selection.
-	// If set to 0 then only the most up-to-date peers are considered.
-	// If set to -1 then all peers (regardless of block height) are considered for selection.
-	BlockHeightLagThreshold() int
-
-	// ReconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
-	// block height falls behind the specified number of blocks and will reconnect to a better performing peer.
-	// If set to 0 (default) then the peer will not disconnect based on block height.
-	// NOTE: Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
-	// affecting performance.
-	ReconnectBlockHeightLagThreshold() int
-
-	// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
-	// value is only relevant if reconnectBlockHeightLagThreshold >0.
-	BlockHeightMonitorPeriod() time.Duration
 }
 
 // TimeoutType enumerates the different types of outgoing connections
@@ -162,6 +154,7 @@ type Providers interface {
 	ChannelProvider() ChannelProvider
 	InfraProvider() InfraProvider
 	EndpointConfig() EndpointConfig
+	MetricsProvider
 }
 
 // CertPool is a thread safe wrapper around the x509 standard library
@@ -172,4 +165,9 @@ type CertPool interface {
 	//Add allows adding certificates to CertPool
 	//Call Get() after Add() to get the updated certpool
 	Add(certs ...*x509.Certificate)
+}
+
+// MetricsProvider represents a provider of metrics.
+type MetricsProvider interface {
+	GetMetrics() *metrics.ClientMetrics
 }

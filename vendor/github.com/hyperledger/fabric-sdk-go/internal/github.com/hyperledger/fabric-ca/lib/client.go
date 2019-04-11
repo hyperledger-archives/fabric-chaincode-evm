@@ -24,8 +24,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
@@ -38,6 +36,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 )
 
 // Client is the fabric-ca client object
@@ -155,6 +154,33 @@ func (c *Client) initHTTPClient(serverName string) error {
 	}
 	c.httpClient = &http.Client{Transport: tr}
 	return nil
+}
+
+// GetCAInfo returns generic CA information
+func (c *Client) GetCAInfo(req *api.GetCAInfoRequest) (*GetCAInfoResponse, error) {
+	err := c.Init()
+	if err != nil {
+		return nil, err
+	}
+	body, err := util.Marshal(req, "GetCAInfo")
+	if err != nil {
+		return nil, err
+	}
+	cainforeq, err := c.newPost("cainfo", body)
+	if err != nil {
+		return nil, err
+	}
+	netSI := &common.CAInfoResponseNet{}
+	err = c.SendReq(cainforeq, netSI)
+	if err != nil {
+		return nil, err
+	}
+	localSI := &GetCAInfoResponse{}
+	err = c.net2LocalCAInfo(netSI, localSI)
+	if err != nil {
+		return nil, err
+	}
+	return localSI, nil
 }
 
 // GenCSR generates a CSR (Certificate Signing Request)
@@ -584,4 +610,14 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		}
 	}
 	return u, nil
+}
+
+// GetFabCAVersion is a utility function to fetch the Fabric CA version for this client
+// TODO remove the function below once Fabric CA v1.3 is not supported by the SDK anymore
+func (c *Client) GetFabCAVersion() (string, error) {
+	i, e := c.GetCAInfo(&api.GetCAInfoRequest{CAName: c.Config.CAName})
+	if e != nil {
+		return "", e
+	}
+	return i.Version, nil
 }

@@ -44,14 +44,6 @@
   revision = "ed77733ec07dfc8a513741138419b8d9d3de9d2d"
 
 [[projects]]
-  digest = "1:a1e402c0a7eb4122cb9e4c3dcd1aa20bb238767ea1a857cc5d245f05c0cd5b3c"
-  name = "github.com/cactus/go-statsd-client"
-  packages = ["statsd"]
-  pruneopts = "UT"
-  revision = "138b925ccdf617776955904ba7759fce64406cec"
-  version = "v3.1.1"
-
-[[projects]]
   digest = "1:ef214866cabb3c7e2a0dc935682a19e6c35f96e90fb306d6f775d4f1d4a3910a"
   name = "github.com/cloudflare/cfssl"
   packages = [
@@ -143,14 +135,6 @@
   revision = "19279f0492417475b6bfbd0aa529f73e8f178fb5"
 
 [[projects]]
-  branch = "master"
-  digest = "1:5fe3f6ede1c208a2efd3b78fe4df0306aa9624edd39476143d14f0326e5a8d29"
-  name = "github.com/facebookgo/clock"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "600d898af40aa09a7a93ecb9265d87b0504b6f03"
-
-[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -172,16 +156,22 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:704b145137b5555c6bac6a7e52875e4df8a0a1b7ea74aaae864abcab61e672b0"
+  digest = "1:278bc423e38c3a969b6757f1c0af369ecf930b534a58fddde76f5191ec969a25"
   name = "github.com/go-kit/kit"
   packages = [
     "log",
     "log/level",
     "log/term",
+    "metrics",
+    "metrics/internal/lv",
+    "metrics/internal/ratemap",
+    "metrics/prometheus",
+    "metrics/statsd",
+    "util/conn",
   ]
   pruneopts = "UT"
-  revision = "4dc7be5d2d12881735283bcab7352178e190fc71"
-  version = "v0.6.0"
+  revision = "12210fb6ace19e0496167bb3e667dcd91fa9f69b"
+  version = "v0.8.0"
 
 [[projects]]
   digest = "1:31a18dae27a29aa074515e43a443abfd2ba6deb6d69309d8d7ce789c45f34659"
@@ -190,14 +180,6 @@
   pruneopts = "UT"
   revision = "390ab7935ee28ec6b286364bba9b4dd6410cb3d5"
   version = "v0.3.0"
-
-[[projects]]
-  digest = "1:c4a2528ccbcabf90f9f3c464a5fc9e302d592861bbfd0b7135a7de8a943d0406"
-  name = "github.com/go-stack/stack"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
-  version = "v1.7.0"
 
 [[projects]]
   digest = "1:35621fe20f140f05a0c4ef662c26c0ab4ee50bca78aa30fe87d33120bd28165e"
@@ -216,11 +198,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2e292c0e36117b617c4df3f10ac9a7fe05e3c90bf057f1e61867c913d866e0c9"
+  digest = "1:2c1437d319a5ece1f082bfa3022f03a4e1c02805fff1a9f2c4e84389d49c59c0"
   name = "github.com/golang/mock"
   packages = ["gomock"]
   pruneopts = "UT"
-  revision = "22bbf0ddf08105dfa364d0a2fa619dfa71014af5"
+  revision = "73dc87cad333b55a02058f4b3d872dbbafddc2b0"
 
 [[projects]]
   digest = "1:0a6478c37f24385424d457d8f2d921dc9ff84156e021fe86c5cabe263db64930"
@@ -406,7 +388,15 @@
   revision = "6b78f7a22d950103fb2669aabb969f56d42d283b"
 
 [[projects]]
-  digest = "1:fc08b002438ac89d56e08022ad2898aa33c541c598a0abd5c6129caff2b470f7"
+  digest = "1:0f4305e5a43e324844412168385a23ff23dafc55369fcbbc2ea77fb974f828cc"
+  name = "github.com/hyperledger/fabric-lib-go"
+  packages = ["healthz"]
+  pruneopts = "UT"
+  revision = "90dc96fb23ab7eb18477e4bfcf9cd8ebdb7209f0"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:ec7757d9a15cd30896008499c952ebc0b39e6276c7a2b99281aec929c311c0cf"
   name = "github.com/hyperledger/fabric-sdk-go"
   packages = [
     "internal/github.com/hyperledger/fabric-ca/api",
@@ -428,8 +418,18 @@
     "internal/github.com/hyperledger/fabric/common/channelconfig",
     "internal/github.com/hyperledger/fabric/common/crypto",
     "internal/github.com/hyperledger/fabric/common/ledger",
+    "internal/github.com/hyperledger/fabric/common/metrics",
+    "internal/github.com/hyperledger/fabric/common/metrics/disabled",
+    "internal/github.com/hyperledger/fabric/common/metrics/internal/namer",
+    "internal/github.com/hyperledger/fabric/common/metrics/prometheus",
+    "internal/github.com/hyperledger/fabric/common/metrics/statsd",
+    "internal/github.com/hyperledger/fabric/common/metrics/statsd/goruntime",
     "internal/github.com/hyperledger/fabric/common/util",
+    "internal/github.com/hyperledger/fabric/core/comm",
+    "internal/github.com/hyperledger/fabric/core/common/privdata",
     "internal/github.com/hyperledger/fabric/core/ledger",
+    "internal/github.com/hyperledger/fabric/core/middleware",
+    "internal/github.com/hyperledger/fabric/core/operations",
     "internal/github.com/hyperledger/fabric/discovery/client",
     "internal/github.com/hyperledger/fabric/msp",
     "internal/github.com/hyperledger/fabric/protos/discovery",
@@ -437,6 +437,7 @@
     "internal/github.com/hyperledger/fabric/protos/orderer",
     "internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge",
     "internal/github.com/hyperledger/fabric/sdkpatch/logbridge",
+    "internal/github.com/hyperledger/fabric/sdkpatch/logbridge/httpadmin",
     "pkg/client/channel",
     "pkg/client/channel/invoke",
     "pkg/client/common/discovery",
@@ -444,10 +445,14 @@
     "pkg/client/common/discovery/greylist",
     "pkg/client/common/discovery/staticdiscovery",
     "pkg/client/common/filter",
+    "pkg/client/common/random",
+    "pkg/client/common/selection/balancer",
     "pkg/client/common/selection/dynamicselection",
     "pkg/client/common/selection/dynamicselection/pgresolver",
     "pkg/client/common/selection/fabricselection",
     "pkg/client/common/selection/options",
+    "pkg/client/common/selection/sorter/balancedsorter",
+    "pkg/client/common/selection/sorter/blockheightsorter",
     "pkg/client/common/verifier",
     "pkg/client/ledger",
     "pkg/common/errors/multi",
@@ -484,6 +489,10 @@
     "pkg/fab/events/client",
     "pkg/fab/events/client/dispatcher",
     "pkg/fab/events/client/lbp",
+    "pkg/fab/events/client/peerresolver",
+    "pkg/fab/events/client/peerresolver/balanced",
+    "pkg/fab/events/client/peerresolver/minblockheight",
+    "pkg/fab/events/client/peerresolver/preferorg",
     "pkg/fab/events/deliverclient",
     "pkg/fab/events/deliverclient/connection",
     "pkg/fab/events/deliverclient/dispatcher",
@@ -505,6 +514,8 @@
     "pkg/fabsdk/factory/defcore",
     "pkg/fabsdk/factory/defmsp",
     "pkg/fabsdk/factory/defsvc",
+    "pkg/fabsdk/metrics",
+    "pkg/fabsdk/metrics/cfg",
     "pkg/fabsdk/provider/chpvdr",
     "pkg/fabsdk/provider/fabpvdr",
     "pkg/fabsdk/provider/msppvdr",
@@ -518,7 +529,6 @@
     "pkg/util/pathvar",
     "pkg/util/test",
     "test/metadata",
-    "test/performance/metrics",
     "third_party/github.com/hyperledger/fabric/core/common/ccprovider",
     "third_party/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil",
     "third_party/github.com/hyperledger/fabric/core/ledger/util",
@@ -528,10 +538,12 @@
     "third_party/github.com/hyperledger/fabric/protos/msp",
     "third_party/github.com/hyperledger/fabric/protos/orderer",
     "third_party/github.com/hyperledger/fabric/protos/peer",
+    "third_party/github.com/hyperledger/fabric/protos/token",
     "third_party/github.com/hyperledger/fabric/protos/utils",
   ]
   pruneopts = "UT"
-  revision = "beccd9cb1450fddfe426616e151d709c99f7ccdd"
+  revision = "0e710cebffe5674d411a625bc103ff0e266bb5e1"
+  version = "v1.0.0-alpha5"
 
 [[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
@@ -691,12 +703,11 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:93a746f1060a8acbcf69344862b2ceced80f854170e1caae089b2834c5fbf7f4"
+  digest = "1:75d51eeab0df85a3cea9e1297ccd3183b20a10cb4b48c753d8ec8d113cc14250"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
     "prometheus/internal",
-    "prometheus/promhttp",
   ]
   pruneopts = "UT"
   revision = "505eaef017263e299324067d40ca2c48f6a2cf50"
@@ -861,18 +872,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "a82aa03cedda71045967f5cc69c22cada26f4e6c"
-
-[[projects]]
-  digest = "1:38e3092e8ae40fc6f8d10d83008ff401e596a410692b86d3093a1f3643866b05"
-  name = "github.com/uber-go/tally"
-  packages = [
-    ".",
-    "prometheus",
-    "statsd",
-  ]
-  pruneopts = "UT"
-  revision = "522328b48efad0c6034dba92bf39228694e9d31f"
-  version = "v3.3.2"
 
 [[projects]]
   digest = "1:3c1a69cdae3501bf75e76d0d86dc6f2b0a7421bc205c0cb7b96b19eed464a34d"
