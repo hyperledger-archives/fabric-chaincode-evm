@@ -105,6 +105,7 @@ bin/evmcc:
 	go build -o bin/evmcc github.com/hyperledger/fabric-chaincode-evm/evmcc
 	rm bin/evmcc # checking that it compiled, evmcc not meant to be run directly
 
+# Requires go v1.11+
 .PHONY:
 update-mocks: gotool.counterfeiter
 	go generate ./fab3/

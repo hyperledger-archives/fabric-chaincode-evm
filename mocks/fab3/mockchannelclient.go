@@ -2,10 +2,10 @@
 package fab3
 
 import (
-	"sync"
+	sync "sync"
 
-	"github.com/hyperledger/fabric-chaincode-evm/fab3"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	fab3 "github.com/hyperledger/fabric-chaincode-evm/fab3"
+	channel "github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 )
 
 type MockChannelClient struct {
