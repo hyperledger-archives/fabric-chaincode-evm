@@ -25,6 +25,14 @@ to use with Hyperledger Fabric.
 
 ![EndToEnd](EndToEnd.png)
 
+# Table of Contents
+- [Deploying the Fabric EVM Chaincode (EVMCC)](#Deploying-the-Fabric-EVM-Chaincode-(EVMCC))
+- [Running Fab3](#Running-Fab3)
+- [Tutorial](#Tutorial)
+- [Testing](#Testing)
+- [Contributions](#Contributions)
+- [Current Dependencies](#Current-Dependencies)
+
 We hang out in the
 [#fabric-evm channel](https://chat.hyperledger.org/channel/fabric-evm). We are
 always interested in feedback and help in development and testing! For more
@@ -178,7 +186,7 @@ Please send all pull requests to the gerrit repository. For issues, open a ticke
 the Hyperledger Fabric [JIRA](https://jira.hyperledger.org/projects/FAB/issues)
 and add `fabric-chaincode-evm` in the component field.
 
-Current Dependencies:
+## Current Dependencies
 - Hyperledger Fabric [v1.4](https://github.com/hyperledger/fabric/releases/tag/v1.4.0). EVMCC can be run on Fabric 1.0 and newer.
 - Hyperledger Fabric SDK Go [revision = "beccd9cb1450fddfe426616e151d709c99f7ccdd"](https://github.com/hyperledger/fabric-sdk-go/tree/beccd9cb1450fddfe426616e151d709c99f7ccdd)
 - Dep [v0.5](https://github.com/golang/dep/releases/tag/v0.5.0)
