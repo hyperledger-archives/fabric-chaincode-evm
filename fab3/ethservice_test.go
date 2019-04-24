@@ -1298,6 +1298,15 @@ var _ = Describe("Ethservice", func() {
 			})
 		})
 	})
+
+	Describe("GetTransactionCount", func() {
+		It("always returns 0x0", func() {
+			var reply string
+			err := ethservice.GetTransactionCount(&http.Request{}, nil, &reply)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(reply).To(Equal("0x0"))
+		})
+	})
 })
 
 func formatTopic(s string) string {

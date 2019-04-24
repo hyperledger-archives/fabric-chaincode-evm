@@ -25,6 +25,7 @@ Fab3 currently supports:
 - [eth_getTransactionByHash](#eth_getTransactionByHash)
 - [eth_getTransactionReceipt](#eth_getTransactionReceipt)
 - [eth_getLogs](#eth_getLogs)
+- [eth_getTransactionCount](#eth_getTransactionCount)
 
 
 ### net_version
@@ -337,4 +338,23 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
     }
   ]
 }
+```
+
+### eth_getTransactionCount
+Transaction count per user is not tracked and there is no concept of a nonce in
+Fabric. Therefore `eth_getTransactionCount` is hardcoded to always return `0x0`.
+According to the spec, [getTransactionCount](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactioncount)
+takes in an address and a block number. These parameters, if provided will be
+ignored.
+
+**Example**
+```
+curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
+  "jsonrpc":"2.0",
+  "method": "eth_getTransactionCount",
+  "id":1,
+  "params":[]
+}'
+
+{"jsonrpc":"2.0","result":"0x0","id":1}
 ```
