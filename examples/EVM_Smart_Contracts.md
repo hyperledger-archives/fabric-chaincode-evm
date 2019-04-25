@@ -33,7 +33,7 @@ Update the ``docker-compose-cli.yaml`` with the volumes to include the ``fabric-
 Start the network by running:
 
 ```bash
-  ./byfn up
+  ./byfn.sh up
 ```
 
 ### Build and Start the EVM
