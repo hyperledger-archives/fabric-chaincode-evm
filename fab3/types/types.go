@@ -179,7 +179,7 @@ type TxReceipt struct {
 	TransactionIndex  string `json:"transactionIndex"`
 	BlockHash         string `json:"blockHash"`
 	BlockNumber       string `json:"blockNumber"`
-	ContractAddress   string `json:"contractAddress"`
+	ContractAddress   string `json:"contractAddress,omitempty"`
 	GasUsed           int    `json:"gasUsed"`
 	CumulativeGasUsed int    `json:"cumulativeGasUsed"`
 	To                string `json:"to"`
