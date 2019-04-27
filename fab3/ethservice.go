@@ -75,6 +75,7 @@ type EthService interface {
 	GetBlockByNumber(r *http.Request, p *[]interface{}, reply *types.Block) error
 	BlockNumber(r *http.Request, _ *interface{}, reply *string) error
 	GetTransactionByHash(r *http.Request, txID *string, reply *types.Transaction) error
+	GetTransactionCount(r *http.Request, _ *interface{}, reply *string) error
 	GetLogs(*http.Request, *types.GetLogsArgs, *[]types.Log) error
 }
 
@@ -380,6 +381,15 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 	}
 
 	*reply = txn
+	return nil
+}
+
+// GetTransactionCount will always return 0 regardless of the provided parameters.
+//
+// This implmentation does not match the Ethereum JSON RPC API definition of eth_getTransactionCount.
+// This has been stubbed out in order to have Truffle IDE support.
+func (s *ethService) GetTransactionCount(r *http.Request, _ *interface{}, reply *string) error {
+	*reply = "0x0"
 	return nil
 }
 

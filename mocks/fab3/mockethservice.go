@@ -127,6 +127,19 @@ type MockEthService struct {
 	getTransactionByHashReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetTransactionCountStub        func(*http.Request, *interface{}, *string) error
+	getTransactionCountMutex       sync.RWMutex
+	getTransactionCountArgsForCall []struct {
+		arg1 *http.Request
+		arg2 *interface{}
+		arg3 *string
+	}
+	getTransactionCountReturns struct {
+		result1 error
+	}
+	getTransactionCountReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GetTransactionReceiptStub        func(*http.Request, *string, *types.TxReceipt) error
 	getTransactionReceiptMutex       sync.RWMutex
 	getTransactionReceiptArgsForCall []struct {
@@ -625,6 +638,58 @@ func (fake *MockEthService) GetTransactionByHashReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
+func (fake *MockEthService) GetTransactionCount(arg1 *http.Request, arg2 *interface{}, arg3 *string) error {
+	fake.getTransactionCountMutex.Lock()
+	ret, specificReturn := fake.getTransactionCountReturnsOnCall[len(fake.getTransactionCountArgsForCall)]
+	fake.getTransactionCountArgsForCall = append(fake.getTransactionCountArgsForCall, struct {
+		arg1 *http.Request
+		arg2 *interface{}
+		arg3 *string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetTransactionCount", []interface{}{arg1, arg2, arg3})
+	fake.getTransactionCountMutex.Unlock()
+	if fake.GetTransactionCountStub != nil {
+		return fake.GetTransactionCountStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.getTransactionCountReturns
+	return fakeReturns.result1
+}
+
+func (fake *MockEthService) GetTransactionCountCallCount() int {
+	fake.getTransactionCountMutex.RLock()
+	defer fake.getTransactionCountMutex.RUnlock()
+	return len(fake.getTransactionCountArgsForCall)
+}
+
+func (fake *MockEthService) GetTransactionCountArgsForCall(i int) (*http.Request, *interface{}, *string) {
+	fake.getTransactionCountMutex.RLock()
+	defer fake.getTransactionCountMutex.RUnlock()
+	argsForCall := fake.getTransactionCountArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *MockEthService) GetTransactionCountReturns(result1 error) {
+	fake.GetTransactionCountStub = nil
+	fake.getTransactionCountReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) GetTransactionCountReturnsOnCall(i int, result1 error) {
+	fake.GetTransactionCountStub = nil
+	if fake.getTransactionCountReturnsOnCall == nil {
+		fake.getTransactionCountReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.getTransactionCountReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) GetTransactionReceipt(arg1 *http.Request, arg2 *string, arg3 *types.TxReceipt) error {
 	fake.getTransactionReceiptMutex.Lock()
 	ret, specificReturn := fake.getTransactionReceiptReturnsOnCall[len(fake.getTransactionReceiptArgsForCall)]
@@ -750,6 +815,8 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.getLogsMutex.RUnlock()
 	fake.getTransactionByHashMutex.RLock()
 	defer fake.getTransactionByHashMutex.RUnlock()
+	fake.getTransactionCountMutex.RLock()
+	defer fake.getTransactionCountMutex.RUnlock()
 	fake.getTransactionReceiptMutex.RLock()
 	defer fake.getTransactionReceiptMutex.RUnlock()
 	fake.sendTransactionMutex.RLock()
