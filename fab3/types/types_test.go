@@ -171,4 +171,33 @@ var _ = Describe("GetLogsArgs UnmarshalJSON", func() {
 		Entry("mixed block specifier and blockhash",
 			[]byte(`{"fromBlock":"0x1", "blockHash":"0x47"}`)),
 	)
+
+	DescribeTable("Transaction MarshalJSON",
+		func(tx Transaction, bytes []byte) {
+			marshalledData, err := tx.MarshalJSON()
+			Expect(err).ToNot(HaveOccurred())
+
+			var target Transaction
+			err = json.Unmarshal(marshalledData, &target)
+			Expect(err).ToNot(HaveOccurred())
+
+			var expectedTx Transaction
+			err = json.Unmarshal(bytes, &expectedTx)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(target).To(Equal(expectedTx))
+		},
+
+		Entry("empty transaction object",
+			Transaction{},
+			[]byte(`{"blockHash":"", "blockNumber":"", "to":"", "input":"","transactionIndex":"", "hash":"", "gasPrice":"0x0", "value":"0x0"}`)),
+
+		Entry("non-empty transaction object",
+			Transaction{BlockHash: "0x1234567"},
+			[]byte(`{"blockHash":"0x1234567", "blockNumber":"", "to":"", "input":"","transactionIndex":"", "hash":"", "gasPrice":"0x0", "value":"0x0"}`)),
+
+		Entry("non-empty gasPrice and value fields",
+			Transaction{BlockHash: "0x1234567", GasPrice: "some-value", Value: "some-price"},
+			[]byte(`{"blockHash":"0x1234567", "blockNumber":"", "to":"", "input":"","transactionIndex":"", "hash":"", "gasPrice":"0x0", "value":"0x0"}`)),
+	)
 })

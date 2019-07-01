@@ -49,6 +49,17 @@ function TestVotingContract(fab3Address1, fab3Address2){
     console.log(contractTransaction.input)
     process.exit(1)
   }
+
+  if ( contractTransaction.gasPrice != "0x0" ){
+    console.log("getTransaction should return gasPrice and it should be equal to `0x0`")
+    console.log("gasPrice was" + contractTransaction.gasPrice)
+  }
+
+  if ( contractTransaction.value != "0x0" ){
+    console.log("getTransaction should return value and it should be equal to `0x0`")
+    console.log("value was" + contractTransaction.gasPrice)
+  }
+
   var contractTransactionBlock = user1.eth.getBlock(contractTransaction.blockNumber, false)
   if ( contractTransactionBlock.transactions[contractTransaction.transactionIndex] != contractTransaction.hash ) {
     console.log("getBlock should have a block with the same transaction as before")

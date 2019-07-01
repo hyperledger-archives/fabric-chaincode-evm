@@ -213,7 +213,19 @@ type Transaction struct { // object, or null when no transaction was found:
 	// From string `json:"from"` // DATA, 20 Bytes - address of the sender.
 	Input            string `json:"input"`            // DATA - the data send along with the transaction.
 	TransactionIndex string `json:"transactionIndex"` // QUANTITY - integer of the transactions index position in the block. null when its pending.
-	Hash             string `json:"hash"`             //: DATA, 32 Bytes - hash of the transaction.
+	Hash             string `json:"hash"`             // DATA, 32 Bytes - hash of the transaction.
+	GasPrice         string `json:"gasPrice"`         // QUANTITY - gas price provided by the sender in Wei.
+	Value            string `json:"value"`            // QUANTITY - value transferred in Wei.
+}
+
+// MarshalJSON will json marshal the tx object as well as setting the Gas Price and Value fields as Ox0
+func (tx *Transaction) MarshalJSON() ([]byte, error) {
+	type Alias Transaction
+	temp := (Alias)(*tx)
+	temp.GasPrice = "0x0"
+	temp.Value = "0x0"
+
+	return json.Marshal(temp)
 }
 
 // Block is an eth return struct
