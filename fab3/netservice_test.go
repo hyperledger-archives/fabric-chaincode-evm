@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fab3_test
 
 import (
+	"encoding/hex"
 	"net/http"
 
 	"github.com/hyperledger/fabric-chaincode-evm/fab3"
@@ -21,7 +22,7 @@ var _ = Describe("NetService", func() {
 			var reply string
 			err := netservice.Version(&http.Request{}, nil, &reply)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(reply).To(Equal(fab3.NetworkID))
+			Expect(reply).To(Equal(hex.EncodeToString([]byte(fab3.NetworkID))))
 		})
 	})
 })
