@@ -185,6 +185,7 @@ type TxReceipt struct {
 	To                string `json:"to"`
 	Logs              []Log  `json:"logs"`
 	Status            string `json:"status"`
+	From              string `json:"from"`
 }
 
 type Log struct {
@@ -210,7 +211,7 @@ type Transaction struct { // object, or null when no transaction was found:
 	//
 	// From can be gotten from the Signature on the Transaction Envelope
 	//
-	// From string `json:"from"` // DATA, 20 Bytes - address of the sender.
+	From             string `json:"from"`             // DATA, 20 Bytes - address of the sender.
 	Input            string `json:"input"`            // DATA - the data send along with the transaction.
 	TransactionIndex string `json:"transactionIndex"` // QUANTITY - integer of the transactions index position in the block. null when its pending.
 	Hash             string `json:"hash"`             // DATA, 32 Bytes - hash of the transaction.

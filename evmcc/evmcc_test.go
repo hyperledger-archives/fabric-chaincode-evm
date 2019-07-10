@@ -7,22 +7,20 @@ SPDX-License-Identifier: Apache-2.0
 package main_test
 
 import (
-	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/crypto"
+	"github.com/hyperledger/fabric-chaincode-evm/addressgenerator"
 	"github.com/hyperledger/fabric-chaincode-evm/event"
 	evm "github.com/hyperledger/fabric-chaincode-evm/evmcc"
 	evmcc_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/msp"
-	"golang.org/x/crypto/sha3"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -208,10 +206,10 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 					BeforeEach(func() {
 						stub.GetArgsReturns([][]byte{[]byte("account")})
 						stub.GetCreatorReturns(creator, nil)
-						si := &msp.SerializedIdentity{IdBytes: []byte(user0Cert)}
 
-						var err error
-						callerAddress, err = identityToAddr(si.IdBytes)
+						addr, err := addressgenerator.IdentityToAddr(creator)
+						Expect(err).ToNot(HaveOccurred())
+						callerAddress, err = crypto.AddressFromBytes(addr)
 						Expect(err).ToNot(HaveOccurred())
 					})
 
@@ -515,7 +513,9 @@ H8GZeN2ifTyJzzGo
 				var baseCallCount int
 
 				BeforeEach(func() {
-					user1Addr, err := identityToAddr([]byte(user1Cert))
+					addr, err := addressgenerator.IdentityToAddr([]byte(user1))
+					Expect(err).ToNot(HaveOccurred())
+					user1Addr, err := crypto.AddressFromBytes(addr)
 					Expect(err).ToNot(HaveOccurred())
 					stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(giveRightToVote + hex.EncodeToString(user1Addr.Word256().Bytes()))})
 					res := evmcc.Invoke(stub)
@@ -535,7 +535,9 @@ H8GZeN2ifTyJzzGo
 					})
 
 					It("sets the variables of voter 1 (user1) properly", func() {
-						user1addr, err := identityToAddr([]byte(user1Cert))
+						addr, err := addressgenerator.IdentityToAddr([]byte(user1))
+						Expect(err).ToNot(HaveOccurred())
+						user1addr, err := crypto.AddressFromBytes(addr)
 						Expect(err).ToNot(HaveOccurred())
 						stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(voters + hex.EncodeToString(user1addr.Word256().Bytes()))})
 						res := evmcc.Invoke(stub)
@@ -766,23 +768,3 @@ Vc4foA7mruwjI8sEng==
 		})
 	})
 })
-
-// TODO: This is copied from evmcc. Consider moving this to an util pkg
-func identityToAddr(id []byte) (crypto.Address, error) {
-	bl, _ := pem.Decode(id)
-	if bl == nil {
-		return crypto.ZeroAddress, fmt.Errorf("no pem data found")
-	}
-
-	cert, err := x509.ParseCertificate(bl.Bytes)
-	if err != nil {
-		return crypto.ZeroAddress, fmt.Errorf("failed to parse certificate: %s", err)
-	}
-
-	pubkeyBytes, err := x509.MarshalPKIXPublicKey(cert.PublicKey)
-	if err != nil {
-		return crypto.ZeroAddress, fmt.Errorf("unable to marshal public key: %s", err)
-	}
-
-	return crypto.AddressFromWord256(sha3.Sum256(pubkeyBytes)), nil
-}

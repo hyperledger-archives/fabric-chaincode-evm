@@ -28,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/msp"
 
 	"github.com/hyperledger/fabric-chaincode-evm/event"
 	"github.com/hyperledger/fabric-chaincode-evm/fab3"
@@ -38,7 +39,24 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var evmcc = "evmcc"
+var (
+	evmcc = "evmcc"
+	cert  = `-----BEGIN CERTIFICATE-----
+MIIB/zCCAaWgAwIBAgIRAKaex32sim4PQR6kDPEPVnwwCgYIKoZIzj0EAwIwaTEL
+MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+cmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRcwFQYDVQQDEw5jYS5leGFt
+cGxlLmNvbTAeFw0xNzA3MjYwNDM1MDJaFw0yNzA3MjQwNDM1MDJaMEoxCzAJBgNV
+BAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNp
+c2NvMQ4wDAYDVQQDEwVwZWVyMDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABPzs
+BSdIIB0GrKmKWn0N8mMfxWs2s1D6K+xvTvVJ3wUj3znNBxj+k2j2tpPuJUExt61s
+KbpP3GF9/crEahpXXRajTTBLMA4GA1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAA
+MCsGA1UdIwQkMCKAIEvLfQX685pz+rh2q5yCA7e0a/a5IGDuJVHRWfp++HThMAoG
+CCqGSM49BAMCA0gAMEUCIH5H9W3tsCrti6tsN9UfY1eeTKtExf/abXhfqfVeRChk
+AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
+-----END CERTIFICATE-----`
+	// Address associated with the above cert
+	addrFromCert = "0xb3778bcee2b9c349702e5832928730d2aed0ac07"
+)
 var _ = Describe("Ethservice", func() {
 	var (
 		ethservice fab3.EthService
@@ -408,6 +426,7 @@ var _ = Describe("Ethservice", func() {
 				CumulativeGasUsed: 0,
 				To:                "0x" + sampleAddress,
 				Status:            "0x1",
+				From:              addrFromCert,
 			}))
 		})
 
@@ -504,6 +523,7 @@ var _ = Describe("Ethservice", func() {
 					To:                "0x" + sampleAddress,
 					Logs:              expectedLogs,
 					Status:            "0x1",
+					From:              addrFromCert,
 				}))
 			})
 
@@ -544,6 +564,7 @@ var _ = Describe("Ethservice", func() {
 					CumulativeGasUsed: 0,
 					Logs:              nil,
 					Status:            "0x1",
+					From:              addrFromCert,
 				}))
 			})
 
@@ -572,6 +593,7 @@ var _ = Describe("Ethservice", func() {
 						CumulativeGasUsed: 0,
 						Logs:              nil,
 						Status:            "0x1",
+						From:              addrFromCert,
 					}))
 				})
 			})
@@ -1485,9 +1507,20 @@ func GetSampleTransaction(inputArgs [][]byte, txResponse, eventBytes []byte, txI
 		return &peer.ProcessedTransaction{}, err
 	}
 
+	creator, err := proto.Marshal(&msp.SerializedIdentity{IdBytes: []byte(cert)})
+	if err != nil {
+		return nil, err
+	}
+
+	sigHdr, err := proto.Marshal(&common.SignatureHeader{Creator: creator})
+	if err != nil {
+		return nil, err
+	}
+
 	payload := &common.Payload{
 		Header: &common.Header{
-			ChannelHeader: chdrBytes,
+			ChannelHeader:   chdrBytes,
+			SignatureHeader: sigHdr,
 		},
 		Data: actionsPayload,
 	}
@@ -1499,7 +1532,8 @@ func GetSampleTransaction(inputArgs [][]byte, txResponse, eventBytes []byte, txI
 
 	tx := &peer.ProcessedTransaction{
 		TransactionEnvelope: &common.Envelope{
-			Payload: payloadBytes,
+			Payload:   payloadBytes,
+			Signature: []byte(cert),
 		},
 	}
 

@@ -7,25 +7,21 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
-	"crypto/x509"
 	"encoding/hex"
-	"encoding/pem"
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/execution/evm"
 	"github.com/hyperledger/burrow/logging"
 	"github.com/hyperledger/burrow/permission"
+	"github.com/hyperledger/fabric-chaincode-evm/addressgenerator"
 	"github.com/hyperledger/fabric-chaincode-evm/eventmanager"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric/protos/peer"
-	"golang.org/x/crypto/sha3"
 )
 
 //Permissions for all accounts (users & contracts) to send CallTx or SendTx to a contract
@@ -199,21 +195,10 @@ func (evmcc *EvmChaincode) getCode(stub shim.ChaincodeStubInterface, address []b
 }
 
 func (evmcc *EvmChaincode) account(stub shim.ChaincodeStubInterface) pb.Response {
-	creatorBytes, err := stub.GetCreator()
-	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get creator: %s", err))
-	}
-
-	si := &msp.SerializedIdentity{}
-	if err = proto.Unmarshal(creatorBytes, si); err != nil {
-		return shim.Error(fmt.Sprintf("failed to unmarshal serialized identity: %s", err))
-	}
-
-	callerAddr, err := identityToAddr(si.IdBytes)
+	callerAddr, err := getCallerAddress(stub)
 	if err != nil {
 		return shim.Error(fmt.Sprintf("fail to convert identity to address: %s", err))
 	}
-
 	return shim.Success([]byte(callerAddr.String()))
 }
 
@@ -231,36 +216,12 @@ func getCallerAddress(stub shim.ChaincodeStubInterface) (crypto.Address, error) 
 		return crypto.ZeroAddress, fmt.Errorf("failed to get creator: %s", err)
 	}
 
-	si := &msp.SerializedIdentity{}
-	if err = proto.Unmarshal(creatorBytes, si); err != nil {
-		return crypto.ZeroAddress, fmt.Errorf("failed to unmarshal serialized identity: %s", err)
-	}
-
-	callerAddr, err := identityToAddr(si.IdBytes)
+	callerAddr, err := addressgenerator.IdentityToAddr(creatorBytes)
 	if err != nil {
 		return crypto.ZeroAddress, fmt.Errorf("fail to convert identity to address: %s", err)
 	}
 
-	return callerAddr, nil
-}
-
-func identityToAddr(id []byte) (crypto.Address, error) {
-	bl, _ := pem.Decode(id)
-	if bl == nil {
-		return crypto.ZeroAddress, fmt.Errorf("no pem data found")
-	}
-
-	cert, err := x509.ParseCertificate(bl.Bytes)
-	if err != nil {
-		return crypto.ZeroAddress, fmt.Errorf("failed to parse certificate: %s", err)
-	}
-
-	pubkeyBytes, err := x509.MarshalPKIXPublicKey(cert.PublicKey)
-	if err != nil {
-		return crypto.ZeroAddress, fmt.Errorf("unable to marshal public key: %s", err)
-	}
-
-	return crypto.AddressFromWord256(sha3.Sum256(pubkeyBytes)), nil
+	return crypto.AddressFromBytes(callerAddr)
 }
 
 func main() {

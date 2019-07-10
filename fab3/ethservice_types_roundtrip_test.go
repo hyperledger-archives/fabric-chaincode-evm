@@ -34,14 +34,14 @@ var _ = Describe("ethereum json rpc struct fields", func() {
 			It("includes `contractAddress` when the contract address is not empty", func() {
 				fieldNames := []string{"transactionHash", "transactionIndex",
 					"blockHash", "blockNumber", "contractAddress", "gasUsed",
-					"cumulativeGasUsed", "to", "status", "logs"}
+					"cumulativeGasUsed", "to", "status", "logs", "from"}
 				assertTypeMarshalsJSONFields(fieldNames, types.TxReceipt{ContractAddress: "some-address"})
 			})
 
 			It("does not include `contractAddress` as a key when the contract address is empty", func() {
 				fieldNames := []string{"transactionHash", "transactionIndex",
 					"blockHash", "blockNumber", "gasUsed",
-					"cumulativeGasUsed", "to", "status", "logs"}
+					"cumulativeGasUsed", "to", "status", "logs", "from"}
 				assertTypeMarshalsJSONFields(fieldNames, types.TxReceipt{})
 			})
 
@@ -54,7 +54,7 @@ var _ = Describe("ethereum json rpc struct fields", func() {
 		})
 
 		It("for Transaction with the proper cases", func() {
-			fieldNames := []string{"blockHash", "blockNumber", "to", "input", "transactionIndex", "hash", "gasPrice", "value"}
+			fieldNames := []string{"blockHash", "blockNumber", "to", "input", "from", "transactionIndex", "hash", "gasPrice", "value"}
 			assertTypeMarshalsJSONFields(fieldNames, types.Transaction{})
 		})
 

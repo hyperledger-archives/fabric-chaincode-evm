@@ -28,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-chaincode-evm/addressgenerator"
 	"github.com/hyperledger/fabric-chaincode-evm/event"
 	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
 )
@@ -167,8 +168,12 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 	// for fabric transactions, 0 is valid, 1 is invalid, the opposite of how ethereum
 	receipt.Status = "0x" + strconv.FormatUint(((1+uint64(transactionsFilter[indexU]))%2), 16)
 
-	to, _, respPayload, err := getTransactionInformation(txPayload)
+	to, _, from, respPayload, err := getTransactionInformation(txPayload)
+	if err != nil {
+		return fmt.Errorf("Failed getting transaction infomration: %s", err)
+	}
 
+	receipt.From = from
 	if to != "" {
 		callee, err := hex.DecodeString(to)
 		if err != nil {
@@ -295,13 +300,14 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 				TransactionIndex: "0x" + strconv.FormatUint(uint64(index), 16),
 				Hash:             "0x" + chdr.TxId,
 			}
-			to, input, _, err := getTransactionInformation(payload)
+			to, input, from, _, err := getTransactionInformation(payload)
 			if err != nil {
 				return err
 			}
 
 			txn.To = "0x" + to
 			txn.Input = "0x" + input
+			txn.From = from
 			txns[index] = txn
 		} else {
 			txns[index] = "0x" + chdr.TxId
@@ -367,7 +373,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 
 	txn.TransactionIndex = index
 
-	to, input, _, err := getTransactionInformation(txPayload)
+	to, input, from, _, err := getTransactionInformation(txPayload)
 	if err != nil {
 		return err
 	}
@@ -379,6 +385,7 @@ func (s *ethService) GetTransactionByHash(r *http.Request, txID *string, reply *
 	if input != "" {
 		txn.Input = "0x" + input
 	}
+	txn.From = from
 
 	*reply = txn
 	return nil
@@ -479,7 +486,7 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 			logger.Debug("transaction ", transactionIndex, " has hash ", transactionHash)
 
 			var respPayload *peer.ChaincodeAction
-			_, _, respPayload, err = getTransactionInformation(payload)
+			_, _, _, respPayload, err = getTransactionInformation(payload)
 			if err != nil {
 				return errors.Wrap(err, "failed to unmarshal the transaction details")
 			}
@@ -581,23 +588,23 @@ func getPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeProposalPayl
 }
 
 // getTransactionInformation takes a payload
-// It returns if available the To, Input, the Response Payload of the transaction in the payload, otherwise it returns an error
-func getTransactionInformation(payload *common.Payload) (string, string, *peer.ChaincodeAction, error) {
+// It returns if available the To, Input, From, the Response Payload of the transaction in the payload, otherwise it returns an error
+func getTransactionInformation(payload *common.Payload) (string, string, string, *peer.ChaincodeAction, error) {
 	txActions := &peer.Transaction{}
 	err := proto.Unmarshal(payload.GetData(), txActions)
 	if err != nil {
-		return "", "", nil, err
+		return "", "", "", nil, err
 	}
 
 	ccPropPayload, respPayload, err := getPayloads(txActions.GetActions()[0])
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err)
+		return "", "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err)
 	}
 
 	invokeSpec := &peer.ChaincodeInvocationSpec{}
 	err = proto.Unmarshal(ccPropPayload.GetInput(), invokeSpec)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err)
+		return "", "", "", nil, fmt.Errorf("Failed to unmarshal transaction: %s", err)
 	}
 
 	// callee, input data is standard case, also handle getcode & account cases
@@ -605,7 +612,17 @@ func getTransactionInformation(payload *common.Payload) (string, string, *peer.C
 
 	if len(args) != 2 || string(args[0]) == "getCode" {
 		// no more data available to fill the transaction
-		return "", "", respPayload, nil
+		return "", "", "", respPayload, nil
+	}
+
+	sigHdr := &common.SignatureHeader{}
+	if err := proto.Unmarshal(payload.GetHeader().GetSignatureHeader(), sigHdr); err != nil {
+		return "", "", "", nil, fmt.Errorf("Failed unmarshaling signature header: %s", err)
+	}
+
+	from, err := addressgenerator.IdentityToAddr(sigHdr.GetCreator())
+	if err != nil {
+		return "", "", "", nil, fmt.Errorf("Failed generating from address: %s", err)
 	}
 
 	// At this point, this is either an EVM Contract Deploy,
@@ -613,7 +630,7 @@ func getTransactionInformation(payload *common.Payload) (string, string, *peer.C
 	// specific case, fill in the fields directly.
 
 	// First arg is to and second arg is the input data
-	return string(args[0]), string(args[1]), respPayload, nil
+	return string(args[0]), string(args[1]), "0x" + hex.EncodeToString(from), respPayload, nil
 }
 
 // findTransaction takes in the txId and  block data from block.GetData().GetData() where block is of type *common.Block
@@ -626,7 +643,7 @@ func findTransaction(txID string, blockData [][]byte) (string, *common.Payload, 
 
 		payload, chdr, err := getChannelHeaderandPayloadFromTransactionData(transactionData)
 		if err != nil {
-			return "", &common.Payload{}, err
+			return "", nil, err
 		}
 
 		// early exit to try next transaction
@@ -638,7 +655,7 @@ func findTransaction(txID string, blockData [][]byte) (string, *common.Payload, 
 		return "0x" + strconv.FormatUint(uint64(index), 16), payload, nil
 	}
 
-	return "", &common.Payload{}, nil
+	return "", nil, nil
 }
 
 func fabricEventToEVMLogs(logger *zap.SugaredLogger, events []byte, blocknumber, txhash, txindex, blockhash string,
@@ -754,6 +771,7 @@ func getChannelHeaderandPayloadFromTransactionData(transactionData []byte) (*com
 	if err := proto.Unmarshal(payload.GetHeader().GetChannelHeader(), chdr); err != nil {
 		return nil, nil, err
 	}
+
 	return payload, chdr, nil
 }
 

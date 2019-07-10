@@ -144,6 +144,7 @@ var _ = Describe("Fab3", func() {
 		checkHexEncoded(receipt.BlockNumber)
 		checkHexEncoded(receipt.BlockHash)
 		checkHexEncoded(receipt.TransactionIndex)
+		Expect(receipt.From).To(Equal(account))
 
 		By("verifying the code")
 		contractAddr := receipt.ContractAddress
@@ -195,6 +196,7 @@ var _ = Describe("Fab3", func() {
 		checkHexEncoded(receipt.BlockHash)
 		checkHexEncoded(receipt.TransactionIndex)
 		Expect(receipt.ContractAddress).To(BeEmpty())
+		Expect(receipt.From).To(Equal(account))
 
 		By("querying the contract")
 		params = helpers.MessageParams{
