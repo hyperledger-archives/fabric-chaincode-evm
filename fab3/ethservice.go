@@ -28,7 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-chaincode-evm/addressgenerator"
+	"github.com/hyperledger/fabric-chaincode-evm/address"
 	"github.com/hyperledger/fabric-chaincode-evm/event"
 	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
 )
@@ -620,7 +620,7 @@ func getTransactionInformation(payload *common.Payload) (string, string, string,
 		return "", "", "", nil, fmt.Errorf("Failed unmarshaling signature header: %s", err)
 	}
 
-	from, err := addressgenerator.IdentityToAddr(sigHdr.GetCreator())
+	from, err := address.IdentityToAddr(sigHdr.GetCreator())
 	if err != nil {
 		return "", "", "", nil, fmt.Errorf("Failed generating from address: %s", err)
 	}

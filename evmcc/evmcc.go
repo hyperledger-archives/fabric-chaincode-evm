@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/burrow/execution/evm"
 	"github.com/hyperledger/burrow/logging"
 	"github.com/hyperledger/burrow/permission"
-	"github.com/hyperledger/fabric-chaincode-evm/addressgenerator"
+	"github.com/hyperledger/fabric-chaincode-evm/address"
 	"github.com/hyperledger/fabric-chaincode-evm/eventmanager"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 	"github.com/hyperledger/fabric/common/flogging"
@@ -216,7 +216,7 @@ func getCallerAddress(stub shim.ChaincodeStubInterface) (crypto.Address, error) 
 		return crypto.ZeroAddress, fmt.Errorf("failed to get creator: %s", err)
 	}
 
-	callerAddr, err := addressgenerator.IdentityToAddr(creatorBytes)
+	callerAddr, err := address.IdentityToAddr(creatorBytes)
 	if err != nil {
 		return crypto.ZeroAddress, fmt.Errorf("fail to convert identity to address: %s", err)
 	}

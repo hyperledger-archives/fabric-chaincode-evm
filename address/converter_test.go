@@ -4,13 +4,13 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package addressgenerator_test
+package address_test
 
 import (
 	"encoding/hex"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/hyperledger/fabric-chaincode-evm/addressgenerator"
+	"github.com/hyperledger/fabric-chaincode-evm/address"
 	"github.com/hyperledger/fabric/protos/msp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,7 +40,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 	})
 
 	It("returns a 160 bit address from a public key", func() {
-		address, err := addressgenerator.IdentityToAddr([]byte(creator))
+		address, err := address.IdentityToAddr([]byte(creator))
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(hex.EncodeToString(address)).To(Equal("b3778bcee2b9c349702e5832928730d2aed0ac07"),

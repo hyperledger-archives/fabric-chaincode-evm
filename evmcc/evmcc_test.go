@@ -15,7 +15,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/crypto"
-	"github.com/hyperledger/fabric-chaincode-evm/addressgenerator"
+	"github.com/hyperledger/fabric-chaincode-evm/address"
 	"github.com/hyperledger/fabric-chaincode-evm/event"
 	evm "github.com/hyperledger/fabric-chaincode-evm/evmcc"
 	evmcc_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
@@ -207,7 +207,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 						stub.GetArgsReturns([][]byte{[]byte("account")})
 						stub.GetCreatorReturns(creator, nil)
 
-						addr, err := addressgenerator.IdentityToAddr(creator)
+						addr, err := address.IdentityToAddr(creator)
 						Expect(err).ToNot(HaveOccurred())
 						callerAddress, err = crypto.AddressFromBytes(addr)
 						Expect(err).ToNot(HaveOccurred())
@@ -513,7 +513,7 @@ H8GZeN2ifTyJzzGo
 				var baseCallCount int
 
 				BeforeEach(func() {
-					addr, err := addressgenerator.IdentityToAddr([]byte(user1))
+					addr, err := address.IdentityToAddr([]byte(user1))
 					Expect(err).ToNot(HaveOccurred())
 					user1Addr, err := crypto.AddressFromBytes(addr)
 					Expect(err).ToNot(HaveOccurred())
@@ -535,7 +535,7 @@ H8GZeN2ifTyJzzGo
 					})
 
 					It("sets the variables of voter 1 (user1) properly", func() {
-						addr, err := addressgenerator.IdentityToAddr([]byte(user1))
+						addr, err := address.IdentityToAddr([]byte(user1))
 						Expect(err).ToNot(HaveOccurred())
 						user1addr, err := crypto.AddressFromBytes(addr)
 						Expect(err).ToNot(HaveOccurred())

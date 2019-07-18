@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package addressgenerator
+package address
 
 import (
 	"crypto/x509"
@@ -16,9 +16,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// IdentityToAddr takes in the bytes of serialized identity
-// It will return a byte slice with length 20 (160 bits) that is the address associated
-// with the public key
+// IdentityToAddr computes 160 bits address from the public key encoded in an identity.
 func IdentityToAddr(creator []byte) ([]byte, error) {
 	si := &msp.SerializedIdentity{}
 	if err := proto.Unmarshal(creator, si); err != nil {
