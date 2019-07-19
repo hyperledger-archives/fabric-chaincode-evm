@@ -6,7 +6,10 @@ SPDX-License-Identifier: Apache-2.0
 
 package fab3
 
-import "net/http"
+import (
+	"encoding/hex"
+	"net/http"
+)
 
 const NetworkID = "fabric-evm"
 
@@ -19,6 +22,6 @@ type NetService struct {
 //
 // https://github.com/ethereum/wiki/wiki/JSON-RPC#net_version
 func (s *NetService) Version(r *http.Request, _ *interface{}, reply *string) error {
-	*reply = NetworkID
+	*reply = hex.EncodeToString([]byte(NetworkID))
 	return nil
 }

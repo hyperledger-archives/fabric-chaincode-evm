@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fab3_test
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -123,7 +124,7 @@ var _ = Describe("Fab3", func() {
 				ID      int    `json:"id"`
 				Result  string `json:"result"`
 			}
-			expectedBody := responseBody{JsonRPC: "2.0", ID: 1, Result: "fabric-evm"}
+			expectedBody := responseBody{JsonRPC: "2.0", ID: 1, Result: hex.EncodeToString([]byte(fab3.NetworkID))}
 
 			rBody, err := ioutil.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
