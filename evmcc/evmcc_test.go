@@ -15,6 +15,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/crypto"
+	"github.com/hyperledger/burrow/permission"
 	"github.com/hyperledger/fabric-chaincode-evm/address"
 	"github.com/hyperledger/fabric-chaincode-evm/event"
 	evm "github.com/hyperledger/fabric-chaincode-evm/evmcc"
@@ -117,7 +118,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 			stub.GetCreatorReturns(creator, nil)
 		})
 
-		It("will create and store the runtime bytecode from the deploy bytecode and a user account", func() {
+		It("will create and store the runtime bytecode from the deploy bytecode in a contract account with the correct permsissions", func() {
 			// zero address, and deploy code is contract creation
 			stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), deployCode})
 			res := evmcc.Invoke(stub)
@@ -132,7 +133,11 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 
 			Expect(hex.EncodeToString(contractAcct.Code.Bytes())).To(Equal(runtimeCode))
 			Expect(hex.EncodeToString(contractAcct.Address.Bytes())).To(Equal(string(res.Payload)))
+
 			Expect(contractAcct.Permissions).To(Equal(evm.ContractPerms))
+			expectedPerms := permission.Call | permission.Send | permission.CreateContract
+			Expect(contractAcct.Permissions.Base.Perms).To(Equal(expectedPerms))
+			Expect(contractAcct.Permissions.Base.SetBit).To(Equal(expectedPerms))
 		})
 
 		Context("when a contract has already been deployed", func() {
@@ -764,6 +769,77 @@ Vc4foA7mruwjI8sEng==
 						Expect(stub.SetEventCallCount()).To(Equal(initialEventCallCount))
 					})
 				})
+			})
+		})
+
+		Context("when a smart contract creates other smart contracts", func() {
+			/*
+				pragma solidity ^0.5.0;
+					contract SimpleStorage {
+							uint storedData;
+
+							function set(uint x) public {
+									storedData = x;
+							}
+
+							function get() public view returns (uint) {
+									return storedData;
+							}
+					}
+
+					contract SimpleStorageCreator {
+							function createSimpleStorage() public returns (SimpleStorage simpleStorageAddress){
+									return new SimpleStorage();
+							}
+					}
+			*/
+			var (
+				deployCode          = "608060405234801561001057600080fd5b50610204806100206000396000f3fe60806040526004361061003b576000357c01000000000000000000000000000000000000000000000000000000009004806340d66b3b14610040575b600080fd5b34801561004c57600080fd5b50610055610097565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b60006100a16100c3565b604051809103906000f0801580156100bd573d6000803e3d6000fd5b50905090565b604051610105806100d48339019056fe608060405234801561001057600080fd5b5060e68061001f6000396000f3fe6080604052600436106043576000357c01000000000000000000000000000000000000000000000000000000009004806360fe47b11460485780636d4ce63c14607f575b600080fd5b348015605357600080fd5b50607d60048036036020811015606857600080fd5b810190808035906020019092919050505060a7565b005b348015608a57600080fd5b50609160b1565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea165627a7a723058204fba53eb31e370bbdbe1f1064d4e2a6aa794f3533a7563265edde21d4e8563b40029a165627a7a723058208317acddf85b105bfe01677c962f5e4493cfc1b65fcd91dfc3474d3bd4be2eeb0029"
+				runtimeCode         = "60806040526004361061003b576000357c01000000000000000000000000000000000000000000000000000000009004806340d66b3b14610040575b600080fd5b34801561004c57600080fd5b50610055610097565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b60006100a16100c3565b604051809103906000f0801580156100bd573d6000803e3d6000fd5b50905090565b604051610105806100d48339019056fe608060405234801561001057600080fd5b5060e68061001f6000396000f3fe6080604052600436106043576000357c01000000000000000000000000000000000000000000000000000000009004806360fe47b11460485780636d4ce63c14607f575b600080fd5b348015605357600080fd5b50607d60048036036020811015606857600080fd5b810190808035906020019092919050505060a7565b005b348015608a57600080fd5b50609160b1565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea165627a7a723058204fba53eb31e370bbdbe1f1064d4e2a6aa794f3533a7563265edde21d4e8563b40029a165627a7a723058208317acddf85b105bfe01677c962f5e4493cfc1b65fcd91dfc3474d3bd4be2eeb0029"
+				contractAddress     crypto.Address
+				CREATESIMPLESTORAGE = "40d66b3b"
+				SET                 = "60fe47b1"
+				GET                 = "6d4ce63c"
+			)
+
+			It("creates a new contract account", func() {
+				// Set contract creator
+				stub.GetCreatorReturns(creator, nil)
+
+				//Deploying SimpleStorageCreator
+				stub.GetArgsReturns([][]byte{[]byte(crypto.ZeroAddress.String()), []byte(deployCode)})
+
+				res := evmcc.Invoke(stub)
+				Expect(res.Status).To(Equal(int32(shim.OK)))
+
+				//check that contract account has been created
+				value := fakeLedger[string(res.Payload)]
+				contractAcct, err := acm.Decode(value)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(hex.EncodeToString(contractAcct.Code.Bytes())).To(Equal(runtimeCode))
+
+				contractAddress, err = crypto.AddressFromHexString(string(res.Payload))
+				Expect(err).ToNot(HaveOccurred())
+
+				// Invoke createSimpleStorage()
+				stub.GetArgsReturns([][]byte{[]byte(contractAddress.String()), []byte(CREATESIMPLESTORAGE)})
+				res = evmcc.Invoke(stub)
+				Expect(res.Status).To(Equal(int32(shim.OK)))
+
+				//Returned value has 12 bytes of leading zeros than 20 bytes which is the address
+				createdContractAddr, err := crypto.AddressFromHexString(hex.EncodeToString(res.Payload[len(res.Payload)-20:]))
+				Expect(err).ToNot(HaveOccurred())
+
+				//Invoke the SimpleStorage contract that was created previously
+				stub.GetArgsReturns([][]byte{[]byte(createdContractAddr.String()), []byte(SET + "000000000000000000000000000000000000000000000000000000000000002a")})
+				res = evmcc.Invoke(stub)
+				Expect(res.Status).To(Equal(int32(shim.OK)))
+
+				//Get the previously set value
+				stub.GetArgsReturns([][]byte{[]byte(createdContractAddr.String()), []byte(GET)})
+				res = evmcc.Invoke(stub)
+				Expect(res.Status).To(Equal(int32(shim.OK)))
+				Expect(hex.EncodeToString(res.Payload)).To(Equal("000000000000000000000000000000000000000000000000000000000000002a"))
 			})
 		})
 	})
