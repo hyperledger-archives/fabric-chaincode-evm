@@ -29,9 +29,9 @@ Fab3 currently supports:
 
 
 ### net_version
-`net_version` always returns the string `fabric-evm`. According to the spec,
-[net_version](https://github.com/ethereum/wiki/wiki/JSON-RPC#net_version) does
-not take any parameters.
+`net_version` always returns the string `66616265766d`, which is the hex encoding
+of `fabevm`. According to the spec, [net_version](https://github.com/ethereum/wiki/wiki/JSON-RPC#net_version)
+does not take any parameters.
 
 **Example**
 ```
@@ -42,7 +42,7 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "params":[]
 }'
 
-{"jsonrpc":"2.0","result":"fabric-evm","id":1}
+{"jsonrpc":"2.0","result":"66616265766d","id":1}
 ```
 
 
