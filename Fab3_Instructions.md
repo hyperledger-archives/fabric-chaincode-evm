@@ -196,23 +196,25 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
 {
   "jsonrpc": "2.0",
   "result": {
-    "number": "0x6",
-    "hash": "0x91e7c644378b5386ce317ad7e55f57f230e4234488c88fbb37d170a3d110c55c",
-    "parentHash": "0x477617af182bfa77690bc07d0d9e301192474740d2dee4d6c56ba3a6483a11fa",
+    "number": "0x8",
+    "hash": "0xe63104fc910f90f4d281dbc9d666225d74c5a4ac1438890b4252236d52e158e0",
+    "parentHash": "0x8230fad38e199e014aa7433656f78a9d8336ddd6aace9791a6cbbb78c6b9640e",
     "transactions": [
       {
-        "blockHash": "0x91e7c644378b5386ce317ad7e55f57f230e4234488c88fbb37d170a3d110c55c",
-        "blockNumber": "0x6",
-        "to": "0x40421fd8b64e91da48e703ea1daa488b44ff9d16",
-        "input": "0x60fe47b1000000000000000000000000000000000000000000000000000000000000000f",
+        "blockHash": "0xe63104fc910f90f4d281dbc9d666225d74c5a4ac1438890b4252236d52e158e0",
+        "blockNumber": "0x8",
+        "to": "0x96036d93a9fd3f4cc4cc92e3b9fdb4213f552a99",
+        "from": "0xa6e427512d418a9f8f1277dff45a1942236005d3",
+        "input": "0x60fe47b1000000000000000000000000000000000000000000000000000000000000000a",
         "transactionIndex": "0x0",
-        "hash": "0x9807a7ff4ed1962e9414b04f9dec7e05112382a6d826b7e64628fb7f12632dc5"
+        "hash": "0x1eafc293bd6c4c19dbd965dfb442a1817d2f7b1eaa8fd575a4409539086978dc",
+        "gasPrice": "0x0",
+        "value": "0x0"
       }
     ]
   },
   "id": 1
-}
-```
+}```
 ### eth_blockNumber
 `eth_blockNumber` returns the number associated with the latest block on the
 ledger. According to the spec, [blockNumber](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_blockNumber)
@@ -241,18 +243,21 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc":"2.0",
   "method": "eth_getTransactionByHash",
   "id":1,
-  "params":["0x9807a7ff4ed1962e9414b04f9dec7e05112382a6d826b7e64628fb7f12632dc5"]
+  "params":["0x9c109bd5880c85a053bee913e82b2395510ef91be133dac06ebf1240e3d73abc"]
 }'
 
 {
   "jsonrpc": "2.0",
   "result": {
-    "blockHash": "0x91e7c644378b5386ce317ad7e55f57f230e4234488c88fbb37d170a3d110c55c",
-    "blockNumber": "0x6",
-    "to": "0x40421fd8b64e91da48e703ea1daa488b44ff9d16",
-    "input": "0x60fe47b1000000000000000000000000000000000000000000000000000000000000000f",
+    "blockHash": "0xffe091745796ce5f1b5cee98fca7ee8a53b5b7c834cdebe74c808a2a5cfbb510",
+    "blockNumber": "0x4",
+    "to": "0x0000000000000000000000000000000000000000",
+    "from": "0xa6e427512d418a9f8f1277dff45a1942236005d3",
+    "input": "0x608060405234801561001057600080fd5b5060e68061001f6000396000f3fe6080604052600436106043576000357c01000000000000000000000000000000000000000000000000000000009004806360fe47b11460485780636d4ce63c14607f575b600080fd5b348015605357600080fd5b50607d60048036036020811015606857600080fd5b810190808035906020019092919050505060a7565b005b348015608a57600080fd5b50609160b1565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea165627a7a72305820290b24d16ffaf96310c5e236cef6f8bd81744b72beaeae1ca817d9372b69c2ba0029",
     "transactionIndex": "0x0",
-    "hash": "0x9807a7ff4ed1962e9414b04f9dec7e05112382a6d826b7e64628fb7f12632dc5"
+    "hash": "0x9c109bd5880c85a053bee913e82b2395510ef91be133dac06ebf1240e3d73abc",
+    "gasPrice": "0x0",
+    "value": "0x0"
   },
   "id": 1
 }
@@ -272,22 +277,23 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc":"2.0",
   "method": "eth_getTransactionReceipt",
   "id":1,
-  "params":["0x39221cdec040293d3124a83e03d8e5555442a5a56ce69a0f866e29fd545f76f5"]
+  "params":["0x9c109bd5880c85a053bee913e82b2395510ef91be133dac06ebf1240e3d73abc"]
 }'
 
 {
   "jsonrpc": "2.0",
   "result": {
-    "transactionHash": "0x39221cdec040293d3124a83e03d8e5555442a5a56ce69a0f866e29fd545f76f5",
+    "transactionHash": "0x9c109bd5880c85a053bee913e82b2395510ef91be133dac06ebf1240e3d73abc",
     "transactionIndex": "0x0",
-    "blockHash": "0x0b1cbfa3fa4a5963f025b503ee41cef7500090a4fb102fd569672c17cf2b7f9d",
-    "blockNumber": "0x2",
-    "contractAddress": "40421fd8b64e91da48e703ea1daa488b44ff9d16",
+    "blockHash": "0xffe091745796ce5f1b5cee98fca7ee8a53b5b7c834cdebe74c808a2a5cfbb510",
+    "blockNumber": "0x4",
+    "contractAddress": "0xad72cffcba95abedf4656a65a2ebab448aae8c19",
     "gasUsed": 0,
     "cumulativeGasUsed": 0,
     "to": "",
     "logs": null,
-    "status": "0x1"
+    "status": "0x1",
+    "from": "0xa6e427512d418a9f8f1277dff45a1942236005d3"
   },
   "id": 1
 }
@@ -316,27 +322,29 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc":"2.0",
   "method": "eth_getLogs",
   "id":1,
-  "params":[{"fromBlock":"earliest", "address":"0x4550dd67c85d79875df5f2d4ab0719c3071f8060", "topics":["0xdd611e8d05f58b9581bed4b946a053020008d51f9c0178f0dc67fad6e4e85f89"]}]
+  "params":[
+    {"fromBlock":"earliest",
+    "address":"0x96036d93a9fd3f4cc4cc92e3b9fdb4213f552a99",
+    "topics":["0x208509800c5cb9707f116ef96a1d456499ab9fa3c8edc1cdf381fe5216d5b173"]}]
 }'
 
 {
   "jsonrpc": "2.0",
-  "id": 1,
   "result": [
     {
-      "address": "0x4550dd67c85d79875df5f2d4ab0719c3071f8060",
+      "address": "0x96036d93a9fd3f4cc4cc92e3b9fdb4213f552a99",
       "topics": [
-        "0xdd611e8d05f58b9581bed4b946a053020008d51f9c0178f0dc67fad6e4e85f89"
+        "0x208509800c5cb9707f116ef96a1d456499ab9fa3c8edc1cdf381fe5216d5b173"
       ],
       "data": "0x000000000000000000000000000000000000000000000000000000000000000a",
-      "blockNumber": "0x2",
-      "transactionHash": "0x647308ac48ce85236487266cbe9581c5280b97d3eeb8573af98413f164a1c27a",
+      "blockNumber": "0x8",
+      "transactionHash": "0x1eafc293bd6c4c19dbd965dfb442a1817d2f7b1eaa8fd575a4409539086978dc",
       "transactionIndex": "0x0",
-      "blockHash": "0x7a47720c5a92f30d0d17847deb6611df4b09d97b61d71ecb3fbeb8243f48f886",
-      "logIndex": "0x0",
-      "removed": false
+      "blockHash": "0xe63104fc910f90f4d281dbc9d666225d74c5a4ac1438890b4252236d52e158e0",
+      "logIndex": "0x0"
     }
-  ]
+  ],
+  "id": 1
 }
 ```
 
