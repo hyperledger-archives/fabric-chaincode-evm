@@ -19,8 +19,8 @@
 #   - update-mocks - update the counterfeiter test doubles
 #
 FABRIC_RELEASE=1.4
-PREV_VERSION=0.1.0
-BASE_VERSION=0.2.0
+PREV_VERSION=0.2.0
+BASE_VERSION=0.3.0
 
 EXECUTABLES ?= go git curl docker
 K := $(foreach exec,$(EXECUTABLES),\
