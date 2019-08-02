@@ -232,12 +232,48 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 // Block is an eth return struct
 // defined https://github.com/ethereum/wiki/wiki/JSON-RPC#returns-26
 type Block struct {
-	Number     string `json:"number"`     // number: QUANTITY - the block number. null when its pending block.
-	Hash       string `json:"hash"`       // hash: DATA, 32 Bytes - hash of the block. null when its pending block.
-	ParentHash string `json:"parentHash"` // parentHash: DATA, 32 Bytes - hash of the parent block.
+	BlockData
 	// size: QUANTITY - integer the size of this block in bytes.
 	// timestamp: QUANTITY - the unix timestamp for when the block was collated.
 	Transactions []interface{} `json:"transactions"` // transactions: Array - Array of transaction objects, or 32 Bytes transaction hashes depending on the last given parameter.
+}
+
+// BlockData contains the fields that are constant in a Block object
+type BlockData struct {
+	Number     string `json:"number"`     // number: QUANTITY - the block number. null when its pending block.
+	Hash       string `json:"hash"`       // hash: DATA, 32 Bytes - hash of the block. null when its pending block.
+	ParentHash string `json:"parentHash"` // parentHash: DATA, 32 Bytes - hash of the parent block.
+}
+
+// MarshalJSON marshals the data differently based on whether
+// transactions are full or just tx hashes
+func (blk *Block) MarshalJSON() ([]byte, error) {
+	if len(blk.Transactions) == 0 {
+		return json.Marshal(*blk)
+	}
+
+	if _, ok := blk.Transactions[0].(Transaction); !ok {
+		return json.Marshal(*blk)
+	}
+
+	txns := make([]Transaction, len(blk.Transactions))
+	for i, txn := range blk.Transactions {
+		txns[i] = txn.(Transaction)
+	}
+
+	temp := struct {
+		BlockData
+		Transactions []Transaction `json:"transactions"`
+	}{
+		BlockData: BlockData{
+			Number:     blk.Number,
+			Hash:       blk.Hash,
+			ParentHash: blk.ParentHash,
+		},
+		Transactions: txns,
+	}
+
+	return json.Marshal(temp)
 }
 
 func strip0x(s string) string {

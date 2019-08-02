@@ -200,4 +200,35 @@ var _ = Describe("GetLogsArgs UnmarshalJSON", func() {
 			Transaction{BlockHash: "0x1234567", GasPrice: "some-value", Value: "some-price"},
 			[]byte(`{"blockHash":"0x1234567", "blockNumber":"", "to":"", "input":"","transactionIndex":"", "hash":"", "gasPrice":"0x0", "value":"0x0"}`)),
 	)
+
+	DescribeTable("Block MarshalJSON",
+		func(blk Block, bytes []byte) {
+			marshalledData, err := json.Marshal(&blk)
+			Expect(err).ToNot(HaveOccurred())
+
+			var target Block
+			err = json.Unmarshal(marshalledData, &target)
+			Expect(err).ToNot(HaveOccurred())
+
+			var expectedBlk Block
+			err = json.Unmarshal(bytes, &expectedBlk)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(target).To(Equal(expectedBlk))
+		},
+
+		Entry("block with no transaction",
+			Block{},
+			[]byte(`{"number":"", "parentHash":"", "hash":""}`)),
+
+		Entry("block with full transactions",
+			Block{
+				Transactions: []interface{}{Transaction{}}},
+			[]byte(`{"number":"", "parentHash":"", "hash":"", "transactions":[{"blockHash":"", "blockNumber":"", "to":"", "from":"", "input":"","transactionIndex":"", "hash":"", "gasPrice":"0x0", "value":"0x0"}]}`)),
+
+		Entry("block with not full transactions",
+			Block{
+				Transactions: []interface{}{"0x12345678"}},
+			[]byte(`{"number":"", "parentHash":"", "hash":"", "transactions":["0x12345678"]}`)),
+	)
 })

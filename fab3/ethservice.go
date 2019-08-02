@@ -315,9 +315,11 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 	}
 
 	blk := types.Block{
-		Number:       blockNumber,
-		Hash:         blockHash,
-		ParentHash:   "0x" + hex.EncodeToString(blkHeader.GetPreviousHash()),
+		BlockData: types.BlockData{
+			Number:     blockNumber,
+			Hash:       blockHash,
+			ParentHash: "0x" + hex.EncodeToString(blkHeader.GetPreviousHash()),
+		},
 		Transactions: txns,
 	}
 	s.logger.Debug("asked for block", number, "found block", blk)
