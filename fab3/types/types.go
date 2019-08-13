@@ -14,6 +14,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -48,11 +49,28 @@ type GetLogsArgs struct {
 	BlockHash string        `json:"blockHash,omitempty"`
 }
 
+type FilterID struct {
+	ID uint64
+}
+
 type AddressFilter []string // 20 Byte Addresses, OR'd together
 
 type TopicFilter []string // 32 Byte Topics, OR'd together
 
 type TopicsFilter []TopicFilter // TopicFilter, AND'd together
+
+func (id *FilterID) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	fid, err := strconv.ParseUint(strip0x(s), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse filter id")
+	}
+	id.ID = fid
+	return nil
+}
 
 func (gla *GetLogsArgs) UnmarshalJSON(data []byte) error {
 	type inputGetLogsArgs struct {

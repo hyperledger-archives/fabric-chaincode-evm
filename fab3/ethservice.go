@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
@@ -81,7 +82,10 @@ type EthService interface {
 	GetTransactionCount(r *http.Request, _ *interface{}, reply *string) error
 	GetLogs(*http.Request, *types.GetLogsArgs, *[]types.Log) error
 	NewFilter(*http.Request, *types.GetLogsArgs, *string) error
-	UninstallFilter(*http.Request, *string, *bool) error
+	NewBlockFilter(*http.Request, *interface{}, *string) error
+	UninstallFilter(*http.Request, *types.FilterID, *bool) error
+	GetFilterChanges(*http.Request, *types.FilterID, *[]interface{}) error
+	GetFilterLogs(*http.Request, *types.FilterID, *[]types.Log) error
 }
 
 type ethService struct {
@@ -91,7 +95,7 @@ type ethService struct {
 	ccid          string
 	logger        *zap.SugaredLogger
 	filterMapLock sync.Mutex
-	filterMap     map[uint64]interface{}
+	filterMap     map[uint64]filterEntry
 	filterSeq     uint64
 }
 
@@ -102,7 +106,7 @@ func NewEthService(channelClient ChannelClient, ledgerClient LedgerClient, chann
 		channelID:     channelID,
 		ccid:          ccid,
 		logger:        logger.Named("ethservice"),
-		filterMap:     make(map[uint64]interface{}),
+		filterMap:     make(map[uint64]filterEntry),
 	}
 }
 
@@ -218,7 +222,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 func (s *ethService) Accounts(r *http.Request, arg *string, reply *[]string) error {
 	response, err := s.query(s.ccid, "account", [][]byte{})
 	if err != nil {
-		return fmt.Errorf("Failed to query the ledger: %s", err)
+		return errors.Wrap(err, "Failed to query the ledger")
 	}
 
 	*reply = []string{"0x" + strings.ToLower(string(response.Payload))}
@@ -528,21 +532,26 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 }
 
 func (s *ethService) NewFilter(_ *http.Request, filter *types.GetLogsArgs, result *string) error {
+	logger := s.logger.With("method", "NewFilter")
+	latestExistingBlock, err := s.parseBlockNum("latest")
+	if err != nil {
+		return errors.Wrap(err, "latest block number not available at this time")
+	}
+
 	s.filterMapLock.Lock()
 	s.filterSeq++
 	index := s.filterSeq
-	s.filterMap[index] = filter
+	s.filterMap[index] = &logsFilter{logArgs: filter, latestBlockSeen: latestExistingBlock, lastAccessTime: time.Now()}
 	s.filterMapLock.Unlock()
+
+	logger.Debugf("filter created with ID %d, log args %v", index, filter)
+
 	*result = "0x" + strconv.FormatUint(index, 16)
 	return nil
 }
 
-func (s *ethService) UninstallFilter(_ *http.Request, filterID *string, removed *bool) error {
-	id, err := strconv.ParseUint(strip0x(*filterID), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse filter id")
-	}
-
+func (s *ethService) UninstallFilter(_ *http.Request, filterID *types.FilterID, removed *bool) error {
+	id := filterID.ID
 	s.filterMapLock.Lock()
 	defer s.filterMapLock.Unlock()
 
@@ -551,6 +560,87 @@ func (s *ethService) UninstallFilter(_ *http.Request, filterID *string, removed 
 		*removed = true
 	}
 
+	return nil
+}
+
+func (s *ethService) NewBlockFilter(_ *http.Request, _ *interface{}, result *string) error {
+	logger := s.logger.With("method", "NewBlockFilter")
+	latestExistingBlock, err := s.parseBlockNum("latest")
+	if err != nil {
+		return errors.Wrap(err, "latest block number not available at this time")
+	}
+
+	s.filterMapLock.Lock()
+	s.filterSeq++
+	index := s.filterSeq
+	s.filterMap[index] = &newBlockFilter{latestBlockSeen: latestExistingBlock, lastAccessTime: time.Now()}
+	s.filterMapLock.Unlock()
+
+	logger.Debugf("filter created with ID %d, current latest block %d", index, latestExistingBlock)
+
+	*result = "0x" + strconv.FormatUint(index, 16)
+	return nil
+}
+
+func (s *ethService) GetFilterChanges(_ *http.Request, filterID *types.FilterID, logsOrBlocks *[]interface{}) error {
+	id := filterID.ID
+	var f filterEntry
+	// get the filter
+	s.filterMapLock.Lock()
+	if e, ok := s.filterMap[id]; ok {
+		f = e
+	} else {
+		s.filterMapLock.Unlock()
+		return fmt.Errorf("No filter found for id %d", id)
+	}
+	s.filterMapLock.Unlock()
+	// check the filter for validity by expiration time
+	if time.Now().After(f.LastAccessTime().Add(5 * time.Minute)) {
+		// remove the filter if not valid and return error
+		// delegate to existing function
+		var removed bool
+		s.UninstallFilter(nil, filterID, &removed)
+		return fmt.Errorf("No filter found for id %d", id)
+	}
+	// use the filter
+	ret, err := f.Filter(s)
+	if err != nil {
+		return errors.Wrapf(err, "failed to run filter id: %d", id)
+	}
+	*logsOrBlocks = ret
+	return nil
+}
+
+func (s *ethService) GetFilterLogs(_ *http.Request, filterID *types.FilterID, logs *[]types.Log) error {
+	logger := s.logger.With("method", "GetFilterLogs")
+	id := filterID.ID
+	var f *logsFilter
+	// get the filter
+	s.filterMapLock.Lock()
+	if e, ok := s.filterMap[id]; ok {
+		if f, ok = e.(*logsFilter); !ok {
+			s.filterMapLock.Unlock()
+			return fmt.Errorf("Filter id %d is not for retrieving logs, it is %T", id, f)
+		}
+	} else {
+		s.filterMapLock.Unlock()
+		return fmt.Errorf("No filter found for id %d", id)
+	}
+	s.filterMapLock.Unlock()
+	// check the filter for validity by expiration time
+	if time.Now().After(f.LastAccessTime().Add(5 * time.Minute)) {
+		// remove the filter if not valid and return error
+		// delegate to existing function
+		var removed bool
+		logger.Debugf("expired filter ID:%d removed", id)
+		s.UninstallFilter(nil, filterID, &removed)
+		return fmt.Errorf("No filter found for id %d", id)
+	}
+	// use the filter
+	err := s.GetLogs(nil, f.logArgs, logs)
+	if err != nil {
+		return errors.Wrapf(err, "failed to run filter id: %d", id)
+	}
 	return nil
 }
 

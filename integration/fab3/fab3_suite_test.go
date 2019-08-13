@@ -20,6 +20,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestFab3(t *testing.T) {
@@ -91,6 +93,12 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 }, func(payload []byte) {
 	err := json.Unmarshal(payload, &components)
 	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = BeforeEach(func() {
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(GinkgoWriter), zap.DebugLevel)
+	rawLogger := zap.New(core)
+	zap.ReplaceGlobals(rawLogger)
 })
 
 var _ = SynchronizedAfterSuite(func() {

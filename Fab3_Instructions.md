@@ -26,6 +26,11 @@ Fab3 currently supports:
 - [eth_getTransactionReceipt](#eth_getTransactionReceipt)
 - [eth_getLogs](#eth_getLogs)
 - [eth_getTransactionCount](#eth_getTransactionCount)
+- [eth_newFilter](#eth_newFilter)
+- [eth_newBlockFilter](#eth_newBlockFilter)
+- [eth_uninstallFilter](#eth_uninstallFilter)
+- [eth_getFilterChanges](#eth_getFilterChanges)
+- [eth_getFilterLogs](#eth_getFilterLogs)
 
 ### net_version
 `net_version` always returns the string `66616265766d`, which is the hex encoding
@@ -368,4 +373,125 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
 }'
 
 {"jsonrpc":"2.0","result":"0x0","id":1}
+```
+
+### eth_newFilter
+`eth_newFilter` takes the same arguments as [`eth_getLogs`](#eth_getLogs). It returns an
+identifier to collect the log entries. The log filter is not run until
+[`eth_getFilterChanges`](#eth_getFilterChanges) is called.
+
+**Example**
+```
+curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "eth_newFilter",
+  "params": [{
+    "toBlock": "latest",
+    "address": [
+      "0x6c27ec2ab7a4e81228080434d553fa198ddccfbc"
+    ],
+    "topics": [
+      [],
+      [
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    ]
+  }]
+}'
+
+{"jsonrpc":"2.0","result":"0x1","id":5}
+```
+
+### eth_newBlockFilter
+`eth_newBlockFilter` creates a filter of the blocks that arrive after creation
+of the filter. An identifier is returned to refer to the filter in the future.
+
+**Example**
+```
+curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
+  "jsonrpc":"2.0",
+  "method": "eth_newBlockFilter",
+  "id":1,
+  "params":[]
+}'
+
+{"jsonrpc":"2.0","result":"0x2","id":1}
+```
+
+### eth_uninstallFilter
+`eth_uninstallFilter` takes a filter identifier and forgets the associated
+filter.
+
+**Example**
+```
+curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
+  "jsonrpc":"2.0",
+  "method": "eth_uninstallFilter",
+  "id":1,
+  "params":["0x2"]
+}'
+
+{"jsonrpc":"2.0","result":true,"id":1}
+```
+
+### eth_getFilterChanges
+`eth_getFilterChanges` takes a filter identifier and returns the output
+associated with the filter. For new block filters, that is an array of block
+hashes. For log filters, it is the log entries as if from [`eth_getLogs`](#eth_getLogs).
+
+**Example**
+```
+curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
+  "jsonrpc":"2.0",
+  "method": "eth_getFilterChanges",
+  "id": 6129484611666146000,
+  "params":["0x2"]
+}'
+
+{
+  "jsonrpc": "2.0",
+  "result": [
+    "0xcbe7100b09f4c5aaf2649936bf8ba65b90636ca375ec23e4a81801bffe996724",
+    "0xae3e4d4972e986d44d6bd830a2d40afa404a4e6b42b5429d2bba700b1e956e61",
+    "0x316f3cae866ae1f0c53ecce4d63378cc1ad2e3a3d7eea11315002c3e2f18d9ca",
+    "0x60d15a4cc589ac95723768a243edfa1fd432c4ea3ea83fe21938313780e8076d"
+  ],
+  "id": 6129484611666146000
+}
+```
+
+### eth_getFilterLogs
+`eth_getFilterLogs` is a deferred version of [`eth_getLogs`](#eth_getLogs) that
+does not keep track of when it was polled. The filter is run at every
+invocation. 
+
+**Example**
+```
+curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
+  "jsonrpc":"2.0",
+  "method": "eth_getFilterLogs",
+  "id": 8674665223082154000,
+  "params":["0x1"]
+}'
+
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "address": "0xb125f5af2083c8d86e36beeabf8be0ed78028fad",
+      "topics": [
+        "0xd81ec364c58bcc9b49b6c953fc8e1f1c158ee89255bae73029133234a2936aad",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x3737373737373737373737373737373737373737373737373737373737373737"
+      ],
+      "blockNumber": "0x4",
+      "transactionHash": "0xaa8e9ffa6a49f8f99e8bb82f3711681e6638f35c408eba6772e385cb6ebee4a0",
+      "transactionIndex": "0x0",
+      "blockHash": "0xbf6deecd5d248c6d0cdab0bff79aa94bd1dc9e72a3b5b3b9e98f5d0d14145a1a",
+      "logIndex": "0x0"
+    }
+  ],
+  "id": 8674665223082154000
+}
 ```
