@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -74,6 +75,11 @@ var _ = Describe("Fab3", func() {
 	})
 
 	It("implements the ethereum json rpc api", func() {
+		var err error
+		var respBody helpers.JsonRPCResponse
+		var respBlockBody helpers.JsonRPCBlockResponse
+		var respArrayBody helpers.JsonRPCArrayResponse
+
 		By("querying for an account")
 		resp, err := sendRPCRequest(client, "eth_accounts", proxyAddress, 5, []interface{}{})
 		Expect(err).ToNot(HaveOccurred())
@@ -83,7 +89,6 @@ var _ = Describe("Fab3", func() {
 		rBody, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
-		var respArrayBody helpers.JsonRPCArrayResponse
 		err = json.Unmarshal(rBody, &respArrayBody)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -96,6 +101,16 @@ var _ = Describe("Fab3", func() {
 		// Set the same result so that next expectation can check all other fields
 		expectedArrayBody.Result = respArrayBody.Result
 		Expect(respArrayBody).To(Equal(expectedArrayBody))
+
+		By("starting a newBlockFilter before creating new blocks")
+		resp, err = sendRPCRequest(client, "eth_newBlockFilter", proxyAddress, rand.Int(), []interface{}{})
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+		newBlockFilterID := respBody.Result
 
 		By("Deploying the Simple Storage Contract")
 		params := helpers.MessageParams{
@@ -110,7 +125,6 @@ var _ = Describe("Fab3", func() {
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
-		var respBody helpers.JsonRPCResponse
 		err = json.Unmarshal(rBody, &respBody)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -229,6 +243,30 @@ var _ = Describe("Fab3", func() {
 		Expect(respBody.Result).To(Equal(receipt.BlockNumber))
 		checkHexEncoded(respBody.Result)
 
+		By("getting the block by number we just got")
+		resp, err = sendRPCRequest(client, "eth_getBlockByNumber", proxyAddress, rand.Int(), []interface{}{receipt.BlockNumber, false})
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		err = json.Unmarshal(rBody, &respBlockBody)
+		Expect(err).ToNot(HaveOccurred())
+		latestBlock := respBlockBody.Result
+		Expect(latestBlock.Number).To(Equal(receipt.BlockNumber))
+
+		By("getting a block notification")
+		resp, err = sendRPCRequest(client, "eth_getFilterChanges", proxyAddress, rand.Int(), newBlockFilterID)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		err = json.Unmarshal(rBody, &respArrayBody)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(respArrayBody.Result).ToNot(BeEmpty())
+		blockHashes := respArrayBody.Result
+
+		By("comparing the new top block's hash we have with the return from block notifications")
+		Expect(blockHashes).To(ContainElement(receipt.BlockHash))
+		Expect(blockHashes).To(ContainElement(latestBlock.Hash))
+
 		By("querying for logs of a transaction with no logs, we get no logs")
 		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 20, []interface{}{})
 		Expect(err).ToNot(HaveOccurred())
@@ -251,19 +289,23 @@ var _ = Describe("Fab3", func() {
 	})
 
 	It("implements the ethereum json rpc api with logs", func() {
+		var err error
+		var resp *http.Response
+		var rBody []byte
+		var respBody helpers.JsonRPCResponse
+
 		By("Deploying the Simple Storage With Logs Contract")
 		params := helpers.MessageParams{
 			To:   "0000000000000000000000000000000000000000",
 			Data: helpers.SimpleStorageWithLog().CompiledBytecode,
 		}
 
-		resp, err := sendRPCRequest(client, "eth_sendTransaction", proxyAddress, 6, params)
+		resp, err = sendRPCRequest(client, "eth_sendTransaction", proxyAddress, 6, params)
 		Expect(err).ToNot(HaveOccurred())
 
-		rBody, err := ioutil.ReadAll(resp.Body)
+		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
-		var respBody helpers.JsonRPCResponse
 		err = json.Unmarshal(rBody, &respBody)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -285,6 +327,24 @@ var _ = Describe("Fab3", func() {
 		}, LongEventualTimeout, LongPollingInterval).Should(BeZero())
 		receipt := rpcResp.Result
 		contractAddr := receipt.ContractAddress
+
+		By("using one log arg for both log gets")
+		logFilter := types.GetLogsArgs{ToBlock: "latest", // FromBlock as a default argument
+			Address: types.AddressFilter{contractAddr},
+			Topics: types.TopicsFilter{
+				types.TopicFilter{}, // a null topic filter, and a no 0x prefix topic
+				types.TopicFilter{"0000000000000000000000000000000000000000000000000000000000000000"}}}
+
+		By("starting a logs before creating new blocks with logs")
+		resp, err = sendRPCRequest(client, "eth_newFilter", proxyAddress, rand.Int(), logFilter)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+		logsFilterID := respBody.Result
+
 		By("interacting with the contract")
 		val := "3737373737373737373737373737373737373737373737373737373737373737"
 		params = helpers.MessageParams{
@@ -315,12 +375,7 @@ var _ = Describe("Fab3", func() {
 		}, LongEventualTimeout, LongPollingInterval).Should(BeZero())
 
 		By("querying for logs of a contract with logs, we get a log")
-		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 23,
-			types.GetLogsArgs{ToBlock: "latest", // FromBlock as a default argument
-				Address: types.AddressFilter{contractAddr},
-				Topics: types.TopicsFilter{
-					types.TopicFilter{}, // a null topic filter, and a no 0x prefix topic
-					types.TopicFilter{"0000000000000000000000000000000000000000000000000000000000000000"}}})
+		resp, err = sendRPCRequest(client, "eth_getLogs", proxyAddress, 23, logFilter)
 		Expect(err).ToNot(HaveOccurred())
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
@@ -329,7 +384,7 @@ var _ = Describe("Fab3", func() {
 		err = json.Unmarshal(rBody, &respArrayBody)
 		Expect(err).ToNot(HaveOccurred())
 		logs := respArrayBody.Result
-		Expect(logs).To(HaveLen(1), "this contract only emits one log entry")
+		Expect(logs).To(HaveLen(1), "this contract only emits one log entry, had %d, in %+v", len(logs), logs)
 		log := logs[0]
 		Expect(log.Address).To(Equal(contractAddr), "logs come from the contract")
 		Expect(log.Topics).To(HaveLen(3))
@@ -340,6 +395,31 @@ var _ = Describe("Fab3", func() {
 		Expect(topics[1]).To(Equal("0x0000000000000000000000000000000000000000000000000000000000000000"))
 		Expect(topics[2]).To(Equal("0x" + val))
 		txReceipt := rpcResp.Result
+		Expect(log.BlockNumber).To(Equal(txReceipt.BlockNumber))
+		Expect(log.BlockHash).To(Equal(txReceipt.BlockHash))
+		Expect(log.TxIndex).To(Equal(txReceipt.TransactionIndex))
+		Expect(log.TxHash).To(Equal(txReceipt.TransactionHash))
+
+		By("getting the same log notification with the deferred/async method")
+		resp, err = sendRPCRequest(client, "eth_getFilterLogs", proxyAddress, rand.Int(), logsFilterID)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		respArrayBody = helpers.JsonRPCLogArrayResponse{}
+		err = json.Unmarshal(rBody, &respArrayBody)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(respArrayBody.Result).ToNot(BeEmpty())
+		Expect(logs).To(HaveLen(1), "this contract only emits one log entry")
+		log = logs[0]
+		Expect(log.Address).To(Equal(contractAddr), "logs come from the contract")
+		Expect(log.Topics).To(HaveLen(3))
+		Expect(log.Index).To(Equal("0x0"))
+		topics = log.Topics
+		// topics are, hash of event signature, 0 from initial setting, & the value we set earlier
+		Expect(topics[0]).To(Equal("0xd81ec364c58bcc9b49b6c953fc8e1f1c158ee89255bae73029133234a2936aad"))
+		Expect(topics[1]).To(Equal("0x0000000000000000000000000000000000000000000000000000000000000000"))
+		Expect(topics[2]).To(Equal("0x" + val))
+		txReceipt = rpcResp.Result
 		Expect(log.BlockNumber).To(Equal(txReceipt.BlockNumber))
 		Expect(log.BlockHash).To(Equal(txReceipt.BlockHash))
 		Expect(log.TxIndex).To(Equal(txReceipt.TransactionIndex))
@@ -378,31 +458,64 @@ var _ = Describe("Fab3", func() {
 	})
 
 	It("implements the ethereum json rpc api for async-logs", func() {
-		resp, err := sendRPCRequest(client, "eth_newFilter", proxyAddress, 37, []interface{}{})
+		var err error
+		var resp *http.Response
+		var rBody []byte
+		var respBody helpers.JsonRPCResponse
+		var respArrayBody helpers.JsonRPCArrayResponse
+		var uninstallBody helpers.JsonRPCBoolResponse
+
+		resp, err = sendRPCRequest(client, "eth_newFilter", proxyAddress, 37, []interface{}{})
 		Expect(err).ToNot(HaveOccurred())
-		rBody, err := ioutil.ReadAll(resp.Body)
+		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
-		var respBody helpers.JsonRPCResponse
 		err = json.Unmarshal(rBody, &respBody)
 		Expect(err).ToNot(HaveOccurred())
 		filterID := respBody.Result
 
-		resp, err = sendRPCRequest(client, "eth_uninstallFilter", proxyAddress, 38, filterID)
+		By("starting a newBlockFilter before creating new blocks")
+		resp, err = sendRPCRequest(client, "eth_newBlockFilter", proxyAddress, rand.Int(), []interface{}{})
 		Expect(err).ToNot(HaveOccurred())
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		fmt.Fprintln(GinkgoWriter, string(rBody))
-		var uninstallBody helpers.JsonRPCBoolResponse
+
+		err = json.Unmarshal(rBody, &respBody)
+		Expect(err).ToNot(HaveOccurred())
+		newBlockFilterID := respBody.Result
+
+		By("not getting a block notification when nothing has happened")
+		resp, err = sendRPCRequest(client, "eth_getFilterChanges", proxyAddress, rand.Int(), newBlockFilterID)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		err = json.Unmarshal(rBody, &respArrayBody)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(respArrayBody.Result).To(BeEmpty())
+
+		By("successfully uninstalling the installed block filter")
+		resp, err = sendRPCRequest(client, "eth_uninstallFilter", proxyAddress, rand.Int(), newBlockFilterID)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
 		err = json.Unmarshal(rBody, &uninstallBody)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(uninstallBody.Result).To(BeTrue())
 
+		By("successfully uninstalling the installed filter")
+		resp, err = sendRPCRequest(client, "eth_uninstallFilter", proxyAddress, 38, filterID)
+		Expect(err).ToNot(HaveOccurred())
+		rBody, err = ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		err = json.Unmarshal(rBody, &uninstallBody)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(uninstallBody.Result).To(BeTrue())
+
+		By("lacking presence of the installed filter")
 		resp, err = sendRPCRequest(client, "eth_uninstallFilter", proxyAddress, 39, filterID)
 		Expect(err).ToNot(HaveOccurred())
 		rBody, err = ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		fmt.Fprintln(GinkgoWriter, string(rBody))
 		err = json.Unmarshal(rBody, &uninstallBody)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(uninstallBody.Result).To(BeFalse(), "filter just now removed")

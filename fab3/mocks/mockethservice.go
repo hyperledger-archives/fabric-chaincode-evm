@@ -101,6 +101,32 @@ type MockEthService struct {
 	getCodeReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetFilterChangesStub        func(*http.Request, *types.FilterID, *[]interface{}) error
+	getFilterChangesMutex       sync.RWMutex
+	getFilterChangesArgsForCall []struct {
+		arg1 *http.Request
+		arg2 *types.FilterID
+		arg3 *[]interface{}
+	}
+	getFilterChangesReturns struct {
+		result1 error
+	}
+	getFilterChangesReturnsOnCall map[int]struct {
+		result1 error
+	}
+	GetFilterLogsStub        func(*http.Request, *types.FilterID, *[]interface{}) error
+	getFilterLogsMutex       sync.RWMutex
+	getFilterLogsArgsForCall []struct {
+		arg1 *http.Request
+		arg2 *types.FilterID
+		arg3 *[]interface{}
+	}
+	getFilterLogsReturns struct {
+		result1 error
+	}
+	getFilterLogsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GetLogsStub        func(*http.Request, *types.GetLogsArgs, *[]types.Log) error
 	getLogsMutex       sync.RWMutex
 	getLogsArgsForCall []struct {
@@ -153,6 +179,19 @@ type MockEthService struct {
 	getTransactionReceiptReturnsOnCall map[int]struct {
 		result1 error
 	}
+	NewBlockFilterStub        func(*http.Request, *interface{}, *string) error
+	newBlockFilterMutex       sync.RWMutex
+	newBlockFilterArgsForCall []struct {
+		arg1 *http.Request
+		arg2 *interface{}
+		arg3 *string
+	}
+	newBlockFilterReturns struct {
+		result1 error
+	}
+	newBlockFilterReturnsOnCall map[int]struct {
+		result1 error
+	}
 	NewFilterStub        func(*http.Request, *types.GetLogsArgs, *string) error
 	newFilterMutex       sync.RWMutex
 	newFilterArgsForCall []struct {
@@ -179,11 +218,11 @@ type MockEthService struct {
 	sendTransactionReturnsOnCall map[int]struct {
 		result1 error
 	}
-	UninstallFilterStub        func(*http.Request, *string, *bool) error
+	UninstallFilterStub        func(*http.Request, *types.FilterID, *bool) error
 	uninstallFilterMutex       sync.RWMutex
 	uninstallFilterArgsForCall []struct {
 		arg1 *http.Request
-		arg2 *string
+		arg2 *types.FilterID
 		arg3 *bool
 	}
 	uninstallFilterReturns struct {
@@ -560,6 +599,110 @@ func (fake *MockEthService) GetCodeReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *MockEthService) GetFilterChanges(arg1 *http.Request, arg2 *types.FilterID, arg3 *[]interface{}) error {
+	fake.getFilterChangesMutex.Lock()
+	ret, specificReturn := fake.getFilterChangesReturnsOnCall[len(fake.getFilterChangesArgsForCall)]
+	fake.getFilterChangesArgsForCall = append(fake.getFilterChangesArgsForCall, struct {
+		arg1 *http.Request
+		arg2 *types.FilterID
+		arg3 *[]interface{}
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetFilterChanges", []interface{}{arg1, arg2, arg3})
+	fake.getFilterChangesMutex.Unlock()
+	if fake.GetFilterChangesStub != nil {
+		return fake.GetFilterChangesStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.getFilterChangesReturns
+	return fakeReturns.result1
+}
+
+func (fake *MockEthService) GetFilterChangesCallCount() int {
+	fake.getFilterChangesMutex.RLock()
+	defer fake.getFilterChangesMutex.RUnlock()
+	return len(fake.getFilterChangesArgsForCall)
+}
+
+func (fake *MockEthService) GetFilterChangesArgsForCall(i int) (*http.Request, *types.FilterID, *[]interface{}) {
+	fake.getFilterChangesMutex.RLock()
+	defer fake.getFilterChangesMutex.RUnlock()
+	argsForCall := fake.getFilterChangesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *MockEthService) GetFilterChangesReturns(result1 error) {
+	fake.GetFilterChangesStub = nil
+	fake.getFilterChangesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) GetFilterChangesReturnsOnCall(i int, result1 error) {
+	fake.GetFilterChangesStub = nil
+	if fake.getFilterChangesReturnsOnCall == nil {
+		fake.getFilterChangesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.getFilterChangesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) GetFilterLogs(arg1 *http.Request, arg2 *types.FilterID, arg3 *[]interface{}) error {
+	fake.getFilterLogsMutex.Lock()
+	ret, specificReturn := fake.getFilterLogsReturnsOnCall[len(fake.getFilterLogsArgsForCall)]
+	fake.getFilterLogsArgsForCall = append(fake.getFilterLogsArgsForCall, struct {
+		arg1 *http.Request
+		arg2 *types.FilterID
+		arg3 *[]interface{}
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetFilterLogs", []interface{}{arg1, arg2, arg3})
+	fake.getFilterLogsMutex.Unlock()
+	if fake.GetFilterLogsStub != nil {
+		return fake.GetFilterLogsStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.getFilterLogsReturns
+	return fakeReturns.result1
+}
+
+func (fake *MockEthService) GetFilterLogsCallCount() int {
+	fake.getFilterLogsMutex.RLock()
+	defer fake.getFilterLogsMutex.RUnlock()
+	return len(fake.getFilterLogsArgsForCall)
+}
+
+func (fake *MockEthService) GetFilterLogsArgsForCall(i int) (*http.Request, *types.FilterID, *[]interface{}) {
+	fake.getFilterLogsMutex.RLock()
+	defer fake.getFilterLogsMutex.RUnlock()
+	argsForCall := fake.getFilterLogsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *MockEthService) GetFilterLogsReturns(result1 error) {
+	fake.GetFilterLogsStub = nil
+	fake.getFilterLogsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) GetFilterLogsReturnsOnCall(i int, result1 error) {
+	fake.GetFilterLogsStub = nil
+	if fake.getFilterLogsReturnsOnCall == nil {
+		fake.getFilterLogsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.getFilterLogsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) GetLogs(arg1 *http.Request, arg2 *types.GetLogsArgs, arg3 *[]types.Log) error {
 	fake.getLogsMutex.Lock()
 	ret, specificReturn := fake.getLogsReturnsOnCall[len(fake.getLogsArgsForCall)]
@@ -768,6 +911,58 @@ func (fake *MockEthService) GetTransactionReceiptReturnsOnCall(i int, result1 er
 	}{result1}
 }
 
+func (fake *MockEthService) NewBlockFilter(arg1 *http.Request, arg2 *interface{}, arg3 *string) error {
+	fake.newBlockFilterMutex.Lock()
+	ret, specificReturn := fake.newBlockFilterReturnsOnCall[len(fake.newBlockFilterArgsForCall)]
+	fake.newBlockFilterArgsForCall = append(fake.newBlockFilterArgsForCall, struct {
+		arg1 *http.Request
+		arg2 *interface{}
+		arg3 *string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("NewBlockFilter", []interface{}{arg1, arg2, arg3})
+	fake.newBlockFilterMutex.Unlock()
+	if fake.NewBlockFilterStub != nil {
+		return fake.NewBlockFilterStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.newBlockFilterReturns
+	return fakeReturns.result1
+}
+
+func (fake *MockEthService) NewBlockFilterCallCount() int {
+	fake.newBlockFilterMutex.RLock()
+	defer fake.newBlockFilterMutex.RUnlock()
+	return len(fake.newBlockFilterArgsForCall)
+}
+
+func (fake *MockEthService) NewBlockFilterArgsForCall(i int) (*http.Request, *interface{}, *string) {
+	fake.newBlockFilterMutex.RLock()
+	defer fake.newBlockFilterMutex.RUnlock()
+	argsForCall := fake.newBlockFilterArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *MockEthService) NewBlockFilterReturns(result1 error) {
+	fake.NewBlockFilterStub = nil
+	fake.newBlockFilterReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) NewBlockFilterReturnsOnCall(i int, result1 error) {
+	fake.NewBlockFilterStub = nil
+	if fake.newBlockFilterReturnsOnCall == nil {
+		fake.newBlockFilterReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.newBlockFilterReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) NewFilter(arg1 *http.Request, arg2 *types.GetLogsArgs, arg3 *string) error {
 	fake.newFilterMutex.Lock()
 	ret, specificReturn := fake.newFilterReturnsOnCall[len(fake.newFilterArgsForCall)]
@@ -872,12 +1067,12 @@ func (fake *MockEthService) SendTransactionReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *MockEthService) UninstallFilter(arg1 *http.Request, arg2 *string, arg3 *bool) error {
+func (fake *MockEthService) UninstallFilter(arg1 *http.Request, arg2 *types.FilterID, arg3 *bool) error {
 	fake.uninstallFilterMutex.Lock()
 	ret, specificReturn := fake.uninstallFilterReturnsOnCall[len(fake.uninstallFilterArgsForCall)]
 	fake.uninstallFilterArgsForCall = append(fake.uninstallFilterArgsForCall, struct {
 		arg1 *http.Request
-		arg2 *string
+		arg2 *types.FilterID
 		arg3 *bool
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("UninstallFilter", []interface{}{arg1, arg2, arg3})
@@ -898,7 +1093,7 @@ func (fake *MockEthService) UninstallFilterCallCount() int {
 	return len(fake.uninstallFilterArgsForCall)
 }
 
-func (fake *MockEthService) UninstallFilterArgsForCall(i int) (*http.Request, *string, *bool) {
+func (fake *MockEthService) UninstallFilterArgsForCall(i int) (*http.Request, *types.FilterID, *bool) {
 	fake.uninstallFilterMutex.RLock()
 	defer fake.uninstallFilterMutex.RUnlock()
 	argsForCall := fake.uninstallFilterArgsForCall[i]
@@ -941,6 +1136,10 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.getBlockByNumberMutex.RUnlock()
 	fake.getCodeMutex.RLock()
 	defer fake.getCodeMutex.RUnlock()
+	fake.getFilterChangesMutex.RLock()
+	defer fake.getFilterChangesMutex.RUnlock()
+	fake.getFilterLogsMutex.RLock()
+	defer fake.getFilterLogsMutex.RUnlock()
 	fake.getLogsMutex.RLock()
 	defer fake.getLogsMutex.RUnlock()
 	fake.getTransactionByHashMutex.RLock()
@@ -949,6 +1148,8 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.getTransactionCountMutex.RUnlock()
 	fake.getTransactionReceiptMutex.RLock()
 	defer fake.getTransactionReceiptMutex.RUnlock()
+	fake.newBlockFilterMutex.RLock()
+	defer fake.newBlockFilterMutex.RUnlock()
 	fake.newFilterMutex.RLock()
 	defer fake.newFilterMutex.RUnlock()
 	fake.sendTransactionMutex.RLock()
