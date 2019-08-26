@@ -214,7 +214,9 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
     ]
   },
   "id": 1
-}```
+}
+```
+
 ### eth_blockNumber
 `eth_blockNumber` returns the number associated with the latest block on the
 ledger. According to the spec, [blockNumber](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_blockNumber)
