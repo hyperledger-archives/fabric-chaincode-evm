@@ -1,0 +1,9 @@
+name: A workflow for chaincode-evm
+on: push
+jobs:
+  build:
+    name: default make target
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: ./.github/action-a
