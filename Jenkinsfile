@@ -41,7 +41,7 @@ timestamps { // set the timestamps on the jenkins console
         }
         // Run license-checks
         stage("Checks") {
-          wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+          // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
             try {
               dir("${ROOTDIR}/$PROJECT_DIR") {
                 sh '''
@@ -55,11 +55,11 @@ timestamps { // set the timestamps on the jenkins console
               currentBuild.result = 'FAILURE'
               throw err
             }
-          }
+          // }
         }
         // Run unit-tests (unit-tests)
         stage("Unit-Tests") {
-          wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+         // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
             try {
               dir("${ROOTDIR}/$PROJECT_DIR") {
                 sh '''
@@ -73,11 +73,11 @@ timestamps { // set the timestamps on the jenkins console
               currentBuild.result = 'FAILURE'
               throw err
             }
-          }
+         // }
         }
         // Run integration tests (e2e tests)
         stage("Integration-Tests") {
-          wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+        //  wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
             try {
               dir("${ROOTDIR}/$PROJECT_DIR") {
                 sh '''
@@ -91,7 +91,7 @@ timestamps { // set the timestamps on the jenkins console
               currentBuild.result = 'FAILURE'
               throw err
             }
-          }
+        //  }
         }
       } finally { // post build actions
       // Send notifications only for merge failures
