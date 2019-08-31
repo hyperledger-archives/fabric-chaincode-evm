@@ -28,7 +28,7 @@ gotool.ginkgo:
 	@go install ./vendor/github.com/onsi/ginkgo/ginkgo
 
 # Lock to a versioned dep
-gotool.dep: DEP_VERSION ?= "v0.5.0"
+gotool.dep: DEP_VERSION ?= "v0.5.4"
 gotool.dep:
 	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) go get -d -u github.com/golang/dep
 	@git -C $(abspath $(GOTOOLS_GOPATH))/src/github.com/golang/dep checkout -q $(DEP_VERSION)
