@@ -1065,6 +1065,7 @@
     "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab",
     "github.com/hyperledger/fabric-sdk-go/pkg/core/config",
     "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk",
+    "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util",
     "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common",
     "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer",
     "github.com/hyperledger/fabric/common/flogging",

@@ -57,6 +57,7 @@ AiEA0GxTPOXVHo0gJpMbHc9B73TL5ZfDhujoDyjb8DToWPQ=
 	// Address associated with the above cert
 	addrFromCert = "0xb3778bcee2b9c349702e5832928730d2aed0ac07"
 )
+
 var _ = Describe("Ethservice", func() {
 	var (
 		ethservice fab3.EthService
@@ -869,6 +870,23 @@ var _ = Describe("Ethservice", func() {
 						Expect(txns[0]).To(BeEquivalentTo("0x5678"))
 						Expect(txns[1]).To(BeEquivalentTo("0x1234"))
 					})
+
+					It("requests a block by number, but there is an invalid transaction, the invalid transaction does not show up", func() {
+						sampleBlock := GetSampleBlock(uintBlockNumber)
+						// invalidate a transaction for some reason
+						sampleBlock.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER][1] = byte(peer.TxValidationCode_MVCC_READ_CONFLICT)
+						mockLedgerClient.QueryBlockReturns(sampleBlock, nil)
+
+						err := ethservice.GetBlockByNumber(&http.Request{}, &args, &reply)
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(reply.Number).To(Equal("0x"+requestedBlockNumber), "block number")
+						Expect(reply.Hash).To(Equal("0x"+hex.EncodeToString(blockHash(sampleBlock.Header))), "block data hash")
+						Expect(reply.ParentHash).To(Equal("0x"+hex.EncodeToString(sampleBlock.Header.PreviousHash)), "block parent hash")
+						txns := reply.Transactions
+						Expect(txns).To(HaveLen(1))
+						Expect(txns[0]).To(BeEquivalentTo("0x5678"))
+					})
 				})
 
 				Context("when the block is requested by name", func() {
@@ -1415,7 +1433,7 @@ func GetSampleBlockWithTransaction(blockNumber uint64, blkHash []byte, txns ...*
 		Expect(err).ToNot(HaveOccurred())
 
 		blockData = append(blockData, txn)
-		transactionsFilter = append(transactionsFilter, '0')
+		transactionsFilter = append(transactionsFilter, 0)
 	}
 
 	blockMetadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER] = transactionsFilter

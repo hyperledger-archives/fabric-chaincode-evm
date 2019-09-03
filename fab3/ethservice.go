@@ -25,6 +25,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -147,9 +148,7 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 	}
 
 	blkHeader := block.GetHeader()
-
-	transactionsFilter := block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER]
-
+	transactionsFilter := util.TxValidationFlags(block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
 	receipt := types.TxReceipt{
 		TransactionHash:   "0x" + strippedTxID,
 		BlockHash:         "0x" + hex.EncodeToString(blockHash(blkHeader)),
@@ -165,8 +164,13 @@ func (s *ethService) GetTransactionReceipt(r *http.Request, txID *string, reply 
 
 	receipt.TransactionIndex = index
 	indexU, _ := strconv.ParseUint(strip0x(index), 16, 64)
-	// for fabric transactions, 0 is valid, 1 is invalid, the opposite of how ethereum
-	receipt.Status = "0x" + strconv.FormatUint(((1+uint64(transactionsFilter[indexU]))%2), 16)
+	// for ethereum transactions, 0 is invalid, 1 is valid
+	txnValidValue := 0
+	if transactionsFilter.IsValid(int(indexU)) {
+		txnValidValue = 1
+	}
+
+	receipt.Status = "0x" + strconv.Itoa(txnValidValue)
 
 	to, _, from, respPayload, err := getTransactionInformation(txPayload)
 	if err != nil {
@@ -276,7 +280,8 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 
 	// each data is a txn
 	data := block.GetData().GetData()
-	txns := make([]interface{}, len(data))
+	transactionsFilter := util.TxValidationFlags(block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
+	txns := make([]interface{}, 0, len(data))
 
 	// drill into the block to find the transaction ids it contains
 	for index, transactionData := range data {
@@ -284,14 +289,14 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 			continue
 		}
 
+		if !transactionsFilter.IsValid(index) {
+			continue
+		}
+
 		payload, chdr, err := getChannelHeaderandPayloadFromTransactionData(transactionData)
 		if err != nil {
 			return err
 		}
-
-		// returning full transactions is unimplemented,
-		// so the hash-only case is the only case.
-		s.logger.Debug("block has transaction hash:", chdr.TxId)
 
 		if fullTransactions {
 			txn := types.Transaction{
@@ -308,9 +313,9 @@ func (s *ethService) GetBlockByNumber(r *http.Request, p *[]interface{}, reply *
 			txn.To = "0x" + to
 			txn.Input = "0x" + input
 			txn.From = from
-			txns[index] = txn
+			txns = append(txns, txn)
 		} else {
-			txns[index] = "0x" + chdr.TxId
+			txns = append(txns, "0x"+chdr.TxId)
 		}
 	}
 
@@ -463,12 +468,12 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 		blockHeader := block.GetHeader()
 		blockHash := "0x" + hex.EncodeToString(blockHash(blockHeader))
 		blockData := block.GetData().GetData()
-		transactionsFilter := block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER]
+		transactionsFilter := util.TxValidationFlags(block.GetMetadata().GetMetadata()[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
 		logger.Debug("handling ", len(blockData), " transactions in block")
 		for transactionIndex, transactionData := range blockData {
 			logger = logger.With("transaction-index", transactionIndex)
 			// check validity of transaction
-			if (transactionsFilter[transactionIndex] == 1) || (transactionData == nil) {
+			if !transactionsFilter.IsValid(transactionIndex) || (transactionData == nil) {
 				continue
 			}
 

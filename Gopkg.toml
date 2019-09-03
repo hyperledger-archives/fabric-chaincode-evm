@@ -76,6 +76,10 @@ noverify = [
   name = "github.com/btcsuite/btcd"
   revision = "ed77733ec07dfc8a513741138419b8d9d3de9d2d"
 
+[[override]]
+  name = "github.com/go-kit/kit"
+  version = "0.8.0"
+
 #Constraints from fabric-sdk-go
 [[override]]
   revision = "aafc9e6bc7b7bb53ddaa75a5ef49a17d6e654be5"
