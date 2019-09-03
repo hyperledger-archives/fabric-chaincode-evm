@@ -233,8 +233,6 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 // defined https://github.com/ethereum/wiki/wiki/JSON-RPC#returns-26
 type Block struct {
 	BlockData
-	// size: QUANTITY - integer the size of this block in bytes.
-	// timestamp: QUANTITY - the unix timestamp for when the block was collated.
 	Transactions []interface{} `json:"transactions"` // transactions: Array - Array of transaction objects, or 32 Bytes transaction hashes depending on the last given parameter.
 }
 
@@ -243,17 +241,21 @@ type BlockData struct {
 	Number     string `json:"number"`     // number: QUANTITY - the block number. null when its pending block.
 	Hash       string `json:"hash"`       // hash: DATA, 32 Bytes - hash of the block. null when its pending block.
 	ParentHash string `json:"parentHash"` // parentHash: DATA, 32 Bytes - hash of the parent block.
+	GasLimit   string `json:"gasLimit"`   // gasLimit: QUANTITY - the maximum gas allowed in this block.
 }
 
 // MarshalJSON marshals the data differently based on whether
 // transactions are full or just tx hashes
-func (blk *Block) MarshalJSON() ([]byte, error) {
+func (originalBlk *Block) MarshalJSON() ([]byte, error) {
+	blk := *originalBlk
+	blk.GasLimit = "0x0"
+
 	if len(blk.Transactions) == 0 {
-		return json.Marshal(*blk)
+		return json.Marshal(blk)
 	}
 
 	if _, ok := blk.Transactions[0].(Transaction); !ok {
-		return json.Marshal(*blk)
+		return json.Marshal(blk)
 	}
 
 	txns := make([]Transaction, len(blk.Transactions))
@@ -265,11 +267,7 @@ func (blk *Block) MarshalJSON() ([]byte, error) {
 		BlockData
 		Transactions []Transaction `json:"transactions"`
 	}{
-		BlockData: BlockData{
-			Number:     blk.Number,
-			Hash:       blk.Hash,
-			ParentHash: blk.ParentHash,
-		},
+		BlockData:    blk.BlockData,
 		Transactions: txns,
 	}
 
