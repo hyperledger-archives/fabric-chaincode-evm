@@ -106,7 +106,13 @@ and [netservice](fab3/netservice.go)
 implementations. For details about limitations and implementations of the the
 instructions look at the [Fab3 Instructions](Fab3_Instructions.md).
 
-To create the Fab3 binary, run the following at the root of this repository:
+To create the Fab3 binary, this repository must be checked out in the [GOPATH](https://github.com/golang/go/wiki/GOPATH)
+```
+mkdir -p $(go env GOPATH)/src/github.com/hyperledger/
+git clone "https://gerrit.hyperledger.org/r/fabric-chaincode-evm" $(go env GOPATH)/src/github.com/hyperledger/fabric-chaincode-evm
+cd $(go env GOPATH)/src/github.com/hyperledger/fabric-chaincode-evm
+```
+Run the following at the root of this repository:
 ```
 make fab3
 ```

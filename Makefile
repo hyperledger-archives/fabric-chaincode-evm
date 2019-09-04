@@ -96,12 +96,12 @@ fab3: bin/fab3
 .PHONY: bin/fab3 # let 'go build' handle caching and whether to rebuild
 bin/fab3:
 	mkdir -p bin/
-	go build -o bin/fab3 github.com/hyperledger/fabric-chaincode-evm/fab3/cmd
+	go build -o bin/fab3 ./fab3/cmd
 
 .PHONY: bin/evmcc # let 'go build' handle caching and whether to rebuild
 bin/evmcc:
 	mkdir -p bin/
-	go build -o bin/evmcc github.com/hyperledger/fabric-chaincode-evm/evmcc
+	go build -o bin/evmcc ./evmcc
 	rm bin/evmcc # checking that it compiled, evmcc not meant to be run directly
 
 # Requires go v1.11+
