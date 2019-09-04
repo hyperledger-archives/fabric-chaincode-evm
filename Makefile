@@ -43,11 +43,11 @@ license:
 .PHONY: build
 build: bin/fab3 bin/evmcc
 
-.PHONY: clean
-clean:
-	rm -rf bin/ node_modules/
-
 include gotools.mk
+
+.PHONY: clean
+clean: gotools-clean
+	rm -rf bin/ node_modules/
 
 .PHONY: gotools
 gotools: gotools-install
