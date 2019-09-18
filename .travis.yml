@@ -1,0 +1,5 @@
+language: go
+
+before_install:
+  - nvm install "10.16.3"
+
