@@ -1,3 +1,4 @@
+test
 # Hyperledger Fabric EVM chaincode
 
 This is the project for the Hyperledger Fabric chaincode, integrating the
