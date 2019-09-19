@@ -14,6 +14,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -278,8 +279,5 @@ func (blk *Block) MarshalJSON() ([]byte, error) {
 
 func strip0x(s string) string {
 	//Not checking for malformed addresses just stripping `0x` prefix where applicable
-	if len(s) > 2 && s[0:2] == "0x" {
-		return s[2:]
-	}
-	return s
+	return strings.TrimPrefix(s, "0x")
 }

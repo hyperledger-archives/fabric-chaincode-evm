@@ -153,6 +153,19 @@ type MockEthService struct {
 	getTransactionReceiptReturnsOnCall map[int]struct {
 		result1 error
 	}
+	NewFilterStub        func(*http.Request, *types.GetLogsArgs, *string) error
+	newFilterMutex       sync.RWMutex
+	newFilterArgsForCall []struct {
+		arg1 *http.Request
+		arg2 *types.GetLogsArgs
+		arg3 *string
+	}
+	newFilterReturns struct {
+		result1 error
+	}
+	newFilterReturnsOnCall map[int]struct {
+		result1 error
+	}
 	SendTransactionStub        func(*http.Request, *types.EthArgs, *string) error
 	sendTransactionMutex       sync.RWMutex
 	sendTransactionArgsForCall []struct {
@@ -164,6 +177,19 @@ type MockEthService struct {
 		result1 error
 	}
 	sendTransactionReturnsOnCall map[int]struct {
+		result1 error
+	}
+	UninstallFilterStub        func(*http.Request, *string, *bool) error
+	uninstallFilterMutex       sync.RWMutex
+	uninstallFilterArgsForCall []struct {
+		arg1 *http.Request
+		arg2 *string
+		arg3 *bool
+	}
+	uninstallFilterReturns struct {
+		result1 error
+	}
+	uninstallFilterReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -742,6 +768,58 @@ func (fake *MockEthService) GetTransactionReceiptReturnsOnCall(i int, result1 er
 	}{result1}
 }
 
+func (fake *MockEthService) NewFilter(arg1 *http.Request, arg2 *types.GetLogsArgs, arg3 *string) error {
+	fake.newFilterMutex.Lock()
+	ret, specificReturn := fake.newFilterReturnsOnCall[len(fake.newFilterArgsForCall)]
+	fake.newFilterArgsForCall = append(fake.newFilterArgsForCall, struct {
+		arg1 *http.Request
+		arg2 *types.GetLogsArgs
+		arg3 *string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("NewFilter", []interface{}{arg1, arg2, arg3})
+	fake.newFilterMutex.Unlock()
+	if fake.NewFilterStub != nil {
+		return fake.NewFilterStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.newFilterReturns
+	return fakeReturns.result1
+}
+
+func (fake *MockEthService) NewFilterCallCount() int {
+	fake.newFilterMutex.RLock()
+	defer fake.newFilterMutex.RUnlock()
+	return len(fake.newFilterArgsForCall)
+}
+
+func (fake *MockEthService) NewFilterArgsForCall(i int) (*http.Request, *types.GetLogsArgs, *string) {
+	fake.newFilterMutex.RLock()
+	defer fake.newFilterMutex.RUnlock()
+	argsForCall := fake.newFilterArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *MockEthService) NewFilterReturns(result1 error) {
+	fake.NewFilterStub = nil
+	fake.newFilterReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) NewFilterReturnsOnCall(i int, result1 error) {
+	fake.NewFilterStub = nil
+	if fake.newFilterReturnsOnCall == nil {
+		fake.newFilterReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.newFilterReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) SendTransaction(arg1 *http.Request, arg2 *types.EthArgs, arg3 *string) error {
 	fake.sendTransactionMutex.Lock()
 	ret, specificReturn := fake.sendTransactionReturnsOnCall[len(fake.sendTransactionArgsForCall)]
@@ -794,6 +872,58 @@ func (fake *MockEthService) SendTransactionReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *MockEthService) UninstallFilter(arg1 *http.Request, arg2 *string, arg3 *bool) error {
+	fake.uninstallFilterMutex.Lock()
+	ret, specificReturn := fake.uninstallFilterReturnsOnCall[len(fake.uninstallFilterArgsForCall)]
+	fake.uninstallFilterArgsForCall = append(fake.uninstallFilterArgsForCall, struct {
+		arg1 *http.Request
+		arg2 *string
+		arg3 *bool
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("UninstallFilter", []interface{}{arg1, arg2, arg3})
+	fake.uninstallFilterMutex.Unlock()
+	if fake.UninstallFilterStub != nil {
+		return fake.UninstallFilterStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.uninstallFilterReturns
+	return fakeReturns.result1
+}
+
+func (fake *MockEthService) UninstallFilterCallCount() int {
+	fake.uninstallFilterMutex.RLock()
+	defer fake.uninstallFilterMutex.RUnlock()
+	return len(fake.uninstallFilterArgsForCall)
+}
+
+func (fake *MockEthService) UninstallFilterArgsForCall(i int) (*http.Request, *string, *bool) {
+	fake.uninstallFilterMutex.RLock()
+	defer fake.uninstallFilterMutex.RUnlock()
+	argsForCall := fake.uninstallFilterArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *MockEthService) UninstallFilterReturns(result1 error) {
+	fake.UninstallFilterStub = nil
+	fake.uninstallFilterReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *MockEthService) UninstallFilterReturnsOnCall(i int, result1 error) {
+	fake.UninstallFilterStub = nil
+	if fake.uninstallFilterReturnsOnCall == nil {
+		fake.uninstallFilterReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.uninstallFilterReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -819,8 +949,12 @@ func (fake *MockEthService) Invocations() map[string][][]interface{} {
 	defer fake.getTransactionCountMutex.RUnlock()
 	fake.getTransactionReceiptMutex.RLock()
 	defer fake.getTransactionReceiptMutex.RUnlock()
+	fake.newFilterMutex.RLock()
+	defer fake.newFilterMutex.RUnlock()
 	fake.sendTransactionMutex.RLock()
 	defer fake.sendTransactionMutex.RUnlock()
+	fake.uninstallFilterMutex.RLock()
+	defer fake.uninstallFilterMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

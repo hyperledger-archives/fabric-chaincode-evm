@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
@@ -79,6 +80,8 @@ type EthService interface {
 	GetTransactionByHash(r *http.Request, txID *string, reply *types.Transaction) error
 	GetTransactionCount(r *http.Request, _ *interface{}, reply *string) error
 	GetLogs(*http.Request, *types.GetLogsArgs, *[]types.Log) error
+	NewFilter(*http.Request, *types.GetLogsArgs, *string) error
+	UninstallFilter(*http.Request, *string, *bool) error
 }
 
 type ethService struct {
@@ -87,10 +90,20 @@ type ethService struct {
 	channelID     string
 	ccid          string
 	logger        *zap.SugaredLogger
+	filterMapLock sync.Mutex
+	filterMap     map[uint64]interface{}
+	filterSeq     uint64
 }
 
 func NewEthService(channelClient ChannelClient, ledgerClient LedgerClient, channelID string, ccid string, logger *zap.SugaredLogger) EthService {
-	return &ethService{channelClient: channelClient, ledgerClient: ledgerClient, channelID: channelID, ccid: ccid, logger: logger.Named("ethservice")}
+	return &ethService{
+		channelClient: channelClient,
+		ledgerClient:  ledgerClient,
+		channelID:     channelID,
+		ccid:          ccid,
+		logger:        logger.Named("ethservice"),
+		filterMap:     make(map[uint64]interface{}),
+	}
 }
 
 func (s *ethService) GetCode(r *http.Request, arg *string, reply *string) error {
@@ -482,7 +495,6 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 			if err != nil {
 				return errors.Wrap(err, "failed to unmarshal the transaction")
 			}
-
 			// only process transactions
 			if chdr.Type != int32(common.HeaderType_ENDORSER_TRANSACTION) {
 				logger.Debug("skipping non-ENDORSER_TRANSACTION")
@@ -511,6 +523,33 @@ func (s *ethService) GetLogs(r *http.Request, args *types.GetLogsArgs, logs *[]t
 
 	logger.Debug("returning logs", txLogs)
 	*logs = txLogs
+
+	return nil
+}
+
+func (s *ethService) NewFilter(_ *http.Request, filter *types.GetLogsArgs, result *string) error {
+	s.filterMapLock.Lock()
+	s.filterSeq++
+	index := s.filterSeq
+	s.filterMap[index] = filter
+	s.filterMapLock.Unlock()
+	*result = "0x" + strconv.FormatUint(index, 16)
+	return nil
+}
+
+func (s *ethService) UninstallFilter(_ *http.Request, filterID *string, removed *bool) error {
+	id, err := strconv.ParseUint(strip0x(*filterID), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse filter id")
+	}
+
+	s.filterMapLock.Lock()
+	defer s.filterMapLock.Unlock()
+
+	if _, ok := s.filterMap[id]; ok {
+		delete(s.filterMap, id)
+		*removed = true
+	}
 
 	return nil
 }
@@ -552,10 +591,7 @@ func (s *ethService) parseBlockNum(input string) (uint64, error) {
 
 func strip0x(addr string) string {
 	//Not checking for malformed addresses just stripping `0x` prefix where applicable
-	if len(addr) > 2 && addr[0:2] == "0x" {
-		return addr[2:]
-	}
-	return addr
+	return strings.TrimPrefix(addr, "0x")
 }
 
 func getPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeProposalPayload, *peer.ChaincodeAction, error) {
