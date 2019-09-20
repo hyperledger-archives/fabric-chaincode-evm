@@ -1044,6 +1044,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/btcsuite/btcd/btcec",
     "github.com/fsouza/go-dockerclient",
     "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/proto",
