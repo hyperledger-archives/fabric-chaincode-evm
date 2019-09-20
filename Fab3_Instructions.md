@@ -27,7 +27,6 @@ Fab3 currently supports:
 - [eth_getLogs](#eth_getLogs)
 - [eth_getTransactionCount](#eth_getTransactionCount)
 
-
 ### net_version
 `net_version` always returns the string `66616265766d`, which is the hex encoding
 of `fabevm`. According to the spec, [net_version](https://github.com/ethereum/wiki/wiki/JSON-RPC#net_version)
@@ -182,7 +181,8 @@ accepts a number that is hex encoded or a default block parameter such as
 `latest`, and `earliest` and a second parameter which is a boolean that
 indicates whether full transaction information should be returned. Fabric does
 not have a concept of `pending` blocks so providing `pending` as the block
-number will result in an error.
+number will result in an error. The field `gasLimit` is provided as a
+compatibility measure, and is always hardcoded to `0x0`.
 
 **Example**
 ```
@@ -199,6 +199,7 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
     "number": "0x8",
     "hash": "0xe63104fc910f90f4d281dbc9d666225d74c5a4ac1438890b4252236d52e158e0",
     "parentHash": "0x8230fad38e199e014aa7433656f78a9d8336ddd6aace9791a6cbbb78c6b9640e",
+    "gasLimit": "0x0",
     "transactions": [
       {
         "blockHash": "0xe63104fc910f90f4d281dbc9d666225d74c5a4ac1438890b4252236d52e158e0",
