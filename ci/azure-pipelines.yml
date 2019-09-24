@@ -1,0 +1,68 @@
+# Copyright the Hyperledger Fabric contributors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: $(SourceBranchName)-$(Date:yyyyMMdd)$(Rev:.rrr)
+trigger:
+- master
+pr:
+- master
+
+variables:
+  GOPATH: $(Agent.BuildDirectory)/go
+  PATH: $(Agent.BuildDirectory)/go/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+  GO_VER: 1.10.4
+  NODE_VER: 8.11.3
+
+jobs:
+- job: VerifyBuild
+  pool:
+    vmImage: ubuntu-16.04
+  condition: and(succeeded(), eq(variables['build.reason'], 'PullRequest'))
+  steps:
+  - task: GoTool@0
+    inputs:
+      version: $(GO_VER)
+      goPath:  $(GOPATH)
+    displayName: Install GoLang
+  - checkout: self
+    path: 'go/src/github.com/hyperledger/fabric-chaincode-evm'
+    displayName: Checkout Fabric Chaincode EVM Code
+  - script: make basic-checks
+    displayName: Check Spelling, Licenses and Linting
+
+- job: UnitTests
+  pool:
+    vmImage: ubuntu-16.04
+  steps:
+  - task: GoTool@0
+    inputs:
+      version: $(GO_VER)
+      goPath:  $(GOPATH)
+    displayName: Install GoLang
+  - checkout: self
+    path: 'go/src/github.com/hyperledger/fabric-chaincode-evm'
+    displayName: Checkout Fabric Chaincode EVM Code
+  - script: make unit-tests
+    displayName: Run Unit Tests
+
+- job: IntegrationTests
+  pool:
+    vmImage: ubuntu-16.04
+  condition: and(succeeded(), eq(variables['build.reason'], 'PullRequest'))
+  steps:
+  - task: GoTool@0
+    inputs:
+      version: $(GO_VER)
+      goPath:  $(GOPATH)
+    displayName: Install GoLang
+  - task: NodeTool@0
+    inputs:
+      versionSpec: $(NODE_VER)
+    displayName: Install Node.js
+  - checkout: self
+    path: 'go/src/github.com/hyperledger/fabric-chaincode-evm'
+    displayName: Checkout Fabric Chaincode EVM Code
+  - script: make integration-test
+    displayName: Run Integration Tests
+
