@@ -184,12 +184,11 @@ test uses the Web3 node.js library as a client to run tests against fab3 and the
 EVMCC.
 
 ## Contributions
-The `fabric-chaincode-evm` lives in a [gerrit repository](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-chaincode-evm).
-The github repository is a mirror. For more information on how to contribute
-look at [Fabric's CONTRIBUTING documentation](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html).
+Pull requests are now accepted on github. When submitting a pull request, please
+include the JIRA number associated with your JIRA work item in the commit
+message title.
 
-Please send all pull requests to the gerrit repository. For issues, open a ticket in
-the Hyperledger Fabric [JIRA](https://jira.hyperledger.org/projects/FAB/issues)
+To report a new issue, open a ticket in the Hyperledger Fabric [JIRA](https://jira.hyperledger.org/projects/FAB/issues)
 and add `fabric-chaincode-evm` in the component field.
 
 ## Current Dependencies
