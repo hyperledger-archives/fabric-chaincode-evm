@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-GOTOOLS = counterfeiter dep golint goimports ginkgo misspell
+GOTOOLS = counterfeiter dep goimports ginkgo misspell
 BUILD_DIR ?= .build
 GOTOOLS_GOPATH ?= $(BUILD_DIR)/gotools
 GOTOOLS_BINDIR ?= $(firstword $(subst :, ,$(GOPATH)))/bin
@@ -12,7 +12,6 @@ GOROOT ?= $(firstword $(subst :, ,$(GOPATH))
 # go tool->path mapping
 go.fqp.counterfeiter := github.com/maxbrunsfeld/counterfeiter
 go.fqp.goimports     := golang.org/x/tools/cmd/goimports
-go.fqp.golint        := golang.org/x/lint/golint
 go.fqp.misspell      := github.com/client9/misspell/cmd/misspell
 
 .PHONY: gotools-install
