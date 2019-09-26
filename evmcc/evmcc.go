@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/burrow/permission"
 	"github.com/hyperledger/fabric-chaincode-evm/address"
 	"github.com/hyperledger/fabric-chaincode-evm/eventmanager"
+	"github.com/hyperledger/fabric-chaincode-evm/signing"
 	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -45,7 +46,7 @@ func (evmcc *EvmChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	// We always expect 2 args: 'callee address, input data' or ' getCode ,  contract address'
+	// We always expect 2 args: 'callee address, input data' or 'getCode , contract address' or 'rawTransaction, raw bytes'
 	args := stub.GetArgs()
 
 	if len(args) == 1 {
@@ -62,26 +63,62 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 		return evmcc.getCode(stub, args[1])
 	}
 
-	c, err := hex.DecodeString(string(args[0]))
-	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(args[0]), err))
-	}
+	var calleeAddr, callerAddr crypto.Address
+	var input []byte
+	if string(args[0]) == "rawTransaction" {
+		var tx signing.SignedTx
+		// get raw transaction from args[1]
+		raw, _ := hex.DecodeString(string(args[1]))
+		err := tx.Decode(raw)
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to decode raw transaction: %s", err))
+		}
 
-	calleeAddr, err := crypto.AddressFromBytes(c)
-	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get callee address: %s", err))
-	}
+		b, err := hex.DecodeString(strings.TrimPrefix(tx.CalleeAddress(), "0x"))
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to decode callee address: %s", err))
+		}
+		if len(b) == 0 {
+			calleeAddr = crypto.ZeroAddress
+		} else {
+			calleeAddr, err = crypto.AddressFromBytes(b)
+			if err != nil {
+				return shim.Error(fmt.Sprintf("failed to get callee address: %s", err))
+			}
+		}
 
-	// get caller account from creator public key
-	callerAddr, err := getCallerAddress(stub)
-	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to get caller address: %s", err))
-	}
+		b, err = hex.DecodeString(strings.TrimPrefix(tx.CallerAddress(), "0x"))
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to decode caller address: %s", err))
+		}
+		callerAddr, err = crypto.AddressFromBytes(b)
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to get caller address: %s", err))
+		}
 
-	// get input bytes from args[1]
-	input, err := hex.DecodeString(string(args[1]))
-	if err != nil {
-		return shim.Error(fmt.Sprintf("failed to decode input bytes: %s", err))
+		input = tx.Payload
+	} else {
+		c, err := hex.DecodeString(string(args[0]))
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to decode callee address from %s: %s", string(args[0]), err))
+		}
+
+		calleeAddr, err = crypto.AddressFromBytes(c)
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to get callee address: %s", err))
+		}
+
+		// get caller account from creator public key
+		callerAddr, err = getCallerAddress(stub)
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to get caller address: %s", err))
+		}
+
+		// get input bytes from args[1]
+		input, err = hex.DecodeString(string(args[1]))
+		if err != nil {
+			return shim.Error(fmt.Sprintf("failed to decode input bytes: %s", err))
+		}
 	}
 
 	var gas uint64 = 10000
@@ -150,11 +187,13 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 			return shim.Error(fmt.Sprintf("failed to execute contract: %s", evmErr))
 		}
 
-		// Passing the function hash of the method that has triggered the event
-		// The function hash is the first 8 bytes of the Input argument
-		err := eventSink.Flush(string(args[1][0:8]))
-		if err != nil {
-			return shim.Error(fmt.Sprintf("error in Flush: %s", err))
+		if len(input) >= 4 {
+			// Passing the function hash of the method that has triggered the event
+			// The function hash is the first 8 bytes of the Input hex string
+			err := eventSink.Flush(hex.EncodeToString(input[0:4]))
+			if err != nil {
+				return shim.Error(fmt.Sprintf("error in Flush: %s", err))
+			}
 		}
 
 		// Sync is required for evm to send writes to the statemanager.

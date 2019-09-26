@@ -383,6 +383,41 @@ var _ = Describe("Ethservice", func() {
 		})
 	})
 
+	Describe("SendRawTransaction", func() {
+		var (
+			sampleResponse channel.Response
+			sampleArgs     string
+		)
+
+		BeforeEach(func() {
+			sampleResponse = channel.Response{
+				Payload:       []byte("sample-response"),
+				TransactionID: "1",
+			}
+			mockChClient.ExecuteReturns(sampleResponse, nil)
+
+			sampleArgs = "sample-raw-transaction"
+		})
+
+		It("returns the transaction id", func() {
+			var reply string
+			err := ethservice.SendRawTransaction(&http.Request{}, &sampleArgs, &reply)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(mockChClient.ExecuteCallCount()).To(Equal(1))
+			chReq, reqOpts := mockChClient.ExecuteArgsForCall(0)
+			Expect(chReq).To(Equal(channel.Request{
+				ChaincodeID: evmcc,
+				Fcn:         "rawTransaction",
+				Args:        [][]byte{[]byte(sampleArgs)},
+			}))
+
+			Expect(reqOpts).To(HaveLen(0))
+
+			Expect(reply).To(Equal(string(sampleResponse.TransactionID)))
+		})
+	})
+
 	Describe("GetTransactionReceipt", func() {
 		var (
 			sampleTransaction   *peer.ProcessedTransaction
