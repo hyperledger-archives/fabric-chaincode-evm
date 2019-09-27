@@ -61,7 +61,7 @@ unit-tests: unit-test
 dev-test:
 	ginkgo watch -notify -randomizeAllSpecs -requireSuite -race -cover -skipPackage integration -r
 
-linter: gotool.goimports gotool.golint check-deps
+linter: gotool.goimports check-deps
 	@echo "LINT: Running code checks.."
 	@scripts/golinter.sh
 
