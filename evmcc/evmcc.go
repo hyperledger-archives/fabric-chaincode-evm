@@ -126,8 +126,13 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 			return shim.Error(fmt.Sprintf("failed to update contract account: %s", evmErr))
 		}
 
-		// Passing the first 8 bytes contract address just created
-		err := eventSink.Flush(string(contractAddr.Bytes()[0:8]))
+		// Passing the first 4 bytes contract address just created
+		// Since the bytes are not hex encoded, one byte will be represented
+		// as 2 hex bytes, so the event name will be 8 hex bytes.
+		// Hex Encode before flushing to ensure no non utf-8 characters
+		// Otherwise proto marshal fails on non utf-8 characters when
+		// the peer tries to marshal the event
+		err := eventSink.Flush(hex.EncodeToString(contractAddr.Bytes()[0:4]))
 		if err != nil {
 			return shim.Error(fmt.Sprintf("error in Flush: %s", err))
 		}
@@ -152,6 +157,7 @@ func (evmcc *EvmChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response 
 
 		// Passing the function hash of the method that has triggered the event
 		// The function hash is the first 8 bytes of the Input argument
+		// The argument is a hex-encoded evm function hash, so we can directly pass the bytes
 		err := eventSink.Flush(string(args[1][0:8]))
 		if err != nil {
 			return shim.Error(fmt.Sprintf("error in Flush: %s", err))

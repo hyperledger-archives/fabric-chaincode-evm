@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/burrow/acm"
@@ -66,6 +67,12 @@ var _ = Describe("evmcc", func() {
 		stub.GetTxIDStub = func() string {
 			nonce = nonce + 1
 			return fmt.Sprintf("%d", nonce)
+		}
+
+		// Real stub will error on non utf8 characters
+		stub.SetEventStub = func(eventName string, _ []byte) error {
+			Expect(utf8.ValidString(eventName)).To(BeTrue())
+			return nil
 		}
 
 	})
@@ -684,7 +691,8 @@ Vc4foA7mruwjI8sEng==
 
 					Expect(stub.SetEventCallCount()).To(Equal(1))
 					setEventName, setEventPayload := stub.SetEventArgsForCall(0)
-					Expect(setEventName).To(Equal(string(contractAddress[0:8])))
+					Expect(setEventName).To(Equal(hex.EncodeToString(contractAddress[0:4])))
+					Expect(setEventName).To(HaveLen(8))
 					Expect(setEventPayload).To(Equal(expectedPayload))
 
 					var unmarshaledPayloads []event.Event
