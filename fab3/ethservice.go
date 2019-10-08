@@ -727,7 +727,7 @@ LOG_EVENT:
 			// if no address, empty range, skipped, present but empty address field results in no match
 			for _, address := range af {
 				logger.Debugw("trying address match", "matcherAddress", address, "eventAddress", logEvent.Address)
-				if logEvent.Address == address {
+				if logEvent.Address == strings.ToLower(address) {
 					foundMatch = true
 					break
 				}
