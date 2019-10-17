@@ -154,7 +154,7 @@ func NewAddressFilter(s string) (AddressFilter, error) {
 	if len(s) != HexEncodedAddressLegnth {
 		return nil, fmt.Errorf("address in wrong format, need 40 chars prefixed with '0x', got %d chars for %q", len(s), s)
 	}
-	return AddressFilter{s}, nil
+	return AddressFilter{strings.ToLower(s)}, nil
 }
 
 // NewTopicFilter takes a string and checks that is the correct length to

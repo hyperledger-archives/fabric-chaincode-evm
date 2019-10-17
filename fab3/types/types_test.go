@@ -85,6 +85,16 @@ var _ = Describe("Types JSON Marshaling and Unmarshaling", func() {
 			Entry("slack validation of multiple address in array",
 				[]byte(`{"address":["3832333733343538313634383230393437383931","3832333733343538313634383230393437383932"]}`),
 				valid{"", "", []string{"3832333733343538313634383230393437383931", "3832333733343538313634383230393437383932"}, nil}),
+			// all addresses are lowered cased
+			Entry("mixed case single addresses",
+				[]byte(`{"address":"0x38323337333435383136343832303934373839aA"}`),
+				valid{"", "", []string{"38323337333435383136343832303934373839aa"}, nil}),
+			Entry("mixed cases single address in array",
+				[]byte(`{"address":["0x38323337333435383136343832303934373839bB"]}`),
+				valid{"", "", []string{"38323337333435383136343832303934373839bb"}, nil}),
+			Entry("mixed cases multiple address in array",
+				[]byte(`{"address":["0x38323337333435383136343832303934373839aA","0x38323337333435383136343832303934373839bB"]}`),
+				valid{"", "", []string{"38323337333435383136343832303934373839aa", "38323337333435383136343832303934373839bb"}, nil}),
 			// topics
 			Entry("any topic",
 				[]byte(`{"topics":[]}`),
