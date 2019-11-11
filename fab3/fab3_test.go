@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-chaincode-evm/fab3"
-	fab3_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fab3"
+	"github.com/hyperledger/fabric-chaincode-evm/fab3/mocks"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
@@ -28,7 +28,7 @@ var _ = Describe("Fab3", func() {
 	var (
 		proxy          *fab3.Fab3
 		proxyAddr      string
-		mockEthService *fab3_mocks.MockEthService
+		mockEthService *mocks.MockEthService
 		req            *http.Request
 		proxyDoneChan  chan struct{}
 		client         *http.Client
@@ -37,7 +37,7 @@ var _ = Describe("Fab3", func() {
 
 	BeforeEach(func() {
 		port = config.GinkgoConfig.ParallelNode + 5000
-		mockEthService = &fab3_mocks.MockEthService{}
+		mockEthService = &mocks.MockEthService{}
 		client = &http.Client{}
 
 		proxyDoneChan = make(chan struct{}, 1)

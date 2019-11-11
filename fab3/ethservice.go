@@ -30,21 +30,21 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-chaincode-evm/address"
-	"github.com/hyperledger/fabric-chaincode-evm/event"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/address"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/event"
 	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
 )
 
 var ZeroAddress = make([]byte, 20)
 
-//go:generate counterfeiter -o ../mocks/fab3/mockchannelclient.go --fake-name MockChannelClient ./ ChannelClient
+//go:generate counterfeiter -o mocks/mockchannelclient.go --fake-name MockChannelClient ./ ChannelClient
 
 type ChannelClient interface {
 	Query(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 	Execute(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 }
 
-//go:generate counterfeiter -o ../mocks/fab3/mockledgerclient.go --fake-name MockLedgerClient ./ LedgerClient
+//go:generate counterfeiter -o mocks/mockledgerclient.go --fake-name MockLedgerClient ./ LedgerClient
 
 type LedgerClient interface {
 	QueryInfo(options ...ledger.RequestOption) (*fab.BlockchainInfoResponse, error)
@@ -53,7 +53,7 @@ type LedgerClient interface {
 	QueryBlockByHash(blockHash []byte, options ...ledger.RequestOption) (*common.Block, error)
 }
 
-//go:generate counterfeiter -o ../mocks/fab3/mockethservice.go --fake-name MockEthService ./ EthService
+//go:generate counterfeiter -o mocks/mockethservice.go --fake-name MockEthService ./ EthService
 
 // EthService is the rpc server implementation. Each function is an
 // implementation of one ethereum json-rpc

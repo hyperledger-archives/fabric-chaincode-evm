@@ -108,4 +108,4 @@ bin/evmcc:
 .PHONY:
 update-mocks: gotool.counterfeiter
 	go generate ./fab3/
-	counterfeiter -o mocks/evmcc/mockstub.go --fake-name MockStub vendor/github.com/hyperledger/fabric/core/chaincode/shim/interfaces.go ChaincodeStubInterface
+	counterfeiter -o evmcc/mocks/mockstub.go --fake-name MockStub evmcc/vendor/github.com/hyperledger/fabric/core/chaincode/shim/interfaces.go ChaincodeStubInterface

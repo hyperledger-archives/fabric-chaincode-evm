@@ -16,12 +16,14 @@ import (
 	"github.com/hyperledger/burrow/execution/evm"
 	"github.com/hyperledger/burrow/logging"
 	"github.com/hyperledger/burrow/permission"
-	"github.com/hyperledger/fabric-chaincode-evm/address"
-	"github.com/hyperledger/fabric-chaincode-evm/eventmanager"
-	"github.com/hyperledger/fabric-chaincode-evm/statemanager"
+
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/address"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/eventmanager"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/statemanager"
 )
 
 //Permissions for all accounts (users & contracts) to send CallTx or SendTx to a contract

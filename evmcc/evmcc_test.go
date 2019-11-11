@@ -17,12 +17,13 @@ import (
 	"github.com/hyperledger/burrow/acm"
 	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/permission"
-	"github.com/hyperledger/fabric-chaincode-evm/address"
-	"github.com/hyperledger/fabric-chaincode-evm/event"
 	evm "github.com/hyperledger/fabric-chaincode-evm/evmcc"
-	evmcc_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/msp"
+
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/address"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/event"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -39,14 +40,14 @@ var _ = Describe("evmcc", func() {
 
 	var (
 		evmcc      shim.Chaincode
-		stub       *evmcc_mocks.MockStub
+		stub       *mocks.MockStub
 		fakeLedger map[string][]byte
 		nonce      uint64
 	)
 
 	BeforeEach(func() {
 		evmcc = &evm.EvmChaincode{}
-		stub = &evmcc_mocks.MockStub{}
+		stub = &mocks.MockStub{}
 		fakeLedger = make(map[string][]byte)
 
 		stub.PutStateStub = func(key string, value []byte) error {

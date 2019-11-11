@@ -12,15 +12,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"go.uber.org/zap"
-
-	"github.com/hyperledger/fabric-chaincode-evm/fab3"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
+	"github.com/hyperledger/fabric-chaincode-evm/fab3"
 )
 
 var fab3Cmd = &cobra.Command{

@@ -31,11 +31,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/msp"
 
-	"github.com/hyperledger/fabric-chaincode-evm/event"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/event"
 	"github.com/hyperledger/fabric-chaincode-evm/fab3"
+	"github.com/hyperledger/fabric-chaincode-evm/fab3/mocks"
 	"github.com/hyperledger/fabric-chaincode-evm/fab3/types"
 
-	fab3_mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/fab3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -63,8 +63,8 @@ var _ = Describe("Ethservice", func() {
 	var (
 		ethservice fab3.EthService
 
-		mockChClient     *fab3_mocks.MockChannelClient
-		mockLedgerClient *fab3_mocks.MockLedgerClient
+		mockChClient     *mocks.MockChannelClient
+		mockLedgerClient *mocks.MockLedgerClient
 		channelID        string
 	)
 	core := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(GinkgoWriter), zap.DebugLevel)
@@ -73,8 +73,8 @@ var _ = Describe("Ethservice", func() {
 	logger := rawLogger.Sugar()
 
 	BeforeEach(func() {
-		mockChClient = &fab3_mocks.MockChannelClient{}
-		mockLedgerClient = &fab3_mocks.MockLedgerClient{}
+		mockChClient = &mocks.MockChannelClient{}
+		mockLedgerClient = &mocks.MockLedgerClient{}
 		channelID = "test-channel"
 
 		ethservice = fab3.NewEthService(mockChClient, mockLedgerClient, channelID, evmcc, logger)
