@@ -4,18 +4,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-declare -a arr=(
-"./event"
-"./eventmanager"
-"./evmcc"
+declare -a vendoredModules=(
+"./evmcc/evmcc*.go"
+"./evmcc/eventmanager"
+"./evmcc/event"
+"./evmcc/statemanager"
+"./evmcc/address"
+"./integration/e2e"
+"./integration/fab3"
+"./integration/helpers"
 "./fab3"
-"./integration"
-"./statemanager"
 )
 
-for i in "${arr[@]}"
+declare -a goModules=(
+)
+
+for i in "${vendoredModules[@]}"
 do
-    echo ">>>Checking code under $i/ with goimports"
+    echo ">>>Checking $i with goimports"
     OUTPUT="$(goimports -l ./$i || true )"
     if [[ $OUTPUT ]]; then
         echo "The following files contain goimports errors"
@@ -25,10 +31,13 @@ do
     fi
 done
 
-echo "Checking with go vet"
-OUTPUT="$(go vet ./...)"
-if [[ $OUTPUT ]]; then
-    echo "The following files contain go vet errors"
-    echo $OUTPUT
-    exit 1
-fi
+for i in "${vendoredModules[@]}"
+do
+    echo ">>>Checking $i with go vet"
+    OUTPUT="$(go vet ./$i)"
+    if [[ $OUTPUT ]]; then
+        echo "The following files contain go vet errors"
+        echo $OUTPUT
+        exit 1
+    fi
+done

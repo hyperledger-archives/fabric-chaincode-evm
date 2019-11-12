@@ -1,0 +1,337 @@
+# github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
+github.com/Azure/go-ansiterm/winterm
+github.com/Azure/go-ansiterm
+# github.com/Microsoft/go-winio v0.4.11
+github.com/Microsoft/go-winio
+# github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
+github.com/Nvveen/Gotty
+# github.com/btcsuite/btcd v0.20.0-beta
+github.com/btcsuite/btcd/btcec
+# github.com/containerd/continuity v0.0.0-20180814194400-c7c5070e6f6e
+github.com/containerd/continuity/pathdriver
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/docker/docker v0.7.3-0.20180827131323-0c5f8d2b9b23
+github.com/docker/docker/api/types/registry
+github.com/docker/docker/api/types/swarm
+github.com/docker/docker/opts
+github.com/docker/docker/pkg/fileutils
+github.com/docker/docker/pkg/homedir
+github.com/docker/docker/pkg/stdcopy
+github.com/docker/docker/api/types/container
+github.com/docker/docker/api/types/mount
+github.com/docker/docker/api/types/network
+github.com/docker/docker/api/types/swarm/runtime
+github.com/docker/docker/api/types
+github.com/docker/docker/pkg/idtools
+github.com/docker/docker/pkg/longpath
+github.com/docker/docker/pkg/pools
+github.com/docker/docker/pkg/system
+github.com/docker/docker/api/types/blkiodev
+github.com/docker/docker/api/types/strslice
+github.com/docker/docker/api/types/filters
+github.com/docker/docker/errdefs
+github.com/docker/docker/pkg/ioutils
+github.com/docker/docker/pkg/mount
+github.com/docker/docker/api/types/versions
+# github.com/docker/go-connections v0.4.0
+github.com/docker/go-connections/nat
+# github.com/docker/go-units v0.3.3
+github.com/docker/go-units
+# github.com/docker/libnetwork v0.8.0-dev.2.0.20180608203834-19279f049241
+github.com/docker/libnetwork/ipamutils
+# github.com/fsnotify/fsnotify v1.4.7
+github.com/fsnotify/fsnotify
+# github.com/fsouza/go-dockerclient v1.3.0
+github.com/fsouza/go-dockerclient
+github.com/fsouza/go-dockerclient/internal/archive
+github.com/fsouza/go-dockerclient/internal/jsonmessage
+github.com/fsouza/go-dockerclient/internal/term
+# github.com/go-kit/kit v0.9.0
+github.com/go-kit/kit/log
+github.com/go-kit/kit/log/term
+github.com/go-kit/kit/log/level
+# github.com/go-logfmt/logfmt v0.4.0
+github.com/go-logfmt/logfmt
+# github.com/gogo/protobuf v1.3.1
+github.com/gogo/protobuf/gogoproto
+github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/types
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
+github.com/gogo/protobuf/jsonpb
+github.com/gogo/protobuf/sortkeys
+# github.com/golang/protobuf v1.3.2
+github.com/golang/protobuf/proto
+github.com/golang/protobuf/ptypes/timestamp
+github.com/golang/protobuf/ptypes/empty
+github.com/golang/protobuf/ptypes
+github.com/golang/protobuf/ptypes/any
+github.com/golang/protobuf/ptypes/duration
+# github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
+github.com/grpc-ecosystem/go-grpc-middleware
+# github.com/hashicorp/hcl v1.0.0
+github.com/hashicorp/hcl
+github.com/hashicorp/hcl/hcl/printer
+github.com/hashicorp/hcl/hcl/ast
+github.com/hashicorp/hcl/hcl/parser
+github.com/hashicorp/hcl/hcl/token
+github.com/hashicorp/hcl/json/parser
+github.com/hashicorp/hcl/hcl/scanner
+github.com/hashicorp/hcl/hcl/strconv
+github.com/hashicorp/hcl/json/scanner
+github.com/hashicorp/hcl/json/token
+# github.com/hpcloud/tail v1.0.0
+github.com/hpcloud/tail
+github.com/hpcloud/tail/ratelimiter
+github.com/hpcloud/tail/util
+github.com/hpcloud/tail/watch
+github.com/hpcloud/tail/winfile
+# github.com/hyperledger/burrow v0.24.4
+github.com/hyperledger/burrow/acm
+github.com/hyperledger/burrow/crypto
+github.com/hyperledger/burrow/execution/evm
+github.com/hyperledger/burrow/logging
+github.com/hyperledger/burrow/permission
+github.com/hyperledger/burrow/execution/errors
+github.com/hyperledger/burrow/execution/exec
+github.com/hyperledger/burrow/binary
+github.com/hyperledger/burrow/event/query
+github.com/hyperledger/burrow/execution/evm/asm
+github.com/hyperledger/burrow/execution/evm/asm/bc
+github.com/hyperledger/burrow/crypto/sha3
+github.com/hyperledger/burrow/acm/acmstate
+github.com/hyperledger/burrow/execution/evm/abi
+github.com/hyperledger/burrow/logging/structure
+github.com/hyperledger/burrow/txs
+github.com/hyperledger/burrow/event
+github.com/hyperledger/burrow/execution/names
+github.com/hyperledger/burrow/genesis/spec
+github.com/hyperledger/burrow/txs/payload
+github.com/hyperledger/burrow/deploy/compile
+github.com/hyperledger/burrow/event/pubsub
+github.com/hyperledger/burrow/process
+github.com/hyperledger/burrow/acm/balance
+github.com/hyperledger/burrow/genesis
+github.com/hyperledger/burrow/keys
+github.com/hyperledger/burrow/acm/validator
+# github.com/hyperledger/fabric v1.4.0
+github.com/hyperledger/fabric/common/flogging
+github.com/hyperledger/fabric/core/chaincode/shim
+github.com/hyperledger/fabric/protos/peer
+github.com/hyperledger/fabric/protos/msp
+github.com/hyperledger/fabric/common/flogging/fabenc
+github.com/hyperledger/fabric/bccsp/factory
+github.com/hyperledger/fabric/common/ledger
+github.com/hyperledger/fabric/common/util
+github.com/hyperledger/fabric/core/comm
+github.com/hyperledger/fabric/protos/ledger/queryresult
+github.com/hyperledger/fabric/protos/utils
+github.com/hyperledger/fabric/protos/common
+github.com/hyperledger/fabric/protos/ledger/rwset
+github.com/hyperledger/fabric/protos/token
+github.com/hyperledger/fabric/bccsp
+github.com/hyperledger/fabric/bccsp/pkcs11
+github.com/hyperledger/fabric/bccsp/sw
+github.com/hyperledger/fabric/common/metadata
+github.com/hyperledger/fabric/common/metrics
+github.com/hyperledger/fabric/core/config
+github.com/hyperledger/fabric/common/crypto
+github.com/hyperledger/fabric/core/chaincode/platforms
+github.com/hyperledger/fabric/msp
+github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset
+github.com/hyperledger/fabric/bccsp/utils
+github.com/hyperledger/fabric/core/container/util
+github.com/hyperledger/fabric/bccsp/idemix
+github.com/hyperledger/fabric/bccsp/signer
+github.com/hyperledger/fabric/core/chaincode/platforms/ccmetadata
+github.com/hyperledger/fabric/bccsp/idemix/bridge
+github.com/hyperledger/fabric/bccsp/idemix/handlers
+github.com/hyperledger/fabric/idemix
+# github.com/hyperledger/fabric-amcl v0.0.0-20190902191507-f66264322317
+github.com/hyperledger/fabric-amcl/amcl
+github.com/hyperledger/fabric-amcl/amcl/FP256BN
+# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
+github.com/kr/logfmt
+# github.com/magiconair/properties v1.8.1
+github.com/magiconair/properties
+# github.com/miekg/pkcs11 v1.0.3
+github.com/miekg/pkcs11
+# github.com/mitchellh/mapstructure v1.1.2
+github.com/mitchellh/mapstructure
+# github.com/onsi/ginkgo v1.10.2
+github.com/onsi/ginkgo
+github.com/onsi/ginkgo/config
+github.com/onsi/ginkgo/internal/codelocation
+github.com/onsi/ginkgo/internal/failer
+github.com/onsi/ginkgo/internal/remote
+github.com/onsi/ginkgo/internal/suite
+github.com/onsi/ginkgo/internal/testingtproxy
+github.com/onsi/ginkgo/internal/writer
+github.com/onsi/ginkgo/reporters
+github.com/onsi/ginkgo/reporters/stenographer
+github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
+github.com/onsi/ginkgo/types
+github.com/onsi/ginkgo/internal/spec_iterator
+github.com/onsi/ginkgo/internal/containernode
+github.com/onsi/ginkgo/internal/leafnodes
+github.com/onsi/ginkgo/internal/spec
+github.com/onsi/ginkgo/internal/specrunner
+github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
+# github.com/onsi/gomega v1.7.0
+github.com/onsi/gomega
+github.com/onsi/gomega/internal/assertion
+github.com/onsi/gomega/internal/asyncassertion
+github.com/onsi/gomega/internal/testingtsupport
+github.com/onsi/gomega/matchers
+github.com/onsi/gomega/types
+github.com/onsi/gomega/internal/oraclematcher
+github.com/onsi/gomega/format
+github.com/onsi/gomega/matchers/support/goraph/bipartitegraph
+github.com/onsi/gomega/matchers/support/goraph/edge
+github.com/onsi/gomega/matchers/support/goraph/node
+github.com/onsi/gomega/matchers/support/goraph/util
+# github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
+github.com/op/go-logging
+# github.com/opencontainers/go-digest v1.0.0-rc1
+github.com/opencontainers/go-digest
+# github.com/opencontainers/image-spec v1.0.1
+github.com/opencontainers/image-spec/specs-go/v1
+github.com/opencontainers/image-spec/specs-go
+# github.com/opencontainers/runc v0.1.1
+github.com/opencontainers/runc/libcontainer/user
+# github.com/pelletier/go-toml v1.2.0
+github.com/pelletier/go-toml
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
+# github.com/sirupsen/logrus v1.4.2
+github.com/sirupsen/logrus
+# github.com/spf13/afero v1.1.2
+github.com/spf13/afero
+github.com/spf13/afero/mem
+# github.com/spf13/cast v1.3.0
+github.com/spf13/cast
+# github.com/spf13/jwalterweatherman v1.0.0
+github.com/spf13/jwalterweatherman
+# github.com/spf13/pflag v1.0.3
+github.com/spf13/pflag
+# github.com/spf13/viper v1.4.0
+github.com/spf13/viper
+# github.com/tendermint/go-amino v0.15.1
+github.com/tendermint/go-amino
+# github.com/tendermint/tendermint v0.32.6
+github.com/tendermint/tendermint/abci/types
+github.com/tendermint/tendermint/crypto
+github.com/tendermint/tendermint/crypto/ed25519
+github.com/tendermint/tendermint/crypto/secp256k1
+github.com/tendermint/tendermint/crypto/tmhash
+github.com/tendermint/tendermint/crypto/merkle
+github.com/tendermint/tendermint/libs/common
+github.com/tendermint/tendermint/crypto/secp256k1/internal/secp256k1
+github.com/tendermint/tendermint/libs/log
+github.com/tendermint/tendermint/types
+github.com/tendermint/tendermint/crypto/encoding/amino
+github.com/tendermint/tendermint/libs/pubsub
+github.com/tendermint/tendermint/libs/pubsub/query
+github.com/tendermint/tendermint/types/time
+github.com/tendermint/tendermint/version
+github.com/tendermint/tendermint/crypto/multisig
+github.com/tendermint/tendermint/crypto/multisig/bitarray
+# github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc
+github.com/tmthrgd/go-hex
+# go.uber.org/atomic v1.4.0
+go.uber.org/atomic
+# go.uber.org/multierr v1.1.0
+go.uber.org/multierr
+# go.uber.org/zap v1.10.0
+go.uber.org/zap
+go.uber.org/zap/zapcore
+go.uber.org/zap/zapgrpc
+go.uber.org/zap/buffer
+go.uber.org/zap/internal/bufferpool
+go.uber.org/zap/internal/color
+go.uber.org/zap/internal/exit
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+golang.org/x/crypto/sha3
+golang.org/x/crypto/ed25519
+golang.org/x/crypto/ripemd160
+golang.org/x/crypto/ed25519/internal/edwards25519
+golang.org/x/crypto/scrypt
+golang.org/x/crypto/pbkdf2
+# golang.org/x/net v0.0.0-20190628185345-da137c7871d7
+golang.org/x/net/context
+golang.org/x/net/trace
+golang.org/x/net/internal/timeseries
+golang.org/x/net/http2
+golang.org/x/net/http2/hpack
+golang.org/x/net/html/charset
+golang.org/x/net/http/httpguts
+golang.org/x/net/idna
+golang.org/x/net/html
+golang.org/x/net/html/atom
+# golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2
+golang.org/x/sys/cpu
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/text v0.3.0
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
+golang.org/x/text/encoding
+golang.org/x/text/encoding/charmap
+golang.org/x/text/encoding/htmlindex
+golang.org/x/text/secure/bidirule
+golang.org/x/text/unicode/bidi
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/japanese
+golang.org/x/text/encoding/korean
+golang.org/x/text/encoding/simplifiedchinese
+golang.org/x/text/encoding/traditionalchinese
+golang.org/x/text/encoding/unicode
+golang.org/x/text/language
+golang.org/x/text/internal/utf8internal
+golang.org/x/text/runes
+golang.org/x/text/internal/tag
+# google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
+google.golang.org/genproto/googleapis/rpc/status
+# google.golang.org/grpc v1.24.0
+google.golang.org/grpc/grpclog
+google.golang.org/grpc
+google.golang.org/grpc/codes
+google.golang.org/grpc/status
+google.golang.org/grpc/peer
+google.golang.org/grpc/credentials
+google.golang.org/grpc/keepalive
+google.golang.org/grpc/stats
+google.golang.org/grpc/balancer
+google.golang.org/grpc/balancer/roundrobin
+google.golang.org/grpc/connectivity
+google.golang.org/grpc/encoding
+google.golang.org/grpc/encoding/proto
+google.golang.org/grpc/internal
+google.golang.org/grpc/internal/backoff
+google.golang.org/grpc/internal/balancerload
+google.golang.org/grpc/internal/binarylog
+google.golang.org/grpc/internal/channelz
+google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpcrand
+google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/transport
+google.golang.org/grpc/metadata
+google.golang.org/grpc/naming
+google.golang.org/grpc/resolver
+google.golang.org/grpc/resolver/dns
+google.golang.org/grpc/resolver/passthrough
+google.golang.org/grpc/serviceconfig
+google.golang.org/grpc/tap
+google.golang.org/grpc/credentials/internal
+google.golang.org/grpc/balancer/base
+google.golang.org/grpc/binarylog/grpc_binarylog_v1
+google.golang.org/grpc/internal/syscall
+# gopkg.in/fsnotify.v1 v1.4.7
+gopkg.in/fsnotify.v1
+# gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+gopkg.in/tomb.v1
+# gopkg.in/yaml.v2 v2.2.2
+gopkg.in/yaml.v2

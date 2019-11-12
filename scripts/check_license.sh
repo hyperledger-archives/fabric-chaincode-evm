@@ -15,7 +15,7 @@ function filterExcludedFiles {
   CHECK=`echo "$CHECK" \
 		| grep -v "^\.git/" \
 		| grep -v "^\.build/" \
-		| grep -v "^vendor/" \
+		| grep -v "vendor/" \
 		| grep -v "testdata/" \
 		| grep -v "release_notes/" \
 		| grep -v "^LICENSE$" \
@@ -30,6 +30,8 @@ function filterExcludedFiles {
 		| grep -v "^Gopkg\.lock$" \
 		| grep -v "\.md$" \
 		| grep -v "\.pb\.go$" \
+		| grep -v "go.mod" \
+		| grep -v "go.sum" \
 		| sort -u`
 
   CHECK=$(filterGeneratedFiles "$CHECK")
