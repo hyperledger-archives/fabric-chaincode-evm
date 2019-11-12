@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hyperledger/fabric-chaincode-evm/event"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/event"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 
 	"github.com/hyperledger/burrow/execution/errors"

@@ -16,9 +16,9 @@ import (
 	"github.com/hyperledger/burrow/crypto"
 	"github.com/hyperledger/burrow/execution/exec"
 
-	"github.com/hyperledger/fabric-chaincode-evm/event"
-	"github.com/hyperledger/fabric-chaincode-evm/eventmanager"
-	mocks "github.com/hyperledger/fabric-chaincode-evm/mocks/evmcc"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/event"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/eventmanager"
+	"github.com/hyperledger/fabric-chaincode-evm/evmcc/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
