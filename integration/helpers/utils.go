@@ -95,7 +95,8 @@ func Build() *nwo.Components {
 	components := &nwo.Components{}
 	components.Build()
 
-	proxyBinPath, err := gexec.Build("github.com/hyperledger/fabric-chaincode-evm/fab3/cmd")
+	proxyBinPath, err := gexec.BuildWithEnvironment("github.com/hyperledger/fabric-chaincode-evm/fab3/cmd",
+		[]string{"GO111MODULE=on"})
 	Expect(err).ToNot(HaveOccurred())
 	components.Paths["fab3"] = proxyBinPath
 

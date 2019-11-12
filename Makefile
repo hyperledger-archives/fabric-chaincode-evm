@@ -54,21 +54,17 @@ gotools: gotools-install
 
 unit-test: gotool.ginkgo
 	@echo "Running unit-tests"
-	ginkgo -p -randomizeAllSpecs -randomizeSuites -requireSuite -noColor -keepGoing -race -skipPackage integration -r
+	ginkgo -p -randomizeAllSpecs -randomizeSuites -requireSuite -noColor -keepGoing -race -r evmcc
+	cd fab3 && GO111MODULE=on ginkgo -p -randomizeAllSpecs -randomizeSuites -requireSuite -noColor -keepGoing -race -r
 
 unit-tests: unit-test
 
 dev-test:
 	ginkgo watch -notify -randomizeAllSpecs -requireSuite -race -cover -skipPackage integration -r
 
-linter: gotool.goimports check-deps
+linter: gotool.goimports
 	@echo "LINT: Running code checks.."
 	@scripts/golinter.sh
-
-check-deps: gotool.dep
-	@echo "DEP: Checking for dependency issues.."
-	dep version
-	dep check
 
 changelog:
 	@scripts/changelog.sh v$(PREV_VERSION) v$(BASE_VERSION)
@@ -96,7 +92,7 @@ fab3: bin/fab3
 .PHONY: bin/fab3 # let 'go build' handle caching and whether to rebuild
 bin/fab3:
 	mkdir -p bin/
-	go build -o bin/fab3 ./fab3/cmd
+	cd fab3 && GO111MODULE=on go build -o ./../bin/fab3 ./cmd
 
 .PHONY: bin/evmcc # let 'go build' handle caching and whether to rebuild
 bin/evmcc:
