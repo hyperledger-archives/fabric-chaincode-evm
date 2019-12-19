@@ -109,9 +109,11 @@ instructions look at the [Fab3 Instructions](Fab3_Instructions.md).
 To create the Fab3 binary, this repository must be checked out in the [GOPATH](https://github.com/golang/go/wiki/GOPATH)
 ```
 mkdir -p $(go env GOPATH)/src/github.com/hyperledger/
-git clone "https://gerrit.hyperledger.org/r/fabric-chaincode-evm" $(go env GOPATH)/src/github.com/hyperledger/fabric-chaincode-evm
+git clone https://github.com/hyperledger/fabric-chaincode-evm.git $(go env GOPATH)/src/github.com/hyperledger/fabric-chaincode-evm
 cd $(go env GOPATH)/src/github.com/hyperledger/fabric-chaincode-evm
 ```
+Fab3 requires golang version 1.11 and up.
+
 Run the following at the root of this repository:
 ```
 make fab3
@@ -188,14 +190,13 @@ Pull requests are now accepted on github. When submitting a pull request, please
 include the JIRA number associated with your JIRA work item in the commit
 message title.
 
-To report a new issue, open a ticket in the Hyperledger Fabric [JIRA](https://jira.hyperledger.org/projects/FAB/issues)
-and add `fabric-chaincode-evm` in the component field.
+To report a new issue, open a ticket in the Hyperledger Fabric [JIRA](https://jira.hyperledger.org/projects/FABCE/issues)
+under the Fabric Chaincode EVM (FABCE) project.
 
 ## Current Dependencies
 - Hyperledger Fabric [v1.4](https://github.com/hyperledger/fabric/releases/tag/v1.4.0). EVMCC can be run on Fabric 1.0 and newer.
-- Hyperledger Fabric SDK Go [revision = "beccd9cb1450fddfe426616e151d709c99f7ccdd"](https://github.com/hyperledger/fabric-sdk-go/tree/beccd9cb1450fddfe426616e151d709c99f7ccdd)
-- Dep [v0.5](https://github.com/golang/dep/releases/tag/v0.5.0)
-- Minimum of Go 1.10 is required to compile Fab3.
+- Hyperledger Fabric Go SDK [1.0.0-alpha5](https://github.com/hyperledger/fabric-sdk-go/releases/tag/v1.0.0-alpha5)
+- Minimum of Go 1.11 is required to compile Fab3.
 
 [![Creative Commons License](https://i.creativecommons.org/l/by/4.0/88x31.png)](http://creativecommons.org/licenses/by/4.0/)<br>
 This work is licensed under a [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/)
