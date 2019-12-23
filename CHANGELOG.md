@@ -1,3 +1,30 @@
+## v0.4.0
+Fri Dec 20 16:24:29 PST 2019
+
+* [361ed2d](https://github.com/hyperledger/fabric-chaincode-evm/commit/361ed2d) [FABCE-145](https://jira.hyperledger.org/browse/FABCE-145) update README for 0.4.0 release
+* [bf3fbd5](https://github.com/hyperledger/fabric-chaincode-evm/commit/bf3fbd5) [FAB-16919](https://jira.hyperledger.org/browse/FAB-16919) Remove scripts/goListFiles.sh
+* [0ed01b6](https://github.com/hyperledger/fabric-chaincode-evm/commit/0ed01b6) [FAB-17053](https://jira.hyperledger.org/browse/FAB-17053) Switch Fab3 and Integration to Go Mod
+* [0476cc1](https://github.com/hyperledger/fabric-chaincode-evm/commit/0476cc1) [FAB-17053](https://jira.hyperledger.org/browse/FAB-17053) Switch EVMCC to go modules
+* [3dae2db](https://github.com/hyperledger/fabric-chaincode-evm/commit/3dae2db) [FAB-16918](https://jira.hyperledger.org/browse/FAB-16918) Restructure evmcc directory
+* [b1cdfe0](https://github.com/hyperledger/fabric-chaincode-evm/commit/b1cdfe0) [FAB-16620](https://jira.hyperledger.org/browse/FAB-16620) HexEncode Event Name for contract create
+* [8378f2f](https://github.com/hyperledger/fabric-chaincode-evm/commit/8378f2f) [FAB-16727](https://jira.hyperledger.org/browse/FAB-16727) Lowercase address in filters
+* [5ce150c](https://github.com/hyperledger/fabric-chaincode-evm/commit/5ce150c) [FAB-16693](https://jira.hyperledger.org/browse/FAB-16693) Add Github PR Template
+* [e327cab](https://github.com/hyperledger/fabric-chaincode-evm/commit/e327cab) Add default SECURITY policy
+* [c8d208e](https://github.com/hyperledger/fabric-chaincode-evm/commit/c8d208e) [FAB-16697](https://jira.hyperledger.org/browse/FAB-16697) remove linters
+* [c19796e](https://github.com/hyperledger/fabric-chaincode-evm/commit/c19796e) [FAB-16677](https://jira.hyperledger.org/browse/FAB-16677) Update Contributions Instructions
+* [a697b37](https://github.com/hyperledger/fabric-chaincode-evm/commit/a697b37) [FAB-16692](https://jira.hyperledger.org/browse/FAB-16692) Remove jenkins pipeline files
+* [5df7e55](https://github.com/hyperledger/fabric-chaincode-evm/commit/5df7e55) [FAB-16683](https://jira.hyperledger.org/browse/FAB-16683) Create AZP YAML File
+* [1c384c4](https://github.com/hyperledger/fabric-chaincode-evm/commit/1c384c4) De-fang stalebot
+* [efde49b](https://github.com/hyperledger/fabric-chaincode-evm/commit/efde49b) [FAB-15233](https://jira.hyperledger.org/browse/FAB-15233) add gasLimit to block return values
+* [0793388](https://github.com/hyperledger/fabric-chaincode-evm/commit/0793388) [FAB-14617](https://jira.hyperledger.org/browse/FAB-14617) GetBlockByNumber omits invalid transactions
+* [d944e0f](https://github.com/hyperledger/fabric-chaincode-evm/commit/d944e0f) [FAB-14067](https://jira.hyperledger.org/browse/FAB-14067) NewFilter & UninstallFilter
+* [89b50d3](https://github.com/hyperledger/fabric-chaincode-evm/commit/89b50d3) [FAB-14651](https://jira.hyperledger.org/browse/FAB-14651) improve fab3 building instructions
+* [6d8e0dd](https://github.com/hyperledger/fabric-chaincode-evm/commit/6d8e0dd) [FAB-16519](https://jira.hyperledger.org/browse/FAB-16519) clean calls existing gotools-clean target
+* [f1b1d8d](https://github.com/hyperledger/fabric-chaincode-evm/commit/f1b1d8d) [FAB-16489](https://jira.hyperledger.org/browse/FAB-16489) Add CODEOWNERS
+* [2c0ce40](https://github.com/hyperledger/fabric-chaincode-evm/commit/2c0ce40) [FAB-16491](https://jira.hyperledger.org/browse/FAB-16491) update dep to 0.5.4
+* [2e9caa1](https://github.com/hyperledger/fabric-chaincode-evm/commit/2e9caa1) [FAB-16433](https://jira.hyperledger.org/browse/FAB-16433) Fix formatting in Fab3 Instructions
+* [a2cb62a](https://github.com/hyperledger/fabric-chaincode-evm/commit/a2cb62a) [FAB-16434](https://jira.hyperledger.org/browse/FAB-16434) Remove ansicolor plugin changes
+
 ## v0.3.0
 Fri Aug  2 11:33:17 PDT 2019
 
