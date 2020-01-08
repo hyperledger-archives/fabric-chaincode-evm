@@ -1379,7 +1379,7 @@ var _ = Describe("Ethservice", func() {
 			})
 		})
 
-		Context("blockfilter", func() {
+		Context("newblock filters", func() {
 			Context("when the ledger is not ok", func() {
 				It("will fail to install when we cannot establish chain height", func() {
 					mockLedgerClient.QueryInfoReturns(nil, fmt.Errorf("oh noes, cannot get block height"))

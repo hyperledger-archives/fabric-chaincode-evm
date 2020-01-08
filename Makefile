@@ -60,7 +60,7 @@ unit-test: gotool.ginkgo
 unit-tests: unit-test
 
 dev-test:
-	ginkgo watch -notify -randomizeAllSpecs -requireSuite -race -cover -skipPackage integration -r
+	cd fab3 && GO111MODULE=on ginkgo watch -notify -randomizeAllSpecs -requireSuite -race -cover -r
 
 linter: gotool.goimports
 	@echo "LINT: Running code checks.."

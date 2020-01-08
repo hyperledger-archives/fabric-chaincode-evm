@@ -21,7 +21,7 @@ type filterEntry interface {
 }
 
 type logsFilter struct {
-	gla            *types.GetLogsArgs
+	logArgs        *types.GetLogsArgs
 	lastAccessTime time.Time
 }
 
@@ -31,13 +31,13 @@ func (f *logsFilter) LastAccessTime() time.Time {
 
 func (f *logsFilter) Filter(s *ethService) ([]interface{}, error) {
 	var logs []types.Log
-	err := s.GetLogs(nil, f.gla, &logs)
+	err := s.GetLogs(nil, f.logArgs, &logs)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetLogs call failed")
 	}
-	l := make([]interface{}, len(logs))
-	for i, v := range logs {
-		l[i] = v
+	l := make([]interface{}, 0, len(logs))
+	for _, v := range logs {
+		l = append(l, v)
 	}
 	// update the filter
 	f.lastAccessTime = time.Now()
@@ -61,9 +61,9 @@ func (f *newBlockFilter) Filter(s *ethService) ([]interface{}, error) {
 	}
 	s.logger.Debug("latest blockseen", blockNumber)
 	// iterate over blocks collecting the hashes
-
-	// for first impl, create array of strings of block numbers in the appropriate format
-	var blocks = make([]interface{}, 0, blockNumber-f.latestBlockSeen)
+	blocksToCollect := blockNumber - f.latestBlockSeen
+	// BlockFilter returns array of strings representing block numbers
+	var blocks = make([]interface{}, 0, blocksToCollect)
 	for i := blockNumber; i > f.latestBlockSeen; i-- {
 		block, err := s.ledgerClient.QueryBlock(i)
 		if err != nil {

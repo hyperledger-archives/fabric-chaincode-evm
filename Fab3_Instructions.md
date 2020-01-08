@@ -26,9 +26,9 @@ Fab3 currently supports:
 - [eth_getTransactionReceipt](#eth_getTransactionReceipt)
 - [eth_getLogs](#eth_getLogs)
 - [eth_getTransactionCount](#eth_getTransactionCount)
-- [eth_NewFilter](#eth_NewFilter)
-- [eth_NewBlockFilter](#eth_NewBlockFilter)
-- [eth_UninstallFilter](#eth_UninstallFilter)
+- [eth_newFilter](#eth_newFilter)
+- [eth_newBlockFilter](#eth_newBlockFilter)
+- [eth_uninstallFilter](#eth_uninstallFilter)
 - [eth_getFilterChanges](#eth_getFilterChanges)
 - [eth_getFilterLogs](#eth_getFilterLogs)
 
@@ -381,12 +381,12 @@ identifier to collect the log entries. The log filter is not run until
 `eth_getFilterChanges` is called.
 
 **Example**
-```console
+```
 curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc": "2.0",
   "id": 5,
   "method": "eth_newFilter",
-  "params": {
+  "params": [{
     "toBlock": "latest",
     "address": [
       "0x6c27ec2ab7a4e81228080434d553fa198ddccfbc"
@@ -397,8 +397,8 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
         "0000000000000000000000000000000000000000000000000000000000000000"
       ]
     ]
-  }
-}
+  }]
+}'
 
 {"jsonrpc":"2.0","result":"0x1","id":5}
 ```
@@ -408,7 +408,7 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
 of the filter. An identifier is returned to refer to the filter in the future.
 
 **Example**
-```console
+```
 curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc":"2.0",
   "method": "eth_newBlockFilter",
@@ -424,12 +424,12 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
 filter.
 
 **Example**
-```console
+```
 curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc":"2.0",
   "method": "eth_uninstallFilter",
   "id":1,
-  "params":"0x2"
+  "params":["0x2"]
 }'
 
 {"jsonrpc":"2.0","result":true,"id":1}
@@ -441,12 +441,12 @@ associated with the filter. For new block filters, that is an array of block
 hashes. For log filters, it is the log entries as if from `eth_getLogs`.
 
 **Example**
-```console
+```
 curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc":"2.0",
   "method": "eth_getFilterChanges",
-  "id":1,
-  "params":"0x2"
+  "id": 6129484611666146000,
+  "params":["0x2"]
 }'
 
 {
@@ -467,12 +467,12 @@ all of the same input and returns all of the exact same output, advancing the
 state of referred log object in the same way as `eth_getFilterChanges`.
 
 **Example**
-```console
+```
 curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
   "jsonrpc":"2.0",
   "method": "eth_getFilterLogs",
-  "id":1,
-  "params":"0x1"
+  "id": 8674665223082154000,
+  "params":["0x1"]
 }'
 
 {

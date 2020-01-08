@@ -535,7 +535,7 @@ func (s *ethService) NewFilter(_ *http.Request, filter *types.GetLogsArgs, resul
 	s.filterMapLock.Lock()
 	s.filterSeq++
 	index := s.filterSeq
-	s.filterMap[index] = &logsFilter{lastAccessTime: time.Now(), gla: filter}
+	s.filterMap[index] = &logsFilter{lastAccessTime: time.Now(), logArgs: filter}
 	s.filterMapLock.Unlock()
 	*result = "0x" + strconv.FormatUint(index, 16)
 	return nil

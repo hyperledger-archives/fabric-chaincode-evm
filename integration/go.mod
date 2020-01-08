@@ -11,6 +11,7 @@ require (
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00
 	github.com/willf/bitset v1.1.10 // indirect
 	go.etcd.io/etcd v3.3.17+incompatible // indirect
+	go.uber.org/zap v1.10.0
 )
 
 replace github.com/hyperledger/fabric-chaincode-evm/fab3 => ../fab3
