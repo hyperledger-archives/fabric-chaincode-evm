@@ -420,7 +420,7 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
 ```
 
 ### eth_uninstallFilter
-`eth_uninstallFilter` takes a filter identifier and forgets the associated
+`eth_uninstallFilter` takes a filter identifier and deletes the associated
 filter.
 
 **Example**
