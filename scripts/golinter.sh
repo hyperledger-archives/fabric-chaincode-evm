@@ -46,7 +46,7 @@ done
 for i in "${vendoredModules[@]}"
 do
     echo ">>>Checking $i with go vet"
-    OUTPUT="$(go vet ./$i)"
+    OUTPUT="$(GO111MODULE=off go vet ./$i)"
     if [[ $OUTPUT ]]; then
         echo "The following files contain go vet errors"
         echo $OUTPUT
