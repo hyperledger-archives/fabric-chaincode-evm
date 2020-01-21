@@ -65,6 +65,13 @@ type JsonRPCTxReceipt struct {
 	Error   JsonRPCError    `json:"error,omitempty"`
 }
 
+type JsonRPCBlockResponse struct {
+	JsonRPC string       `json:"jsonrpc"`
+	ID      int          `json:"id"`
+	Result  types.Block  `json:"result,omitempty"`
+	Error   JsonRPCError `json:"error,omitempty"`
+}
+
 type MessageParams struct {
 	To   string `json:"to"`
 	From string `json:"from,omitempty"`
