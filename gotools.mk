@@ -8,6 +8,7 @@ BUILD_DIR ?= .build
 GOTOOLS_GOPATH ?= $(BUILD_DIR)/gotools
 GOTOOLS_BINDIR ?= $(firstword $(subst :, ,$(GOPATH)))/bin
 GOROOT ?= $(firstword $(subst :, ,$(GOPATH))
+GO111MODULE=off
 
 # go tool->path mapping
 go.fqp.counterfeiter := github.com/maxbrunsfeld/counterfeiter
@@ -44,4 +45,4 @@ gotool.counterfeiter:
 gotool.%:
 	$(eval TOOL = ${subst gotool.,,${@}})
 	@echo "Building ${go.fqp.${TOOL}} -> $(TOOL)"
-	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) GO111MODULE=off go get -u ${go.fqp.${TOOL}}
+	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go get -u ${go.fqp.${TOOL}}
