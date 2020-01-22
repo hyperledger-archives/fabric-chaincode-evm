@@ -103,5 +103,5 @@ bin/evmcc:
 # Requires go v1.11+
 .PHONY:
 update-mocks: gotool.counterfeiter
-	go generate ./fab3/
 	counterfeiter -o evmcc/mocks/mockstub.go --fake-name MockStub evmcc/vendor/github.com/hyperledger/fabric/core/chaincode/shim/interfaces.go ChaincodeStubInterface
+	cd fab3 && GO111MODULE=on go generate .
