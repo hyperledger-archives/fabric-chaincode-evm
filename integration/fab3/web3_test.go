@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const Web3EventuallyTimeout = 5 * time.Minute
+const Web3EventuallyTimeout = 7 * time.Minute
 const Web3EventuallyPollingInterval = 1 * time.Second
 
 var _ = Describe("Web3 Integration", func() {

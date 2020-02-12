@@ -23,13 +23,15 @@ General:
   Cluster:
     ClientCertificate: {{ $w.OrdererLocalTLSDir Orderer }}/server.crt
     ClientPrivateKey: {{ $w.OrdererLocalTLSDir Orderer }}/server.key
+    ServerCertificate: {{ $w.OrdererLocalTLSDir Orderer }}/server.crt
+    ServerPrivateKey: {{ $w.OrdererLocalTLSDir Orderer }}/server.key
     DialTimeout: 5s
     RPCTimeout: 7s
     ReplicationBufferSize: 20971520
     ReplicationPullTimeout: 5s
     ReplicationRetryTimeout: 5s
-    RootCAs:
-    -  {{ $w.OrdererLocalTLSDir Orderer }}/ca.crt
+    ListenAddress: 127.0.0.1
+    ListenPort: {{ .OrdererPort Orderer "Cluster" }}
   Keepalive:
     ServerMinInterval: 60s
     ServerInterval: 7200s
@@ -95,6 +97,7 @@ Debug:
 Consensus:
   WALDir: {{ .OrdererDir Orderer }}/etcdraft/wal
   SnapDir: {{ .OrdererDir Orderer }}/etcdraft/snapshot
+  EvictionSuspicion: 10s
 Operations:
   ListenAddress: 127.0.0.1:{{ .OrdererPort Orderer "Operations" }}
   TLS:
