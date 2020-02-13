@@ -50,7 +50,7 @@ main() {
 
     echo "Building CCENV image"
     pushd ${FABRIC_DIR}
-        make ccenv
+        make ccenv CHAINTOOL_URL='https://hyperledger.jfrog.io/hyperledger/fabric-maven/org/hyperledger/fabric-chaintool/$(CHAINTOOL_RELEASE)/fabric-chaintool-$(CHAINTOOL_RELEASE).jar'
     popd
 
     echo "Running integration tests..."
