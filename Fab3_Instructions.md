@@ -294,7 +294,7 @@ curl http://127.0.0.1:5000 -X POST -H "Content-Type:application/json" -d '{
     "gasUsed": 0,
     "cumulativeGasUsed": 0,
     "to": "",
-    "logs": null,
+    "logs": [],
     "status": "0x1",
     "from": "0xa6e427512d418a9f8f1277dff45a1942236005d3"
   },

@@ -131,6 +131,7 @@ var _ = Describe("Fab3", func() {
 
 		receipt := rpcResp.Result
 
+		Expect(receipt.Logs).ToNot(BeNil())
 		checkHexEncoded(receipt.ContractAddress)
 		Expect(receipt.TransactionHash).To(Equal("0x" + txHash))
 		checkHexEncoded(receipt.BlockNumber)
