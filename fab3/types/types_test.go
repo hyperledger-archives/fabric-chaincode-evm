@@ -213,6 +213,35 @@ var _ = Describe("Types JSON Marshaling and Unmarshaling", func() {
 			[]byte(`{"blockHash":"0x1234567", "blockNumber":"", "to":"", "input":"","transactionIndex":"", "hash":"", "gasPrice":"0x0", "value":"0x0"}`)),
 	)
 
+	DescribeTable("TxReceipt MarshalJSON",
+		func(txReceipt TxReceipt, bytes []byte) {
+			marshalledData, err := txReceipt.MarshalJSON()
+			Expect(err).ToNot(HaveOccurred())
+
+			var target TxReceipt
+			err = json.Unmarshal(marshalledData, &target)
+			Expect(err).ToNot(HaveOccurred())
+
+			var expectedReceipt TxReceipt
+			err = json.Unmarshal(bytes, &expectedReceipt)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(target).To(Equal(expectedReceipt))
+		},
+
+		Entry("empty receipt object",
+			TxReceipt{},
+			[]byte(`{"transactionHash":"","transactionIndex":"","blockHash":"","blockNumber":"","gasUsed":0,"cumulativeGasUsed":0,"to":"","logs":[],"status":"","from":""}`)),
+
+		Entry("non-empty receipt object",
+			TxReceipt{Status: "0x1", TransactionHash: "0x9fc76417374aa880d4449a1f7f31ec597f00b1f6f3dd2d66f4c9c6c445836d8b", CumulativeGasUsed: 314159, GasUsed: 30234},
+			[]byte(`{"transactionHash":"0x9fc76417374aa880d4449a1f7f31ec597f00b1f6f3dd2d66f4c9c6c445836d8b","transactionIndex":"","blockHash":"","blockNumber":"","gasUsed":30234,"cumulativeGasUsed":314159,"to":"","logs":[],"status":"0x1","from":""}`)),
+
+		Entry("non-empty logs field",
+			TxReceipt{Logs: make([]Log, 1), Status: "0x1", TransactionHash: "0x9fc76417374aa880d4449a1f7f31ec597f00b1f6f3dd2d66f4c9c6c445836d8b", CumulativeGasUsed: 314159, GasUsed: 30234},
+			[]byte(`{"transactionHash":"0x9fc76417374aa880d4449a1f7f31ec597f00b1f6f3dd2d66f4c9c6c445836d8b","transactionIndex":"","blockHash":"","blockNumber":"","gasUsed":30234,"cumulativeGasUsed":314159,"to":"","contractAddress":"","gasUsed":30234,"cumulativeGasUsed":314159,"to":"","logs":[{"address":"","topics":null,"blockNumber":"","transactionHash":"","transactionIndex":"","blockHash":"","logIndex":""}],"status":"0x1","from":""}`)),
+	)
+
 	DescribeTable("Block MarshalJSON",
 		func(blk Block, bytes []byte) {
 			By("copying the original struct")

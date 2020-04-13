@@ -200,6 +200,17 @@ type Log struct {
 	Index       string   `json:"logIndex"`
 }
 
+// MarshalJSON will json marshal the transaction receipt and set Logs to an empty []Log if none returned
+func (txReceipt *TxReceipt) MarshalJSON() ([]byte, error) {
+	receipt := *txReceipt
+
+	if receipt.Logs == nil {
+		receipt.Logs = []Log{}
+	}
+
+	return json.Marshal(receipt)
+}
+
 // Transaction represents an ethereum evm transaction.
 //
 // https://github.com/ethereum/wiki/wiki/JSON-RPC#returns-28
