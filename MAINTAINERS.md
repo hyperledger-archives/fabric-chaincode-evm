@@ -4,7 +4,7 @@
 |------|--------|------|-------|
 | Christopher Ferris | christo4ferris | cbf | chrisfer@us.ibm.com |
 | Gari Singh | mastersingh24 | mastersingh24 | gari.r.singh@gmail.com |
-| Jay Guo | guoger | guoger | guojiannan@cn.ibm.com |
+| Jay Guo | guoger | guoger | guojiannan1101@gmail.com |
 | Morgan Bauer | MHBauer | MHBauer | mbauer@us.ibm.com |
 | Srinivasan Muralidharan | muralisrini | muralisr | srinivasan.muralidharan99@gmail.com |
 | Swetha Repakula | swetharepakula | swetha | srepaku@us.ibm.com |
