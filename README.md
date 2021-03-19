@@ -45,7 +45,7 @@ section.
 This chaincode can be deployed like any other user chaincode to Hyperledger
 Fabric. The chaincode has no instantiation arguments.
 
-When installing, point to the EVMCC [main package](https://github.com/hyperledger/fabric-chaincode-evm/tree/master/evmcc). Below is an example of installation and
+When installing, point to the EVMCC [main package](https://github.com/hyperledger/fabric-chaincode-evm/tree/main/evmcc). Below is an example of installation and
 instantiation through the peer cli.
 ```
  peer chaincode install -n evmcc -l golang -v 0 -p github.com/hyperledger/fabric-chaincode-evm/evmcc
