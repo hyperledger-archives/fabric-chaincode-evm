@@ -26,3 +26,5 @@ require (
 replace github.com/hyperledger/fabric-chaincode-evm/evmcc => ../evmcc
 
 replace github.com/go-kit/kit => github.com/go-kit/kit v0.8.0
+
+go 1.13

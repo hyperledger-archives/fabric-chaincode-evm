@@ -53,6 +53,7 @@ main() {
         make ccenv CHAINTOOL_URL='https://hyperledger.jfrog.io/hyperledger/fabric-maven/org/hyperledger/fabric-chaintool/$(CHAINTOOL_RELEASE)/fabric-chaintool-$(CHAINTOOL_RELEASE).jar'
     popd
 
+    echo "$(docker images)"
     echo "Running integration tests..."
     ginkgo -noColor -randomizeAllSpecs -race -keepGoing --slowSpecThreshold 80 -r "${dirs[@]}"
 }

@@ -8,7 +8,6 @@ BUILD_DIR ?= .build
 GOTOOLS_GOPATH ?= $(BUILD_DIR)/gotools
 GOTOOLS_BINDIR ?= $(firstword $(subst :, ,$(GOPATH)))/bin
 GOROOT ?= $(firstword $(subst :, ,$(GOPATH))
-GO111MODULE=off
 
 # go tool->path mapping
 go.fqp.counterfeiter := github.com/maxbrunsfeld/counterfeiter
@@ -23,16 +22,16 @@ gotools-clean:
 	-@rm -rf $(BUILD_DIR)/gotools
 
 # Special override for ginkgo since we want to use the version vendored with the project
-gotool.ginkgo: GINKGO_VERSION ?= "v1.10.2"
+gotool.ginkgo: GINKGO_VERSION ?= "v1.11.0"
 gotool.ginkgo:
 	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) go get -d -u github.com/onsi/ginkgo
 	@git -C $(abspath $(GOTOOLS_GOPATH))/src/github.com/onsi/ginkgo checkout -q $(GINKGO_VERSION)
 	@echo "Building github.com/onsi/ginkgo/ginkgo $(GINKGO_VERSION)-> ginkgo"
-	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install -ldflags="-X main.version=$(GINKGO_VERSION) -X main.buildDate=$$(date '+%Y-%m-%d')" github.com/onsi/ginkgo/ginkgo
+	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) GOBIN=$(abspath $(GOTOOLS_BINDIR)) GO111MODULE=on go install -ldflags="-X main.version=$(GINKGO_VERSION) -X main.buildDate=$$(date '+%Y-%m-%d')" github.com/onsi/ginkgo/ginkgo
 # reset to a branch, so that the next time this target is run, go get starts on a branch, as it must
 	@git -C $(abspath $(GOTOOLS_GOPATH))/src/github.com/onsi/ginkgo/ checkout -q master
 
-gotool.counterfeiter: COUNTERFEITER_VERSION ?= "v6.0.1"
+gotool.counterfeiter: COUNTERFEITER_VERSION ?= "v6.3.0"
 gotool.counterfeiter:
 	@GOPATH=$(abspath $(GOTOOLS_GOPATH)) go get -d -u ${go.fqp.counterfeiter}
 	@git -C $(abspath $(GOTOOLS_GOPATH))/src/${go.fqp.counterfeiter} checkout -q $(COUNTERFEITER_VERSION)
