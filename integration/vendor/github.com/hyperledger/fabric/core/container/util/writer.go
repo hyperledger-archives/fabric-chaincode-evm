@@ -55,6 +55,10 @@ func WriteFolderToTarPackage(tw *tar.Writer, srcPath string, excludeDirs []strin
 
 	rootDirLen := len(rootDirectory)
 	walkFn := func(localpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			vmLogger.Errorf("Visit %s failed: %s", localpath, err)
+			return err
+		}
 
 		// If localpath includes .git, ignore
 		if strings.Contains(localpath, ".git") {
@@ -211,7 +215,15 @@ func WriteStreamToPackage(is io.Reader, localpath string, packagepath string, tw
 func WriteBytesToPackage(name string, payload []byte, tw *tar.Writer) error {
 	//Make headers identical by using zero time
 	var zeroTime time.Time
-	tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(payload)), ModTime: zeroTime, AccessTime: zeroTime, ChangeTime: zeroTime})
+	tw.WriteHeader(
+		&tar.Header{
+			Name:       name,
+			Size:       int64(len(payload)),
+			ModTime:    zeroTime,
+			AccessTime: zeroTime,
+			ChangeTime: zeroTime,
+			Mode:       0100644,
+		})
 	tw.Write(payload)
 
 	return nil

@@ -14,13 +14,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 	"text/template"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/hyperledger/fabric/integration/helpers"
 	"github.com/hyperledger/fabric/integration/nwo/commands"
 	"github.com/hyperledger/fabric/integration/nwo/fabricconfig"
@@ -73,8 +74,9 @@ type SystemChannel struct {
 
 // Channel associates a channel name with a configtxgen profile name.
 type Channel struct {
-	Name    string `yaml:"name,omitempty"`
-	Profile string `yaml:"profile,omitempty"`
+	Name        string `yaml:"name,omitempty"`
+	Profile     string `yaml:"profile,omitempty"`
+	BaseProfile string `yaml:"baseprofile,omitempty"`
 }
 
 // Orderer defines an orderer instance and its owning organization.
@@ -86,6 +88,10 @@ type Orderer struct {
 // ID provides a unique identifier for an orderer instance.
 func (o Orderer) ID() string {
 	return fmt.Sprintf("%s.%s", o.Organization, o.Name)
+}
+
+type OrdererCapabilities struct {
+	V2_0 bool `yaml:"v20,omitempty"`
 }
 
 // Peer defines a peer instance, it's owning organization, and the list of
@@ -144,6 +150,7 @@ type Network struct {
 	SystemChannel    *SystemChannel
 	Channels         []*Channel
 	Consensus        *Consensus
+	OrdererCap       *OrdererCapabilities
 	Orderers         []*Orderer
 	Peers            []*Peer
 	Profiles         []*Profile
@@ -276,6 +283,28 @@ func (n *Network) WriteOrdererConfig(o *Orderer, config *fabricconfig.Orderer) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+// ReadConfigTxConfig  unmarshals the configtx.yaml and returns an
+// object approximating its contents.
+func (n *Network) ReadConfigTxConfig() *fabricconfig.ConfigTx {
+	var configtx fabricconfig.ConfigTx
+	configtxBytes, err := ioutil.ReadFile(n.ConfigTxConfigPath())
+	Expect(err).NotTo(HaveOccurred())
+
+	err = yaml.Unmarshal(configtxBytes, &configtx)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &configtx
+}
+
+// WriteConfigTxConfig serializes the provided configuration to configtx.yaml.
+func (n *Network) WriteConfigTxConfig(config *fabricconfig.ConfigTx) {
+	configtxBytes, err := yaml.Marshal(config)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = ioutil.WriteFile(n.ConfigTxConfigPath(), configtxBytes, 0644)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // PeerDir returns the path to the configuration directory for the specified
 // Peer.
 func (n *Network) PeerDir(p *Peer) string {
@@ -374,6 +403,19 @@ func (n *Network) PeerUserCert(p *Peer, user string) string {
 	)
 }
 
+// OrdererUserCert returns the path to the certificate for the specified user in
+// the orderer organization.
+func (n *Network) OrdererUserCert(o *Orderer, user string) string {
+	org := n.Organization(o.Organization)
+	Expect(org).NotTo(BeNil())
+
+	return filepath.Join(
+		n.OrdererUserMSPDir(o, user),
+		"signcerts",
+		fmt.Sprintf("%s@%s-cert.pem", user, org.Domain),
+	)
+}
+
 // PeerUserKey returns the path to the private key for the specified user in
 // the peer organization.
 func (n *Network) PeerUserKey(p *Peer, user string) string {
@@ -382,6 +424,25 @@ func (n *Network) PeerUserKey(p *Peer, user string) string {
 
 	keystore := filepath.Join(
 		n.PeerUserMSPDir(p, user),
+		"keystore",
+	)
+
+	// file names are the SKI and non-deterministic
+	keys, err := ioutil.ReadDir(keystore)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(keys).To(HaveLen(1))
+
+	return filepath.Join(keystore, keys[0].Name())
+}
+
+// OrdererUserKey returns the path to the private key for the specified user in
+// the orderer organization.
+func (n *Network) OrdererUserKey(o *Orderer, user string) string {
+	org := n.Organization(o.Organization)
+	Expect(org).NotTo(BeNil())
+
+	keystore := filepath.Join(
+		n.OrdererUserMSPDir(o, user),
 		"keystore",
 	)
 
@@ -575,6 +636,7 @@ func (n *Network) Bootstrap() {
 		sess, err := n.ConfigTxGen(commands.CreateChannelTx{
 			ChannelID:             c.Name,
 			Profile:               c.Profile,
+			BaseProfile:           c.BaseProfile,
 			ConfigPath:            n.RootDir,
 			OutputCreateChannelTx: n.CreateChannelTxPath(c.Name),
 		})
@@ -582,12 +644,12 @@ func (n *Network) Bootstrap() {
 		Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
 	}
 
-	n.concatenateTLSCACertificates()
+	n.ConcatenateTLSCACertificates()
 }
 
 // concatenateTLSCACertificates concatenates all TLS CA certificates into a
 // single file to be used by peer CLI.
-func (n *Network) concatenateTLSCACertificates() {
+func (n *Network) ConcatenateTLSCACertificates() {
 	bundle := &bytes.Buffer{}
 	for _, tlsCertPath := range n.listTLSCACertificates() {
 		certBytes, err := ioutil.ReadFile(tlsCertPath)
@@ -714,22 +776,85 @@ func (n *Network) UpdateChannelAnchors(o *Orderer, channelName string) {
 
 // CreateChannel will submit an existing create channel transaction to the
 // specified orderer. The channel transaction must exist at the location
-// returned by CreateChannelTxPath.
+// returned by CreateChannelTxPath.  Optionally, additional signers may be
+// included in the case where the channel creation tx modifies other
+// aspects of the channel config for the new channel.
 //
 // The orderer must be running when this is called.
-func (n *Network) CreateChannel(channelName string, o *Orderer, p *Peer) {
+func (n *Network) CreateChannel(channelName string, o *Orderer, p *Peer, additionalSigners ...interface{}) {
+	channelCreateTxPath := n.CreateChannelTxPath(channelName)
+
+	for _, signer := range additionalSigners {
+		switch t := signer.(type) {
+		case *Peer:
+			sess, err := n.PeerAdminSession(t, commands.SignConfigTx{
+				File: channelCreateTxPath,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
+		case *Orderer:
+			sess, err := n.OrdererAdminSession(t, p, commands.SignConfigTx{
+				File: channelCreateTxPath,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
+		default:
+			panic("unknown signer type, expect Peer or Orderer")
+		}
+	}
+
 	createChannel := func() int {
 		sess, err := n.PeerAdminSession(p, commands.ChannelCreate{
 			ChannelID:   channelName,
 			Orderer:     n.OrdererAddress(o, ListenPort),
-			File:        n.CreateChannelTxPath(channelName),
+			File:        channelCreateTxPath,
+			OutputBlock: "/dev/null",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		return sess.Wait(n.EventuallyTimeout).ExitCode()
+	}
+	Eventually(createChannel, n.EventuallyTimeout).Should(Equal(0))
+}
+
+// CreateChannelFail will submit an existing create channel transaction to the
+// specified orderer, but expect to FAIL. The channel transaction must exist
+// at the location returned by CreateChannelTxPath.
+//
+// The orderer must be running when this is called.
+func (n *Network) CreateChannelFail(channelName string, o *Orderer, p *Peer, additionalSigners ...interface{}) {
+	channelCreateTxPath := n.CreateChannelTxPath(channelName)
+
+	for _, signer := range additionalSigners {
+		switch t := signer.(type) {
+		case *Peer:
+			sess, err := n.PeerAdminSession(t, commands.SignConfigTx{
+				File: channelCreateTxPath,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
+		case *Orderer:
+			sess, err := n.OrdererAdminSession(t, p, commands.SignConfigTx{
+				File: channelCreateTxPath,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(sess, n.EventuallyTimeout).Should(gexec.Exit(0))
+		default:
+			panic("unknown signer type, expect Peer or Orderer")
+		}
+	}
+
+	createChannelFail := func() int {
+		sess, err := n.PeerAdminSession(p, commands.ChannelCreate{
+			ChannelID:   channelName,
+			Orderer:     n.OrdererAddress(o, ListenPort),
+			File:        channelCreateTxPath,
 			OutputBlock: "/dev/null",
 		})
 		Expect(err).NotTo(HaveOccurred())
 		return sess.Wait(n.EventuallyTimeout).ExitCode()
 	}
 
-	Eventually(createChannel, n.EventuallyTimeout).Should(Equal(0))
+	Eventually(createChannelFail, n.EventuallyTimeout).ShouldNot(Equal(0))
 }
 
 // JoinChannel will join peers to the specified channel. The orderer is used to
@@ -879,7 +1004,8 @@ func (n *Network) OrdererRunner(o *Orderer) *ginkgomon.Runner {
 		StartCheckTimeout: 15 * time.Second,
 	}
 
-	if n.Consensus.Brokers != 0 {
+	//After consensus-type migration, the #brokers is >0, but the type is etcdraft
+	if n.Consensus.Type == "kafka" && n.Consensus.Brokers != 0 {
 		config.StartCheck = "Start phase completed successfully"
 		config.StartCheckTimeout = 30 * time.Second
 	}
@@ -1075,6 +1201,17 @@ func (n *Network) PeersWithChannel(chanName string) []*Peer {
 			}
 		}
 	}
+
+	// This is a bit of a hack to make the output of this function deterministic.
+	// When this function's output is supplied as input to functions such as ApproveChaincodeForMyOrg
+	// it causes a different subset of peers to be picked, which can create flakiness in tests.
+	sort.Slice(peers, func(i, j int) bool {
+		if peers[i].Organization < peers[j].Organization {
+			return true
+		}
+
+		return peers[i].Organization == peers[j].Organization && peers[i].Name < peers[j].Name
+	})
 	return peers
 }
 
@@ -1174,23 +1311,25 @@ type PortName string
 type Ports map[PortName]uint16
 
 const (
-	ChaincodePort  PortName = "Chaincode"
-	EventsPort     PortName = "Events"
-	HostPort       PortName = "HostPort"
-	ListenPort     PortName = "Listen"
-	ProfilePort    PortName = "Profile"
-	OperationsPort PortName = "Operations"
+	ChaincodePort    PortName = "Chaincode"
+	EventsPort       PortName = "Events"
+	HostPort         PortName = "HostPort"
+	ListenPort       PortName = "Listen"
+	ProfilePort      PortName = "Profile"
+	OperationsPort   PortName = "Operations"
+	AdminServicePort PortName = "AdminService"
+	ClusterPort      PortName = "Cluster"
 )
 
 // PeerPortNames returns the list of ports that need to be reserved for a Peer.
 func PeerPortNames() []PortName {
-	return []PortName{ListenPort, ChaincodePort, EventsPort, ProfilePort, OperationsPort}
+	return []PortName{ListenPort, ChaincodePort, EventsPort, ProfilePort, OperationsPort, AdminServicePort}
 }
 
 // OrdererPortNames  returns the list of ports that need to be reserved for an
 // Orderer.
 func OrdererPortNames() []PortName {
-	return []PortName{ListenPort, ProfilePort, OperationsPort}
+	return []PortName{ListenPort, ProfilePort, OperationsPort, ClusterPort}
 }
 
 // BrokerPortNames returns the list of ports that need to be reserved for a

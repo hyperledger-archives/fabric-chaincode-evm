@@ -43,11 +43,14 @@ Organizations:{{ range .PeerOrgs }}
     Admins:
       Type: Signature
       Rule: OR('{{.MSPID}}.admin')
+  OrdererEndpoints:{{ range $w.OrderersInOrg .Name }}
+  - 127.0.0.1:{{ $w.OrdererPort . "Listen" }}
+  {{- end }}
 {{ end }}
 
 Channel: &ChannelDefaults
   Capabilities:
-    V1_3: true
+    V1_4_3: true
   Policies:
     Readers:
       Type: ImplicitMeta
@@ -61,19 +64,10 @@ Channel: &ChannelDefaults
 
 Profiles:{{ range .Profiles }}
   {{ .Name }}:
-    {{- if .Orderers }}
     <<: *ChannelDefaults
-    Consortiums:{{ range $w.Consortiums }}
-      {{ .Name }}:
-        Organizations:{{ range .Organizations }}
-        - *{{ ($w.Organization .).MSPID }}
-        {{- end }}
-    {{- end }}
+    {{- if .Orderers }}
     Orderer:
       OrdererType: {{ $w.Consensus.Type }}
-      Addresses:{{ range .Orderers }}{{ with $w.Orderer . }}
-      - 127.0.0.1:{{ $w.OrdererPort . "Listen" }}
-      {{- end }}{{ end }}
       BatchTimeout: 1s
       BatchSize:
         MaxMessageCount: 1
@@ -81,6 +75,7 @@ Profiles:{{ range .Profiles }}
         PreferredMaxBytes: 512 KB
       Capabilities:
         V1_1: true
+
       {{- if eq $w.Consensus.Type "kafka" }}
       Kafka:
         Brokers:{{ range $w.BrokerAddresses "HostPort" }}
@@ -90,10 +85,11 @@ Profiles:{{ range .Profiles }}
       {{- if eq $w.Consensus.Type "etcdraft" }}
       EtcdRaft:
         Options:
-          SnapshotInterval: 5
+          TickInterval: 500ms
+          SnapshotIntervalSize: 1 KB
         Consenters:{{ range .Orderers }}{{ with $w.Orderer . }}
         - Host: 127.0.0.1
-          Port: {{ $w.OrdererPort . "Listen" }}
+          Port: {{ $w.OrdererPort . "Cluster" }}
           ClientTLSCert: {{ $w.OrdererLocalCryptoDir . "tls" }}/server.crt
           ServerTLSCert: {{ $w.OrdererLocalCryptoDir . "tls" }}/server.crt
         {{- end }}{{- end }}
@@ -114,7 +110,9 @@ Profiles:{{ range .Profiles }}
         BlockValidation:
           Type: ImplicitMeta
           Rule: ANY Writers
-    {{- else }}
+    {{- end }}
+    {{- if .Consortium }}
+    Consortium: {{ .Consortium }}
     Application:
       Capabilities:
         V1_3: true
@@ -132,7 +130,19 @@ Profiles:{{ range .Profiles }}
         Admins:
           Type: ImplicitMeta
           Rule: MAJORITY Admins
-    Consortium: {{ .Consortium }}
+        LifecycleEndorsement:
+          Type: ImplicitMeta
+          Rule: "MAJORITY Endorsement"
+        Endorsement:
+          Type: ImplicitMeta
+          Rule: "MAJORITY Endorsement"
+    {{- else }}
+    Consortiums:{{ range $w.Consortiums }}
+      {{ .Name }}:
+        Organizations:{{ range .Organizations }}
+        - *{{ ($w.Organization .).MSPID }}
+        {{- end }}
+    {{- end }}
     {{- end }}
 {{- end }}
 {{ end }}

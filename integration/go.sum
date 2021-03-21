@@ -151,6 +151,8 @@ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpO
 github.com/hyperledger/burrow v0.24.4/go.mod h1:rTFvZkaFrD4uLqMmhmB4wBlXNu/MTuwNVAIkYwBp7t4=
 github.com/hyperledger/fabric v1.4.0 h1:AiOUXysOwh4BmSLZaNzw6ZocZl0uByekPcc+g3PiXH4=
 github.com/hyperledger/fabric v1.4.0/go.mod h1:tGFAOCT696D3rG0Vofd2dyWYLySHlh0aQjf7Q1HAju0=
+github.com/hyperledger/fabric v1.4.4-0.20200211223613-5eaae3a9940d h1:bUzlvQfQiZGXCwFMcgg/fZFKmy4YNbcZmPr6XJhqdNU=
+github.com/hyperledger/fabric v1.4.4-0.20200211223613-5eaae3a9940d/go.mod h1:tGFAOCT696D3rG0Vofd2dyWYLySHlh0aQjf7Q1HAju0=
 github.com/hyperledger/fabric-amcl v0.0.0-20190902191507-f66264322317 h1:7BDH7PcKavbYYdH6Oo1rOAlftTbC4FuzRsvqAldw12w=
 github.com/hyperledger/fabric-amcl v0.0.0-20190902191507-f66264322317/go.mod h1:X+DIyUsaTmalOpmpQfIvFZjKHQedrURQ5t4YqquX7lE=
 github.com/hyperledger/fabric-lib-go v1.0.0 h1:UL1w7c9LvHZUSkIvHTDGklxFv2kTeva1QI2emOVc324=
@@ -264,6 +266,7 @@ github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
+github.com/sykesm/zap-logfmt v0.0.2 h1:czSzn+PIXCOAP/4NAIHTTziIKB8201PzoDkKTn+VR/8=
 github.com/sykesm/zap-logfmt v0.0.2/go.mod h1:TerDJT124HaO8UTpZ2wJCipJRAKQ9XONM1mzUabIh6M=
 github.com/syndtr/goleveldb v1.0.1-0.20190318030020-c3a204f8e965 h1:1oFLiOyVl+W7bnBzGhf7BbIv9loSFQcieWWYIjLqcAw=
 github.com/syndtr/goleveldb v1.0.1-0.20190318030020-c3a204f8e965/go.mod h1:9OrXJhf154huy1nPWmuSrkgjPUtUNhA+Zmy+6AESzuA=
