@@ -22,3 +22,5 @@ replace github.com/go-kit/kit => github.com/go-kit/kit v0.7.0
 replace github.com/hyperledger/burrow => github.com/hyperledger/burrow v0.24.4
 
 replace github.com/fsouza/go-dockerclient => github.com/fsouza/go-dockerclient v1.3.0
+
+replace github.com/hyperledger/fabric => github.com/hyperledger/fabric v1.4.4-0.20200211223613-5eaae3a9940d

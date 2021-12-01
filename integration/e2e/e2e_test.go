@@ -60,6 +60,7 @@ var _ = Describe("EndToEnd", func() {
 		network = nwo.New(helpers.SimpleSoloNetwork(), testDir, client, 30000, components)
 		network.GenerateConfigTree()
 		network.Bootstrap()
+		network.EventuallyTimeout = 2 * time.Minute
 
 		networkRunner := network.NetworkGroupRunner()
 		process = ifrit.Invoke(networkRunner)

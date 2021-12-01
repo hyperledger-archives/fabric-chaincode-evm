@@ -23,6 +23,7 @@ require (
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2 // indirect
-	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/grpc v1.24.0 // indirect
 )
+
+go 1.13

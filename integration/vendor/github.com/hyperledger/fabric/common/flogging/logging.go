@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric/common/flogging/fabenc"
 	logging "github.com/op/go-logging"
+	zaplogfmt "github.com/sykesm/zap-logfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -52,6 +53,7 @@ type Logging struct {
 	encoderConfig  zapcore.EncoderConfig
 	multiFormatter *fabenc.MultiFormatter
 	writer         zapcore.WriteSyncer
+	observer       Observer
 }
 
 // New creates a new logging system and initializes it with the provided
@@ -100,9 +102,10 @@ func (s *Logging) Apply(c Config) error {
 	s.SetWriter(c.Writer)
 
 	var formatter logging.Formatter
-	if s.Encoding() == JSON {
+	switch s.Encoding() {
+	case JSON, LOGFMT:
 		formatter = SetFormat(defaultFormat)
-	} else {
+	default:
 		formatter = SetFormat(c.Format)
 	}
 
@@ -124,6 +127,11 @@ func (s *Logging) SetFormat(format string) error {
 
 	if format == "json" {
 		s.encoding = JSON
+		return nil
+	}
+
+	if format == "logfmt" {
+		s.encoding = LOGFMT
 		return nil
 	}
 
@@ -153,6 +161,14 @@ func (s *Logging) SetWriter(w io.Writer) {
 
 	s.mutex.Lock()
 	s.writer = sw
+	s.mutex.Unlock()
+}
+
+// SetObserver is used to provide a log observer that will be called as log
+// levels are checked or written.. Only a single observer is supported.
+func (s *Logging) SetObserver(observer Observer) {
+	s.mutex.Lock()
+	s.observer = observer
 	s.mutex.Unlock()
 }
 
@@ -193,25 +209,42 @@ func (s *Logging) ZapLogger(name string) *zap.Logger {
 		panic(fmt.Sprintf("invalid logger name: %s", name))
 	}
 
-	// always return true here because the core's Check()
-	// method computes the level for the logger name based
-	// on the active logging spec
-	levelEnabler := zap.LevelEnablerFunc(func(l zapcore.Level) bool { return true })
-
 	s.mutex.RLock()
 	core := &Core{
-		LevelEnabler: levelEnabler,
+		LevelEnabler: s.LoggerLevels,
 		Levels:       s.LoggerLevels,
 		Encoders: map[Encoding]zapcore.Encoder{
 			JSON:    zapcore.NewJSONEncoder(s.encoderConfig),
 			CONSOLE: fabenc.NewFormatEncoder(s.multiFormatter),
+			LOGFMT:  zaplogfmt.NewEncoder(s.encoderConfig),
 		},
 		Selector: s,
 		Output:   s,
+		Observer: s,
 	}
 	s.mutex.RUnlock()
 
 	return NewZapLogger(core).Named(name)
+}
+
+func (s *Logging) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) {
+	s.mutex.RLock()
+	observer := s.observer
+	s.mutex.RUnlock()
+
+	if observer != nil {
+		observer.Check(e, ce)
+	}
+}
+
+func (s *Logging) WriteEntry(e zapcore.Entry, fields []zapcore.Field) {
+	s.mutex.RLock()
+	observer := s.observer
+	s.mutex.RUnlock()
+
+	if observer != nil {
+		observer.WriteEntry(e, fields)
+	}
 }
 
 // Logger instantiates a new FabricLogger with the specified name. The name is

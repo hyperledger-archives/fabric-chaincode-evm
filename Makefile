@@ -55,7 +55,7 @@ gotools: gotools-install
 unit-test: gotool.ginkgo
 	@echo "Running unit-tests"
 	ginkgo -p -randomizeAllSpecs -randomizeSuites -requireSuite -noColor -keepGoing -race -r evmcc
-	cd fab3 && GO111MODULE=on ginkgo -p -randomizeAllSpecs -randomizeSuites -requireSuite -noColor -keepGoing -race -r
+	cd fab3 && ginkgo -p -randomizeAllSpecs -randomizeSuites -requireSuite -noColor -keepGoing -race -r
 
 unit-tests: unit-test
 
