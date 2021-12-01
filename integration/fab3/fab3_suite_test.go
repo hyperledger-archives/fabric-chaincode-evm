@@ -73,6 +73,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	By("setting up the channel")
 	network.CreateAndJoinChannel(orderer, channelName)
 	network.UpdateChannelAnchors(orderer, channelName)
+	network.EventuallyTimeout = 2 * time.Minute
 
 	By("deploying the chaincode")
 	chaincode := nwo.Chaincode{
